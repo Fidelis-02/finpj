@@ -644,6 +644,49 @@
             display: block;
         }
         
+        .sim-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .sim-card--winner {
+            border: 2px solid var(--color-primary);
+            box-shadow: 0 0 0 1px rgba(29, 70, 158, 0.08);
+        }
+        
+        .sim-card--winner .sim-pct {
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+        
+        .sim-recomendado {
+            display: none;
+            background: #E1F5EE;
+            color: var(--color-secondary);
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .sim-card--winner .sim-recomendado {
+            display: inline-block;
+        }
+        
+        .cnpj-msg {
+            font-size: 11px;
+            margin-top: 6px;
+            min-height: 16px;
+        }
+        
+        .cnpj-msg.ok { color: var(--success); }
+        .cnpj-msg.err { color: var(--color-danger); }
+        
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .navbar {
@@ -758,14 +801,14 @@
         <p class="section-sub">Ajuste os dados abaixo e veja qual regime paga menos imposto para sua empresa.</p>
         
         <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 40px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                 <div>
                     <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Faturamento bruto anual</label>
-                    <input type="range" id="simulador-fat" min="800000" max="20000000" step="100000" value="4800000" onchange="calcularSimulador()" style="width: 100%; cursor: pointer;">
+                    <input type="range" id="simulador-fat" min="800000" max="20000000" step="100000" value="4800000" oninput="calcularSimulador()" style="width: 100%; cursor: pointer;">
                     <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 6px;" id="lbl-fat">R$ 4.800.000</div>
                 </div>
                 <div>
-                    <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Margem líquida estimada</label>
+                    <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Margem líquida estimada (Lucro Real)</label>
                     <select id="simulador-margem" onchange="calcularSimulador()" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
                         <option value="0.08">8%</option>
                         <option value="0.12" selected>12%</option>
@@ -774,25 +817,39 @@
                     </select>
                 </div>
             </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Atividade principal (afeta Lucro Presumido e faixa do Simples)</label>
+                <select id="simulador-atividade" onchange="calcularSimulador()" style="width: 100%; max-width: 420px; padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
+                    <option value="servicos" selected>Prestação de serviços em geral</option>
+                    <option value="comercio">Comércio / varejo</option>
+                    <option value="industria">Indústria / transformação</option>
+                    <option value="tecnologia">Tecnologia da informação (CNAE 62/63)</option>
+                </select>
+            </div>
             
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-                <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                <div id="sim-card-simples" class="sim-card">
                     <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Simples Nacional</div>
                     <div style="font-size: 24px; font-weight: 600; color: var(--text-primary);" id="val-simples">R$ 0</div>
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;" id="pct-simples">0%</div>
+                    <div class="sim-pct" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;" id="pct-simples">0%</div>
+                    <span class="sim-recomendado">Menor carga</span>
                 </div>
-                <div style="background: var(--bg-tertiary); border: 2px solid var(--color-primary); border-radius: 12px; padding: 20px; text-align: center;">
+                <div id="sim-card-presumido" class="sim-card">
                     <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Lucro Presumido</div>
-                    <div style="font-size: 24px; font-weight: 600; color: var(--color-primary);" id="val-presumido">R$ 0</div>
-                    <div style="font-size: 11px; color: var(--color-primary); margin-top: 4px; font-weight: 600;" id="pct-presumido">0%</div>
-                    <div style="background: #E1F5EE; color: var(--color-secondary); font-size: 10px; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 8px; font-weight: 600;">Recomendado</div>
+                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary);" id="val-presumido">R$ 0</div>
+                    <div class="sim-pct" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;" id="pct-presumido">0%</div>
+                    <span class="sim-recomendado">Menor carga</span>
                 </div>
-                <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                <div id="sim-card-real" class="sim-card">
                     <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Lucro Real</div>
                     <div style="font-size: 24px; font-weight: 600; color: var(--text-primary);" id="val-real">R$ 0</div>
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;" id="pct-real">0%</div>
+                    <div class="sim-pct" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;" id="pct-real">0%</div>
+                    <span class="sim-recomendado">Menor carga</span>
                 </div>
             </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; line-height: 1.5;">
+                Simulação educativa: Simples com alíquota efetiva aproximada por faixa de receita; Lucro Presumido com bases legais típicas por atividade; Lucro Real com IRPJ/CSLL sobre lucro contábil e PIS/COFINS não cumulativos. Não substitui planejamento tributário.
+            </p>
         </div>
     </section>
     
@@ -975,22 +1032,21 @@
                 </div>
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">CNPJ</label>
-<input    
-    type="text" 
-    placeholder="00.000.000/0001-00" 
-    id="inp-cnpj"
-    maxlength="18"
-    oninput="formatarCNPJ(this)"
-    style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;"
->                </div>
+                    <input type="text" placeholder="00.000.000/0001-00" id="inp-cnpj" maxlength="18" oninput="onCnpjInput(this)" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                    <div id="cnpj-consulta-msg" class="cnpj-msg" aria-live="polite"></div>
+                </div>
+                <div id="linha-cnae" style="display: none; margin-bottom: 14px; padding: 10px 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                    <strong style="color: var(--text-primary);">CNAE fiscal (Receita Federal)</strong><br>
+                    <span id="inp-cnae-codigo"></span> — <span id="inp-cnae-texto"></span>
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
                     <div>
-                        <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Setor</label>
+                        <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Setor (ajustado pelo CNAE)</label>
                         <select id="inp-setor" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                            <option>Comércio varejista</option>
-                            <option selected>Serviços especializados</option>
-                            <option>Indústria</option>
-                            <option>Tecnologia</option>
+                            <option value="comercio">Comércio varejista</option>
+                            <option value="servicos" selected>Serviços especializados</option>
+                            <option value="industria">Indústria</option>
+                            <option value="tecnologia">Tecnologia</option>
                         </select>
                     </div>
                     <div>
@@ -1130,40 +1186,93 @@
     </div>
 
     <script>
-        // Simulador Fiscal
+        let cnpjConsultaTimer = null;
+
+        function aliquotaSimplesEfetiva(fat, atividade) {
+            let a;
+            if (fat <= 180000) a = 0.06;
+            else if (fat <= 360000) a = 0.067;
+            else if (fat <= 720000) a = 0.075;
+            else if (fat <= 1800000) a = 0.085;
+            else if (fat <= 3600000) a = 0.095;
+            else if (fat <= 4800000) a = 0.105;
+            else if (fat <= 10000000) a = 0.125;
+            else a = 0.15;
+            if (atividade === 'comercio') return a * 0.9;
+            if (atividade === 'industria') return a * 0.95;
+            return a;
+        }
+
+        function basesLucroPresumido(fat, atividade) {
+            let pctIrpj = 0.32;
+            let pctCsll = 0.32;
+            if (atividade === 'comercio') {
+                pctIrpj = 0.08;
+                pctCsll = 0.12;
+            } else if (atividade === 'industria') {
+                pctIrpj = 0.12;
+                pctCsll = 0.12;
+            } else if (atividade === 'tecnologia') {
+                pctIrpj = 0.32;
+                pctCsll = 0.32;
+            }
+            return { baseIrpj: fat * pctIrpj, baseCsll: fat * pctCsll };
+        }
+
+        function irpjLucroPresumido(baseIrpj) {
+            return baseIrpj * 0.15 + Math.max(0, baseIrpj - 240000) * 0.10;
+        }
+
+        function destacarRegimeSimulador(melhor) {
+            ['simples', 'presumido', 'real'].forEach(function (k) {
+                const el = document.getElementById('sim-card-' + k);
+                if (el) el.classList.toggle('sim-card--winner', k === melhor);
+            });
+        }
+
         function calcularSimulador() {
-            const fat = parseInt(document.getElementById('simulador-fat').value);
+            const fat = parseInt(document.getElementById('simulador-fat').value, 10);
             const margem = parseFloat(document.getElementById('simulador-margem').value);
-            
-            document.getElementById('lbl-fat').textContent = 'R$ ' + (fat / 1000000).toFixed(1).replace('.', ',') + ' mi';
-            
-            // Simples (aprox 11% da receita para este faixa)
-            const impostoS = fat * 0.11;
-            
-            // Presumido
-            const baseP = fat * 0.32; // 32% base para serviços
-            const irpjP = baseP * 0.15 + Math.max(0, baseP - 240000) * 0.10;
-            const csllP = baseP * 0.09;
-            const pisP = fat * 0.0065;
-            const cofP = fat * 0.03;
-            const impostoP = irpjP + csllP + pisP + cofP;
-            
-            // Real
+            const atividade = document.getElementById('simulador-atividade')
+                ? document.getElementById('simulador-atividade').value
+                : 'servicos';
+
+            document.getElementById('lbl-fat').textContent =
+                'R$ ' + fat.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+
+            const aliqS = aliquotaSimplesEfetiva(fat, atividade);
+            const impostoS = fat * aliqS;
+
+            const bases = basesLucroPresumido(fat, atividade);
+            const irpjP = irpjLucroPresumido(bases.baseIrpj);
+            const csllP = bases.baseCsll * 0.09;
+            const impostoP = irpjP + csllP + fat * 0.0165 + fat * 0.076;
+
             const lucroReal = Math.max(0, fat * margem);
             const irpjR = lucroReal * 0.15 + Math.max(0, lucroReal - 240000) * 0.10;
             const csllR = lucroReal * 0.09;
-            const impostoR = irpjR + csllR + (fat * 0.0165) + (fat * 0.076);
-            
-            const fmt = (v) => 'R$ ' + (v / 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            
+            const impostoR = irpjR + csllR + fat * 0.0165 + fat * 0.076;
+
+            const fmt = function (v) {
+                return 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+            };
+
             document.getElementById('val-simples').textContent = fmt(impostoS);
             document.getElementById('pct-simples').textContent = ((impostoS / fat) * 100).toFixed(1) + '%';
-            
+
             document.getElementById('val-presumido').textContent = fmt(impostoP);
             document.getElementById('pct-presumido').textContent = ((impostoP / fat) * 100).toFixed(1) + '%';
-            
+
             document.getElementById('val-real').textContent = fmt(impostoR);
             document.getElementById('pct-real').textContent = ((impostoR / fat) * 100).toFixed(1) + '%';
+
+            const minT = Math.min(impostoS, impostoP, impostoR);
+            const empate = Math.max(1, minT * 0.00005);
+            let melhor = 'real';
+            if (Math.abs(impostoS - minT) <= empate) melhor = 'simples';
+            else if (Math.abs(impostoP - minT) <= empate) melhor = 'presumido';
+
+            destacarRegimeSimulador(melhor);
         }
         
         // Modals
@@ -1193,51 +1302,138 @@
             if (btn) btn.classList.add('active');
         }
 
-        function validarEtapa1Local() {
-            const nome = document.getElementById('inp-nome');
-            const cnpj = document.getElementById('inp-cnpj');
-            let valido = true;
-            if (!nome.value.trim()) {
-                marcarErro('inp-nome');
-                valido = false;
-            } else {
-                limparErro('inp-nome');
-            }
-            if (!validarCNPJ(cnpj.value)) {
-                marcarErro('inp-cnpj');
-                valido = false;
-            } else {
-                limparErro('inp-cnpj');
-            }
-            return valido;
+        function setCnpjMsg(texto, tipo) {
+            const el = document.getElementById('cnpj-consulta-msg');
+            if (!el) return;
+            el.textContent = texto || '';
+            el.className = 'cnpj-msg' + (tipo ? ' ' + tipo : '');
         }
 
-        async function validarEtapa1ComApi() {
-            if (!validarEtapa1Local()) return false;
+        function setorFromCnae(cnaeFiscal, descricao) {
+            const cod = parseInt(String(cnaeFiscal || '').replace(/\D/g, '').slice(0, 2), 10);
+            const txt = String(descricao || '');
+            if (txt.match(/software|tecnologia da informação|informática|desenvolvimento de programas|data processing|hospedagem de/i)) return 'tecnologia';
+            if (cod === 62 || cod === 63) return 'tecnologia';
+            if (cod >= 45 && cod <= 47) return 'comercio';
+            if (cod >= 10 && cod <= 33) return 'industria';
+            return 'servicos';
+        }
+
+        function aplicarDadosCnpj(data) {
+            if (data.nome) {
+                document.getElementById('inp-nome').value = data.nome;
+                limparErro('inp-nome');
+            }
+            const setor = setorFromCnae(data.cnae_fiscal, data.cnae_descricao || data.cnae);
+            const sel = document.getElementById('inp-setor');
+            if (sel) sel.value = setor;
+
+            const linha = document.getElementById('linha-cnae');
+            const codEl = document.getElementById('inp-cnae-codigo');
+            const txtEl = document.getElementById('inp-cnae-texto');
+            if (data.cnae_fiscal != null && String(data.cnae_fiscal).length) {
+                if (codEl) codEl.textContent = String(data.cnae_fiscal);
+                if (txtEl) txtEl.textContent = data.cnae_descricao || data.cnae || '—';
+                if (linha) linha.style.display = 'block';
+            } else if (data.cnae_descricao || data.cnae) {
+                if (codEl) codEl.textContent = '—';
+                if (txtEl) txtEl.textContent = data.cnae_descricao || data.cnae;
+                if (linha) linha.style.display = 'block';
+            } else if (linha) {
+                linha.style.display = 'none';
+            }
+
+            const simAt = document.getElementById('simulador-atividade');
+            if (simAt && ['comercio', 'servicos', 'industria', 'tecnologia'].indexOf(setor) !== -1) {
+                simAt.value = setor;
+            }
+            if (typeof calcularSimulador === 'function') calcularSimulador();
+        }
+
+        function validarCnpjDigitos() {
+            const cnpj = document.getElementById('inp-cnpj');
+            if (!validarCNPJ(cnpj.value)) {
+                marcarErro('inp-cnpj');
+                return false;
+            }
+            limparErro('inp-cnpj');
+            return true;
+        }
+
+        function validarNomePreenchido() {
+            const nome = document.getElementById('inp-nome');
+            if (!nome.value.trim()) {
+                marcarErro('inp-nome');
+                return false;
+            }
+            limparErro('inp-nome');
+            return true;
+        }
+
+        async function buscarCnpjNaReceita(silencioso) {
+            if (!validarCnpjDigitos()) {
+                if (!silencioso) setCnpjMsg('CNPJ incompleto ou dígitos inválidos.', 'err');
+                return false;
+            }
             const cnpj = document.getElementById('inp-cnpj').value.replace(/\D/g, '');
+            if (!silencioso) setCnpjMsg('Consultando Receita Federal…', '');
             try {
                 const res = await fetch('/api/cnpj?cnpj=' + encodeURIComponent(cnpj));
-                const data = await res.json();
-                if (data.erro && res.status >= 400) {
-                    alert(data.erro || 'Não foi possível validar o CNPJ.');
+                let data;
+                try {
+                    data = await res.json();
+                } catch (parseErr) {
+                    if (!silencioso) setCnpjMsg('Resposta inválida do servidor.', 'err');
+                    return false;
+                }
+                if (!res.ok) {
+                    const msg = data.erro || data.message || 'CNPJ não encontrado.';
+                    if (!silencioso) setCnpjMsg(msg, 'err');
                     marcarErro('inp-cnpj');
                     return false;
                 }
-                if (res.status === 404 || data.ativo === false) {
-                    alert('CNPJ não encontrado ou não está ativo na Receita Federal.');
+                if (!data.ativo) {
+                    if (!silencioso) setCnpjMsg('Empresa não está ativa na Receita Federal.', 'err');
                     marcarErro('inp-cnpj');
                     return false;
                 }
-                if (data.nome && !document.getElementById('inp-nome').value.trim()) {
-                    document.getElementById('inp-nome').value = data.nome;
+                aplicarDadosCnpj(data);
+                if (!silencioso) {
+                    setCnpjMsg('Dados da Receita carregados (razão social, CNAE e setor).', 'ok');
+                } else {
+                    setCnpjMsg('', '');
                 }
                 limparErro('inp-cnpj');
                 return true;
             } catch (e) {
                 console.error(e);
-                alert('Erro ao validar CNPJ. Verifique sua conexão e se o servidor está em execução.');
+                if (!silencioso) {
+                    setCnpjMsg('Falha na consulta. Abra o site pelo servidor local (npm start), não como arquivo.', 'err');
+                }
                 return false;
             }
+        }
+
+        function onCnpjInput(el) {
+            formatarCNPJ(el);
+            setCnpjMsg('', '');
+            if (cnpjConsultaTimer) clearTimeout(cnpjConsultaTimer);
+            const digits = el.value.replace(/\D/g, '');
+            if (digits.length === 14 && validarCNPJ(el.value)) {
+                cnpjConsultaTimer = setTimeout(function () {
+                    buscarCnpjNaReceita(true);
+                }, 500);
+            }
+        }
+
+        async function validarEtapa1ComApi() {
+            const ok = await buscarCnpjNaReceita(false);
+            if (!ok) return false;
+            if (!validarNomePreenchido()) {
+                alert('Não foi possível obter a razão social. Preencha o nome manualmente.');
+                return false;
+            }
+            return true;
         }
 
         async function goTab(n) {
