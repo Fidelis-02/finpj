@@ -1,0 +1,26 @@
+{
+  "diagnosticos": [
+    {
+      "id": 1776557351989,
+      "nome": "dddddddddddddddddd",
+      "cnpj": "00000000000000",
+      "setor": "Serviços especializados",
+      "regime": "Lucro Real",
+      "faturamento": 4800000,
+      "margem": 0.12,
+      "data": "2026-04-19T00:09:11.989Z",
+      "resultados": {
+        "regimeIdeal": "Lucro Real",
+        "impostoIdeal": 138240,
+        "economia": 581760,
+        "creditosIdentificados": 240000,
+        "anomaliaValor": 0,
+        "impostos": {
+          "simples": 528000,
+          "presumido": 720000,
+          "real": 138240
+        }
+      }
+    }
+  ]
+}
