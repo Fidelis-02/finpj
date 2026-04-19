@@ -19,8 +19,8 @@
             --color-primary: #1D74F2;
             --color-secondary: #0A2540;
             --color-accent: #00D4FF;
-            --color-danger: #E24B4A;
-            --color-warning: #BA7517;
+            --color-danger: #DC2626;
+            --color-warning: #D97706;
             --color-info: #378ADD;
             --text-primary: #0A2540;
             --text-secondary: #5A6B7D;
@@ -29,7 +29,10 @@
             --bg-secondary: #F0F5FF;
             --bg-tertiary: #F8FAFF;
             --border: #D9E2F0;
-            --success: #00B341;
+            --success: #059669;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
         }
         
         body {
@@ -155,6 +158,84 @@
             background: #1563D8;
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(29, 116, 242, 0.35);
+        }
+        
+        /* Auth Button Group */
+        .nav-auth-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .btn-nav-login {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-nav-login:hover {
+            color: var(--color-primary);
+            border-color: var(--color-primary);
+            background: rgba(29, 116, 242, 0.05);
+        }
+        
+        .btn-nav-signup {
+            background: var(--color-primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(29, 116, 242, 0.2);
+        }
+        
+        .btn-nav-signup:hover {
+            background: #1563D8;
+            box-shadow: 0 6px 16px rgba(29, 116, 242, 0.3);
+        }
+        
+        /* Custom Dropdown Styling */
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231D74F2' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px !important;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        select:hover {
+            border-color: var(--color-primary) !important;
+        }
+        
+        select:focus {
+            border-color: var(--color-primary) !important;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(29, 116, 242, 0.1);
+        }
+        
+        select option {
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            padding: 8px 12px;
+        }
+        
+        select option:checked {
+            background: linear-gradient(#1D74F2, #1D74F2);
+            background-color: #1D74F2 !important;
+            color: white !important;
         }
         
         /* HERO */
@@ -992,12 +1073,13 @@
             <button type="button" class="nav-link" data-target="features" onclick="scrollTo('features')">Funcionalidades</button>
             <button type="button" class="nav-link" data-target="howitworks" onclick="scrollTo('howitworks')">Como funciona</button>
             <button type="button" class="nav-link" data-target="planos" onclick="scrollTo('planos')">Planos</button>
-            <button type="button" class="nav-link" id="nav-login-btn" onclick="openModal('login')">Entrar</button>
             <button type="button" class="nav-link" id="dashboard-link" onclick="openDashboard()" style="display:none;">Dashboard</button>
-            <button type="button" class="nav-link" id="nav-logout-btn" onclick="logoutCliente()" style="display:none; color:#E24B4A;">Sair</button>
+            <button type="button" class="nav-link" id="nav-logout-btn" onclick="logoutCliente()" style="display:none; color:#DC2626;">Sair</button>
         </div>
-        <button class="nav-cta" id="nav-signup-btn" onclick="openModal('register')">Criar conta</button>
-        <button class="nav-cta" id="nav-login-cta" onclick="openModal('login')" style="display:none; background:#0A2540; margin-left:8px;">Entrar</button>
+        <div class="nav-auth-group" id="nav-auth-group">
+            <button type="button" class="btn-nav-login" id="nav-login-btn" onclick="openModal('login')">Entrar</button>
+            <button type="button" class="btn-nav-signup" id="nav-signup-btn" onclick="openModal('register')">Criar conta</button>
+        </div>
     </nav>
     
     <!-- HERO -->
@@ -1295,7 +1377,6 @@
             <div class="tabs" id="login-tabs" style="margin-bottom: 20px;">
                 <button type="button" class="tab-btn active" data-tab="email" onclick="setLoginTab('email')">E-mail</button>
                 <button type="button" class="tab-btn" data-tab="cnpj" onclick="setLoginTab('cnpj')">CNPJ</button>
-                <button type="button" class="tab-btn" data-tab="google" onclick="setLoginTab('google')">Google</button>
             </div>
             <div class="login-step active" id="login-step-email">
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
@@ -1314,13 +1395,6 @@
                 <input id="login-password" type="password" class="login-input" placeholder="Senha" autocomplete="current-password">
                 <button type="button" class="btn-primary" style="width:100%;" onclick="loginWithCnpj()">Entrar</button>
                 <button type="button" class="btn-secondary" style="width:100%; margin-top:12px;" onclick="openModal('register')">Criar conta</button>
-            </div>
-            <div class="login-step" id="login-step-google">
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
-                    <div style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:#1D74F2;">G</div>
-                    <div style="font-size:14px; color:var(--text-primary);">Entrada com Google</div>
-                </div>
-                <button type="button" class="btn-primary" style="width:100%;" onclick="loginWithGoogle()">Continuar com Google</button>
             </div>
             <div class="login-step" id="login-step-code">
                 <p class="login-note">Digitando o código enviado para <strong id="login-email-preview"></strong>.</p>
@@ -1893,22 +1967,14 @@ async function loadDashboard() {
 function updateAuthState() {
     const logged = isLoggedIn();
     const dashboardLink = document.getElementById('dashboard-link');
-    const navSignupBtn = document.getElementById('nav-signup-btn');
-    const navLoginBtn = document.getElementById('nav-login-btn');
-    const navLoginCta = document.getElementById('nav-login-cta');
+    const authGroup = document.getElementById('nav-auth-group');
     const navLogoutBtn = document.getElementById('nav-logout-btn');
     
+    if (authGroup) {
+        authGroup.style.display = logged ? 'none' : 'flex';
+    }
     if (dashboardLink) {
-        dashboardLink.style.display = logged ? 'inline-flex' : 'none';
-    }
-    if (navSignupBtn) {
-        navSignupBtn.style.display = logged ? 'none' : 'inline-block';
-    }
-    if (navLoginBtn) {
-        navLoginBtn.style.display = logged ? 'none' : 'inline-block';
-    }
-    if (navLoginCta) {
-        navLoginCta.style.display = logged ? 'none' : 'inline-block';
+        dashboardLink.style.display = logged ? 'inline-block' : 'none';
     }
     if (navLogoutBtn) {
         navLogoutBtn.style.display = logged ? 'inline-block' : 'none';

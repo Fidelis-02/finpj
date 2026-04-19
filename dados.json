@@ -22,5 +22,121 @@
         }
       }
     }
-  ]
+  ],
+  "usuarios": [
+    {
+      "email": "samuelfidelis381@gmail.com",
+      "createdAt": "2026-04-19T16:29:27.349Z",
+      "bankReports": [
+        {
+          "id": "samuelfidelis381@gmail.com-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa samuelfidelis381 com informações de extrato e movimentações bancárias.",
+          "amount": 10792,
+          "status": "Concluído"
+        },
+        {
+          "id": "samuelfidelis381@gmail.com-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa samuelfidelis381 com informações de extrato e movimentações bancárias.",
+          "amount": 13681,
+          "status": "Atenção"
+        },
+        {
+          "id": "samuelfidelis381@gmail.com-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa samuelfidelis381 com informações de extrato e movimentações bancárias.",
+          "amount": 13043,
+          "status": "Concluído"
+        },
+        {
+          "id": "samuelfidelis381@gmail.com-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa samuelfidelis381 com informações de extrato e movimentações bancárias.",
+          "amount": 10913,
+          "status": "Atenção"
+        },
+        {
+          "id": "samuelfidelis381@gmail.com-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa samuelfidelis381 com informações de extrato e movimentações bancárias.",
+          "amount": 6041,
+          "status": "Concluído"
+        },
+        {
+          "id": "samuelfidelis381@gmail.com-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa samuelfidelis381 com informações de extrato e movimentações bancárias.",
+          "amount": 15472,
+          "status": "Atenção"
+        }
+      ],
+      "verificationCodeHash": "$2b$10$CW1cHWCcpLMtRf8RFnlaI.zUinCRWBzDpLgn58QpH1JPb8R7bReYO",
+      "codeExpiresAt": 1776616918538,
+      "lastCodeSentAt": "2026-04-19T16:31:58.538Z"
+    },
+    {
+      "cnpj": "12354556666666666666666",
+      "passwordHash": "$2b$10$awOAP5K8g8raufZd/3FsvO0dOA/XX8MxA9yA9RohaWPuSfYM5GEQ.",
+      "email": "cnpj-12354556666666666666666@finpj.local",
+      "createdAt": "2026-04-19T16:30:57.079Z",
+      "bankReports": [
+        {
+          "id": "cnpj-12354556666666666666666-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa cnpj-12354556666666666666666 com informações de extrato e movimentações bancárias.",
+          "amount": 6689,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-12354556666666666666666-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa cnpj-12354556666666666666666 com informações de extrato e movimentações bancárias.",
+          "amount": 20306,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-12354556666666666666666-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa cnpj-12354556666666666666666 com informações de extrato e movimentações bancárias.",
+          "amount": 16421,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-12354556666666666666666-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa cnpj-12354556666666666666666 com informações de extrato e movimentações bancárias.",
+          "amount": 9227,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-12354556666666666666666-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa cnpj-12354556666666666666666 com informações de extrato e movimentações bancárias.",
+          "amount": 16094,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-12354556666666666666666-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa cnpj-12354556666666666666666 com informações de extrato e movimentações bancárias.",
+          "amount": 16077,
+          "status": "Atenção"
+        }
+      ]
+    }
+  ],
+  "bankReports": []
 }
