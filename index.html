@@ -1193,7 +1193,7 @@
             </div>
         </div>
     </div>
-
+<script src="https://js.stripe.com/v3/"></script>
     <script>
         let cnpjConsultaTimer = null;
         let cnpjAbortController = null;
@@ -1216,7 +1216,7 @@
         function abrirModalPagamento(plano) {
     const email = prompt('Qual seu e-mail?');
     if (!email) return;
-    
+    const stripe = Stripe('pk_test_51TNld1XJS6AZxAvNOJo9skaADMeBImV7xmTA8mrGNiqO6UF9Qnxi7ZpsQ2J06whIsLNY1ZMxCSejpawIFeu8zOTIx00bNXS9dB4');
     // Aqui você abre um modal com formulário de cartão
     console.log('Pagamento de:', plano);
 }
@@ -1394,7 +1394,35 @@
                 cnpjAbortController = null;
             }
         }
+async function assinarPlano(plano) {
+    const email = prompt("Digite seu e-mail:");
+    if (!email) return;
 
+    const res = await fetch('/api/pagamento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plano, email })
+    });
+
+    const data = await res.json();
+
+    if (!data.clientSecret) {
+        alert('Erro ao iniciar pagamento');
+        return;
+    }
+
+    // 👇 AQUI ESTAVA FALTANDO TUDO
+    const result = await stripe.confirmPayment({
+        clientSecret: data.clientSecret,
+        confirmParams: {
+            return_url: window.location.origin + '/sucesso.html'
+        }
+    });
+
+    if (result.error) {
+        alert(result.error.message);
+    }
+}
         async function buscarCnpjNaReceita(silencioso) {
             if (!validarCnpjDigitos()) {
                 if (!silencioso) setCnpjMsg('CNPJ incompleto ou dígitos verificadores inválidos.', 'err');
