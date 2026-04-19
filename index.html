@@ -515,7 +515,112 @@
         .plan-btn-secondary:hover {
             background: var(--bg-secondary);
         }
-        
+
+        .login-step {
+            display: none;
+        }
+
+        .login-step.active {
+            display: block;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .login-note {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .dashboard-card {
+            border-radius: 18px;
+            padding: 24px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            box-shadow: 0 18px 40px rgba(43, 64, 92, 0.06);
+        }
+
+        .dashboard-card h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .dashboard-card strong {
+            display: block;
+            font-size: 28px;
+            color: var(--text-primary);
+            margin-top: 10px;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-primary);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .report-table th,
+        .report-table td {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .report-table th {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .report-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .report-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .report-status.ok {
+            background: #E1F5EE;
+            color: var(--success);
+        }
+
+        .report-status.warn {
+            background: #F9EBDF;
+            color: var(--color-warning);
+        }
+
+        .dashboard-hidden {
+            display: none;
+        }
+
         /* TESTIMONIALS */
         .testimonials {
             display: grid;
@@ -794,6 +899,8 @@
             <button type="button" class="nav-link" data-target="howitworks" onclick="scrollTo('howitworks')">Como funciona</button>
             <button type="button" class="nav-link" data-target="planos" onclick="scrollTo('planos')">Planos</button>
             <button type="button" class="nav-link" data-target="casos" onclick="scrollTo('casos')">Cases</button>
+            <button type="button" class="nav-link" onclick="openModal('login')">Entrar</button>
+            <button type="button" class="nav-link" id="dashboard-link" onclick="openDashboard()" style="display:none;">Dashboard</button>
         </div>
         <button class="nav-cta" onclick="openModal('diagnose')">Diagnóstico grátis</button>
     </nav>
@@ -970,7 +1077,7 @@
                         <span class="feat-check">+</span> Integração Open Finance
                     </div>
                 </div>
-                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('growth')">
+                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('starter')">
     Saiba Mais
 </button>
             </div>
@@ -1028,7 +1135,7 @@
                         <span class="feat-check">+</span> Suporte dedicado
                     </div>
                 </div>
-                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('growth')">
+                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('enterprise')">
     Falar com vendas
 </button>
             </div>
@@ -1075,6 +1182,41 @@
         <p class="cta-sub">Diagnóstico gratuito em 3 minutos. Sem precisar de contador, sem planilha.</p>
         <button class="btn-primary" onclick="openModal('diagnose')">Fazer diagnóstico agora</button>
     </section>
+
+    <section id="dashboard" class="section section-alt dashboard-hidden">
+        <div class="section-label">Área do cliente</div>
+        <div class="section-title">Relatórios bancários e acompanhamento diário</div>
+        <p class="section-sub">Acompanhe atualizações diárias de movimentação, conciliação e alertas financeiros em um painel simples.</p>
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>Bem-vindo</h3>
+                <strong id="dashboard-welcome">Carregando...</strong>
+            </div>
+            <div class="dashboard-card">
+                <h3>Movimentações recentes</h3>
+                <strong id="dashboard-report-count">0 relatórios</strong>
+            </div>
+            <div class="dashboard-card">
+                <h3>Pendências bancárias</h3>
+                <strong id="dashboard-pendings">0 avisos</strong>
+            </div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Resumo</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboard-reports-body">
+                    <tr><td colspan="4">Nenhum relatório disponível.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
     
     <!-- FOOTER -->
     <footer class="footer">
@@ -1082,6 +1224,28 @@
     </footer>
     
     <!-- MODALS -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <button class="modal-close" onclick="closeModal('login')">&times;</button>
+            <h2 class="modal-title">Entrar com seu e-mail</h2>
+            <p class="login-note">Use seu e-mail para receber um código seguro. Sem senha, com um passo rápido para sua área de cliente.</p>
+            <div class="login-step active" id="login-step-email">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--color-primary);">G</div>
+                    <div style="font-size:14px; color:var(--text-primary);">Entrada com Gmail</div>
+                </div>
+                <input id="login-email" type="email" class="login-input" placeholder="seunome@gmail.com" autocomplete="email">
+                <button type="button" class="btn-primary" style="width:100%;" onclick="sendLoginCode()">Enviar código</button>
+            </div>
+            <div class="login-step" id="login-step-code">
+                <p class="login-note">Digitando o código enviado para <strong id="login-email-preview"></strong>.</p>
+                <input id="login-code" type="text" class="login-input" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric">
+                <button type="button" class="btn-primary" style="width:100%;" onclick="verifyLoginCode()">Verificar código</button>
+                <button type="button" class="btn-secondary" style="width:100%; margin-top:12px;" onclick="setLoginStep('email')">Usar outro e-mail</button>
+            </div>
+            <div id="login-message" class="login-note" style="min-height:20px;"></div>
+        </div>
+    </div>
     <div id="diagnose-modal" class="modal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('diagnose')">&times;</button>
@@ -1279,8 +1443,16 @@
             if (atividade === 'industria') return a * 0.95;
             return a;
         }
+        let pendingPlano = null;
+
         function abrirModalPagamento(plano) {
-            assinarPlano(plano);
+            pendingPlano = plano;
+            if (isLoggedIn()) {
+                iniciarCompra(plano);
+                return;
+            }
+            openModal('login');
+            setLoginStep('email');
         }
 
         function basesLucroPresumido(fat, atividade) {
@@ -1456,26 +1628,168 @@
                 cnpjAbortController = null;
             }
         }
-async function assinarPlano(plano) {
-    const email = prompt("Digite seu e-mail:");
-    if (!email) return;
+function isLoggedIn() {
+    return Boolean(localStorage.getItem('finpjToken')) && Boolean(localStorage.getItem('finpjAuthEmail'));
+}
 
+function setLoginStep(step) {
+    document.getElementById('login-step-email').classList.toggle('active', step === 'email');
+    document.getElementById('login-step-code').classList.toggle('active', step === 'code');
+    document.getElementById('login-message').textContent = '';
+    if (step === 'code') {
+        const email = localStorage.getItem('finpjAuthEmail') || '';
+        document.getElementById('login-email-preview').textContent = email;
+    }
+}
+
+function showLoginMessage(message) {
+    const el = document.getElementById('login-message');
+    if (el) el.textContent = message;
+}
+
+async function sendLoginCode() {
+    const emailInput = document.getElementById('login-email');
+    const email = emailInput ? emailInput.value.trim() : '';
+    if (!email) {
+        showLoginMessage('Digite um e-mail válido para continuar.');
+        return;
+    }
+    try {
+        const res = await fetch('/api/auth/send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.sucesso) {
+            throw new Error(data.erro || 'Não foi possível enviar o código.');
+        }
+        localStorage.setItem('finpjAuthEmail', email);
+        setLoginStep('code');
+        showLoginMessage(data.mensagem || 'Código enviado. Confira sua caixa de entrada.');
+    } catch (erro) {
+        console.error('Envio de código:', erro);
+        showLoginMessage(erro.message || 'Falha ao enviar o código. Tente novamente.');
+    }
+}
+
+async function verifyLoginCode() {
+    const email = localStorage.getItem('finpjAuthEmail');
+    const code = document.getElementById('login-code').value.trim();
+    if (!email || !code) {
+        showLoginMessage('Informe o código que você recebeu por e-mail.');
+        return;
+    }
+    try {
+        const res = await fetch('/api/auth/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.sucesso) {
+            throw new Error(data.erro || 'Código inválido.');
+        }
+        localStorage.setItem('finpjToken', data.token);
+        localStorage.setItem('finpjAuthEmail', email);
+        updateAuthState();
+        closeModal('login');
+        if (pendingPlano) {
+            iniciarCompra(pendingPlano);
+            pendingPlano = null;
+            return;
+        }
+        openDashboard();
+    } catch (erro) {
+        console.error('Verificação de código:', erro);
+        showLoginMessage(erro.message || 'Não foi possível validar o código.');
+    }
+}
+
+async function iniciarCompra(plano) {
+    const email = localStorage.getItem('finpjAuthEmail');
+    if (!email) {
+        abrirModalPagamento(plano);
+        return;
+    }
     try {
         const res = await fetch('/api/pagamento', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plano, email })
         });
-
         const data = await res.json();
         if (!res.ok || !data.checkoutUrl) {
             throw new Error(data.erro || 'Não foi possível iniciar o pagamento.');
         }
-
         window.location.href = data.checkoutUrl;
     } catch (erro) {
         console.error('Pagamento:', erro);
         alert(erro.message || 'Erro ao iniciar o pagamento.');
+    }
+}
+
+async function openDashboard() {
+    if (!isLoggedIn()) {
+        openModal('login');
+        setLoginStep('email');
+        return;
+    }
+    document.getElementById('dashboard').classList.remove('dashboard-hidden');
+    await loadDashboard();
+    scrollTo('dashboard');
+}
+
+async function loadDashboard() {
+    const token = localStorage.getItem('finpjToken');
+    if (!token) return;
+    try {
+        const res = await fetch('/api/dashboard', {
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.sucesso) {
+            throw new Error(data.erro || 'Falha ao carregar o dashboard.');
+        }
+        const dashboard = data.dashboard;
+        const greeting = dashboard.user.email.split('@')[0];
+        document.getElementById('dashboard-welcome').textContent = `Olá, ${greeting}`;
+        document.getElementById('dashboard-report-count').textContent = `${dashboard.summary.reportsCount} relatórios`;
+        document.getElementById('dashboard-pendings').textContent = `${dashboard.summary.pendencias} alertas`;
+        const body = document.getElementById('dashboard-reports-body');
+        body.innerHTML = '';
+        dashboard.reports.forEach(report => {
+            const row = document.createElement('tr');
+            const statusClass = report.status === 'Concluído' ? 'ok' : 'warn';
+            row.innerHTML = `
+                <td>${report.date}</td>
+                <td>${report.title}</td>
+                <td>R$ ${report.amount.toLocaleString('pt-BR')}</td>
+                <td><span class="report-status ${statusClass}">${report.status}</span></td>
+            `;
+            body.appendChild(row);
+        });
+    } catch (erro) {
+        console.error('Carregar dashboard:', erro);
+        logoutCliente();
+    }
+}
+
+function updateAuthState() {
+    const logged = isLoggedIn();
+    const dashboardLink = document.getElementById('dashboard-link');
+    if (dashboardLink) {
+        dashboardLink.style.display = logged ? 'inline-flex' : 'none';
+    }
+}
+
+function logoutCliente() {
+    localStorage.removeItem('finpjToken');
+    localStorage.removeItem('finpjAuthEmail');
+    updateAuthState();
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
+        dashboard.classList.add('dashboard-hidden');
     }
 }
 
@@ -1695,7 +2009,13 @@ async function assinarPlano(plano) {
 
         window.addEventListener('scroll', updateActiveNav);
         window.addEventListener('resize', updateActiveNav);
-        document.addEventListener('DOMContentLoaded', updateActiveNav);
+        document.addEventListener('DOMContentLoaded', () => {
+            updateActiveNav();
+            updateAuthState();
+            if (isLoggedIn()) {
+                loadDashboard();
+            }
+        });
 
         async function enviarDiagnostico() {
             const fatEl = document.getElementById('inp-faturamento');

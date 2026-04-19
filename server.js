@@ -2,9 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 const uri = process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
+const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
+const CODE_EXPIRY_MS = 10 * 60 * 1000;
 let mongoClient = null;
 let db = null;
 
@@ -190,12 +196,222 @@ function lerDados() {
     } catch (e) {
         console.log('Criando novo arquivo de dados...');
     }
-    return { diagnosticos: [] };
+    return { diagnosticos: [], usuarios: [], bankReports: [] };
 }
 
 function salvarDados(dados) {
     fs.writeFileSync(dadosFile, JSON.stringify(dados, null, 2));
 }
+
+function criarTransportadorEmail() {
+    if (process.env.MAIL_HOST && process.env.MAIL_USER && process.env.MAIL_PASS) {
+        return nodemailer.createTransport({
+            host: process.env.MAIL_HOST,
+            port: Number(process.env.MAIL_PORT) || 587,
+            secure: process.env.MAIL_SECURE === 'true',
+            auth: {
+                user: process.env.MAIL_USER,
+                pass: process.env.MAIL_PASS
+            }
+        });
+    }
+
+    return nodemailer.createTransport({ jsonTransport: true });
+}
+
+async function enviarEmailVerificacao(email, code) {
+    const transport = criarTransportadorEmail();
+    await transport.sendMail({
+        from: MAIL_FROM,
+        to: email,
+        subject: 'Seu código de acesso FinPJ',
+        text: `Seu código FinPJ é: ${code}\nUse-o em até 10 minutos para continuar.`,
+        html: `<p>Seu código FinPJ é: <strong>${code}</strong></p><p>Use-o em até 10 minutos para continuar.</p>`
+    });
+}
+
+function gerarCodigoVerificacao() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function validarEmail(email) {
+    return typeof email === 'string' && email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function formatarEmail(email) {
+    return String(email || '').trim().toLowerCase();
+}
+
+async function obterUsuario(email) {
+    const emailNorm = formatarEmail(email);
+    if (!db && uri) {
+        await conectarDB();
+    }
+    if (db) {
+        const usuario = await db.collection('usuarios').findOne({ email: emailNorm });
+        if (usuario) return usuario;
+    }
+    const dados = lerDados();
+    return dados.usuarios.find(u => u.email === emailNorm);
+}
+
+async function salvarUsuario(usuario) {
+    usuario.email = formatarEmail(usuario.email);
+    if (!db && uri) {
+        await conectarDB();
+    }
+    if (db) {
+        await db.collection('usuarios').updateOne({ email: usuario.email }, { $set: usuario }, { upsert: true });
+        return usuario;
+    }
+    const dados = lerDados();
+    const index = dados.usuarios.findIndex(u => u.email === usuario.email);
+    if (index >= 0) {
+        dados.usuarios[index] = usuario;
+    } else {
+        dados.usuarios.push(usuario);
+    }
+    salvarDados(dados);
+    return usuario;
+}
+
+function gerarRelatorioBancario(email) {
+    const hoje = new Date();
+    const tipos = [
+        'Conciliação de extrato',
+        'Revisão de lançamentos',
+        'Atualização de saldo',
+        'Alerta de fluxo de caixa',
+        'Análise de recebimentos',
+        'Detectamos uma diferença bancária'
+    ];
+    return Array.from({ length: 6 }, (_, i) => {
+        const data = new Date(hoje);
+        data.setDate(hoje.getDate() - i);
+        const valor = Math.round((Math.random() * 18 + 3) * 1000);
+        return {
+            id: `${email}-${data.toISOString().slice(0, 10)}-${i}`,
+            date: data.toISOString().slice(0, 10),
+            title: tipos[i % tipos.length],
+            detail: `Atualização diária para a empresa ${email.split('@')[0]} com informações de extrato e movimentações bancárias.`,
+            amount: valor,
+            status: i % 2 === 0 ? 'Concluído' : 'Atenção'
+        };
+    });
+}
+
+function montarDashboard(usuario) {
+    const safeUser = {
+        email: usuario.email,
+        createdAt: usuario.createdAt,
+        lastLogin: usuario.lastLogin || usuario.createdAt
+    };
+    const reports = usuario.bankReports && usuario.bankReports.length ? usuario.bankReports : gerarRelatorioBancario(usuario.email);
+    usuario.bankReports = reports;
+    salvarUsuario(usuario);
+    const totalMovimentado = reports.reduce((sum, item) => sum + item.amount, 0);
+    return {
+        user: safeUser,
+        summary: {
+            reportsCount: reports.length,
+            totalMovimentado,
+            pendencias: reports.filter(r => r.status !== 'Concluído').length
+        },
+        reports
+    };
+}
+
+function extrairToken(req) {
+    const header = req.headers.authorization || req.headers.Authorization;
+    if (!header || typeof header !== 'string') return null;
+    const parts = header.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') return null;
+    return parts[1];
+}
+
+async function verificarToken(req) {
+    const token = extrairToken(req);
+    if (!token) return null;
+    try {
+        return jwt.verify(token, JWT_SECRET);
+    } catch {
+        return null;
+    }
+}
+
+app.post('/api/auth/send-code', async (req, res) => {
+    const { email } = req.body;
+    if (!validarEmail(email)) {
+        return res.status(400).json({ erro: 'Email inválido' });
+    }
+    const emailNorm = formatarEmail(email);
+    const codigo = gerarCodigoVerificacao();
+    const hash = await bcrypt.hash(codigo, 10);
+
+    let usuario = await obterUsuario(emailNorm);
+    if (!usuario) {
+        usuario = {
+            email: emailNorm,
+            createdAt: new Date().toISOString(),
+            bankReports: gerarRelatorioBancario(emailNorm)
+        };
+    }
+
+    usuario.verificationCodeHash = hash;
+    usuario.codeExpiresAt = Date.now() + CODE_EXPIRY_MS;
+    usuario.lastCodeSentAt = new Date().toISOString();
+    await salvarUsuario(usuario);
+
+    try {
+        await enviarEmailVerificacao(emailNorm, codigo);
+    } catch (err) {
+        console.error('Falha ao enviar email de verificação:', err);
+    }
+
+    res.json({ sucesso: true, mensagem: `Código enviado para ${emailNorm}` });
+});
+
+app.post('/api/auth/verify-code', async (req, res) => {
+    const { email, code } = req.body;
+    if (!validarEmail(email) || !code || String(code).trim().length === 0) {
+        return res.status(400).json({ erro: 'Email e código são obrigatórios' });
+    }
+    const emailNorm = formatarEmail(email);
+    const usuario = await obterUsuario(emailNorm);
+    if (!usuario || !usuario.verificationCodeHash) {
+        return res.status(400).json({ erro: 'Código de verificação incorreto ou expirado.' });
+    }
+    if (Date.now() > usuario.codeExpiresAt) {
+        return res.status(400).json({ erro: 'O código expirou. Solicite um novo código.' });
+    }
+    const valido = await bcrypt.compare(String(code), usuario.verificationCodeHash);
+    if (!valido) {
+        return res.status(400).json({ erro: 'Código de verificação incorreto.' });
+    }
+
+    usuario.lastLogin = new Date().toISOString();
+    delete usuario.verificationCodeHash;
+    delete usuario.codeExpiresAt;
+    delete usuario.lastCodeSentAt;
+    await salvarUsuario(usuario);
+
+    const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '7d' });
+    const dashboard = montarDashboard(usuario);
+
+    res.json({ sucesso: true, token, dashboard });
+});
+
+app.get('/api/dashboard', async (req, res) => {
+    const payload = await verificarToken(req);
+    if (!payload || !payload.email) {
+        return res.status(401).json({ erro: 'Token inválido ou expirado.' });
+    }
+    const usuario = await obterUsuario(payload.email);
+    if (!usuario) {
+        return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+    res.json({ sucesso: true, dashboard: montarDashboard(usuario) });
+});
 
 // ===============================
 // ROTA 1: DIAGNÓSTICO
