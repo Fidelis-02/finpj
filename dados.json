@@ -192,6 +192,289 @@
           "status": "Atenção"
         }
       ]
+    },
+    {
+      "cnpj": "33592510000155",
+      "passwordHash": "$2b$10$YTeqQ9inTV2nLmKegCZgXOtWo.BRkDQr5uJsYTaV5EdxDM1Y8stnu",
+      "email": "cnpj-33592510000155@finpj.local",
+      "createdAt": "2026-04-19T18:18:20.621Z",
+      "bankReports": [
+        {
+          "id": "cnpj-33592510000155-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa cnpj-33592510000155 com informações de extrato e movimentações bancárias.",
+          "amount": 10613,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33592510000155-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa cnpj-33592510000155 com informações de extrato e movimentações bancárias.",
+          "amount": 14556,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-33592510000155-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa cnpj-33592510000155 com informações de extrato e movimentações bancárias.",
+          "amount": 4818,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33592510000155-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa cnpj-33592510000155 com informações de extrato e movimentações bancárias.",
+          "amount": 4547,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-33592510000155-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa cnpj-33592510000155 com informações de extrato e movimentações bancárias.",
+          "amount": 20622,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33592510000155-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa cnpj-33592510000155 com informações de extrato e movimentações bancárias.",
+          "amount": 5398,
+          "status": "Atenção"
+        }
+      ]
+    },
+    {
+      "cnpj": "33592510000156",
+      "passwordHash": "$2b$10$L8gtvq..3KWWKEFReM4st.UwDyeZPpczEAwEV6U7vgApyMTH0alqC",
+      "email": "cnpj-33592510000156@finpj.local",
+      "createdAt": "2026-04-19T18:19:45.198Z",
+      "bankReports": [
+        {
+          "id": "cnpj-33592510000156-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa cnpj-33592510000156 com informações de extrato e movimentações bancárias.",
+          "amount": 11127,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33592510000156-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa cnpj-33592510000156 com informações de extrato e movimentações bancárias.",
+          "amount": 17134,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-33592510000156-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa cnpj-33592510000156 com informações de extrato e movimentações bancárias.",
+          "amount": 16622,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33592510000156-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa cnpj-33592510000156 com informações de extrato e movimentações bancárias.",
+          "amount": 11638,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-33592510000156-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa cnpj-33592510000156 com informações de extrato e movimentações bancárias.",
+          "amount": 10042,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33592510000156-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa cnpj-33592510000156 com informações de extrato e movimentações bancárias.",
+          "amount": 16454,
+          "status": "Atenção"
+        }
+      ]
+    },
+    {
+      "cnpj": "12345678000199",
+      "passwordHash": "$2b$10$5HzPFXcWFb8aP/2tUzslyeNPsG57lux2y1z88wlBzT0UIVIqihyVi",
+      "email": "cnpj-12345678000199@finpj.local",
+      "createdAt": "2026-04-19T18:20:30.428Z",
+      "bankReports": [
+        {
+          "id": "cnpj-12345678000199-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa cnpj-12345678000199 com informações de extrato e movimentações bancárias.",
+          "amount": 10144,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-12345678000199-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa cnpj-12345678000199 com informações de extrato e movimentações bancárias.",
+          "amount": 18402,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-12345678000199-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa cnpj-12345678000199 com informações de extrato e movimentações bancárias.",
+          "amount": 18523,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-12345678000199-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa cnpj-12345678000199 com informações de extrato e movimentações bancárias.",
+          "amount": 10916,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-12345678000199-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa cnpj-12345678000199 com informações de extrato e movimentações bancárias.",
+          "amount": 3092,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-12345678000199-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa cnpj-12345678000199 com informações de extrato e movimentações bancárias.",
+          "amount": 17774,
+          "status": "Atenção"
+        }
+      ]
+    },
+    {
+      "email": "test@example.com",
+      "createdAt": "2026-04-19T18:21:51.150Z",
+      "bankReports": [
+        {
+          "id": "test@example.com-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 6424,
+          "status": "Concluído"
+        },
+        {
+          "id": "test@example.com-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 9802,
+          "status": "Atenção"
+        },
+        {
+          "id": "test@example.com-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 14183,
+          "status": "Concluído"
+        },
+        {
+          "id": "test@example.com-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 9175,
+          "status": "Atenção"
+        },
+        {
+          "id": "test@example.com-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 17672,
+          "status": "Concluído"
+        },
+        {
+          "id": "test@example.com-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 8816,
+          "status": "Atenção"
+        }
+      ],
+      "lastLogin": "2026-04-19T18:21:57.187Z",
+      "verificationCodeHash": "$2b$10$5d0zEgdNV9GvJjc99Zgrr.221b3kjdb2RaiShl/gbrozS1yvnUwC6",
+      "codeExpiresAt": 1776623756597,
+      "lastCodeSentAt": "2026-04-19T18:25:56.597Z"
+    },
+    {
+      "cnpj": "99887766000100",
+      "passwordHash": "$2b$10$RdGtMN7cz5RRGR3jnZFeH.R8cJe.IgJPtEd9/z85jMyjVLEjiSSTK",
+      "email": "cnpj-99887766000100@finpj.local",
+      "createdAt": "2026-04-19T18:25:45.078Z",
+      "bankReports": [
+        {
+          "id": "cnpj-99887766000100-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa cnpj-99887766000100 com informações de extrato e movimentações bancárias.",
+          "amount": 7605,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-99887766000100-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa cnpj-99887766000100 com informações de extrato e movimentações bancárias.",
+          "amount": 14704,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-99887766000100-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa cnpj-99887766000100 com informações de extrato e movimentações bancárias.",
+          "amount": 3382,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-99887766000100-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa cnpj-99887766000100 com informações de extrato e movimentações bancárias.",
+          "amount": 5277,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-99887766000100-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa cnpj-99887766000100 com informações de extrato e movimentações bancárias.",
+          "amount": 5962,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-99887766000100-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa cnpj-99887766000100 com informações de extrato e movimentações bancárias.",
+          "amount": 6599,
+          "status": "Atenção"
+        }
+      ],
+      "lastLogin": "2026-04-19T18:25:46.439Z"
     }
   ],
   "bankReports": []

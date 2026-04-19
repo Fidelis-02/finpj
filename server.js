@@ -423,6 +423,19 @@ async function verificarToken(req) {
     }
 }
 
+// Middleware de autenticação para rotas protegidas
+function verificarTokenMiddleware(req, res, next) {
+    const token = extrairToken(req);
+    if (!token) return res.status(401).json({ erro: 'Token obrigatório.' });
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.userEmail = payload.email;
+        next();
+    } catch {
+        return res.status(401).json({ erro: 'Token inválido ou expirado.' });
+    }
+}
+
 app.post('/api/auth/send-code', async (req, res) => {
     const { email } = req.body;
     if (!validarEmail(email)) {
@@ -446,13 +459,24 @@ app.post('/api/auth/send-code', async (req, res) => {
     usuario.lastCodeSentAt = new Date().toISOString();
     await salvarUsuario(usuario);
 
+    let emailEnviado = false;
     try {
         await enviarEmailVerificacao(emailNorm, codigo);
+        emailEnviado = true;
     } catch (err) {
-        console.error('Falha ao enviar email de verificação:', err);
+        console.error('Falha ao enviar email:', err.message);
     }
 
-    res.json({ sucesso: true, mensagem: `Código enviado para ${emailNorm}` });
+    // Em desenvolvimento sem SMTP configurado, retorna o código na resposta
+    const semSmtp = !process.env.MAIL_HOST && !process.env.GMAIL_USER;
+    const isDev = process.env.NODE_ENV !== 'production';
+    const resBody = { sucesso: true, mensagem: `Código enviado para ${emailNorm}` };
+    if (isDev && semSmtp) {
+        resBody._devCode = codigo;
+        resBody.mensagem = `[DEV] Código gerado (sem SMTP configurado): ${codigo}`;
+        console.log(`\n🔑 CÓDIGO OTP para ${emailNorm}: ${codigo}\n`);
+    }
+    res.json(resBody);
 });
 
 app.post('/api/auth/verify-code', async (req, res) => {
@@ -505,8 +529,9 @@ app.post('/api/auth/login-cnpj', async (req, res) => {
     if (!cnpj || !password) {
         return res.status(400).json({ erro: 'CNPJ e senha são obrigatórios' });
     }
-
-    const usuario = await obterUsuarioPorCnpj(cnpj);
+    // Normaliza para dígitos antes de buscar
+    const cnpjNorm = String(cnpj).replace(/\D/g, '');
+    const usuario = await obterUsuarioPorCnpj(cnpjNorm);
     if (!usuario || !usuario.passwordHash) {
         return res.status(400).json({ erro: 'CNPJ ou senha incorretos.' });
     }
@@ -521,7 +546,6 @@ app.post('/api/auth/login-cnpj', async (req, res) => {
 
     const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '7d' });
     const dashboard = montarDashboard(usuario);
-
     res.json({ sucesso: true, token, email: usuario.email, dashboard });
 });
 
@@ -530,23 +554,27 @@ app.post('/api/auth/register-cnpj', async (req, res) => {
     if (!cnpj || !password || password.length < 6) {
         return res.status(400).json({ erro: 'CNPJ e senha (mínimo 6 caracteres) são obrigatórios' });
     }
+    // SEMPRE normaliza CNPJ para só dígitos antes de salvar
+    const cnpjNorm = String(cnpj).replace(/\D/g, '');
+    if (cnpjNorm.length !== 14) {
+        return res.status(400).json({ erro: 'CNPJ inválido. Informe os 14 dígitos.' });
+    }
 
-    let usuario = await obterUsuarioPorCnpj(cnpj);
+    let usuario = await obterUsuarioPorCnpj(cnpjNorm);
     if (usuario) {
-        return res.status(400).json({ erro: 'CNPJ já cadastrado.' });
+        return res.status(400).json({ erro: 'CNPJ já cadastrado. Faça login.' });
     }
 
     usuario = {
-        cnpj,
+        cnpj: cnpjNorm,
         passwordHash: await bcrypt.hash(password, 10),
-        email: `cnpj-${cnpj}@finpj.local`, // dummy email
+        email: `cnpj-${cnpjNorm}@finpj.local`,
         createdAt: new Date().toISOString(),
-        bankReports: gerarRelatoriosBancarios(`cnpj-${cnpj}`)
+        bankReports: gerarRelatoriosBancarios(`cnpj-${cnpjNorm}`)
     };
 
     await salvarUsuario(usuario);
-
-    res.json({ sucesso: true, mensagem: 'Conta criada com sucesso.' });
+    res.json({ sucesso: true, mensagem: 'Conta criada com sucesso. Agora faça login.' });
 });
 
 // ===============================
@@ -787,9 +815,224 @@ app.post('/api/pagamento', async (req, res) => {
 });
 
 // ===============================
+// UPLOAD & ANÁLISE DE DOCUMENTOS (IA)
+// ===============================
+const multer = require('multer');
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
+    fileFilter: (req, file, cb) => {
+        const allowed = ['application/pdf', 'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/csv', 'text/plain'];
+        if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|xlsx|xls|csv|txt|ods)$/i)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Formato não suportado. Use PDF, Excel, CSV ou TXT.'));
+        }
+    }
+});
+
+async function extrairTextoPDF(buffer) {
+    try {
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(buffer);
+        return data.text || '';
+    } catch (e) {
+        console.error('PDF parse error:', e.message);
+        return '';
+    }
+}
+
+function extrairTextoExcel(buffer) {
+    try {
+        const XLSX = require('xlsx');
+        const wb = XLSX.read(buffer, { type: 'buffer' });
+        let texto = '';
+        wb.SheetNames.forEach(name => {
+            const ws = wb.Sheets[name];
+            const csv = XLSX.utils.sheet_to_csv(ws);
+            texto += `=== Aba: ${name} ===\n${csv}\n\n`;
+        });
+        return texto;
+    } catch (e) {
+        console.error('Excel parse error:', e.message);
+        return '';
+    }
+}
+
+async function analisarComGroq(tipoDoc, textoDoc, contexto = '') {
+    const GROQ_KEY = process.env.GROQ_API_KEY;
+    if (!GROQ_KEY) {
+        return analisarLocalmente(tipoDoc, textoDoc);
+    }
+    const prompts = {
+        dre: `Você é um analista financeiro especialista em PMEs brasileiras. Analise o DRE abaixo e retorne JSON com:
+{"receita_bruta": number, "deducoes": number, "receita_liquida": number, "custos": number, "lucro_bruto": number, "despesas_operacionais": number, "ebitda": number, "lucro_liquido": number, "margem_bruta_pct": number, "margem_liquida_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}`,
+        balanco: `Você é um analista financeiro especialista em PMEs. Analise o Balanço Patrimonial e retorne JSON com:
+{"ativo_total": number, "ativo_circulante": number, "ativo_nao_circulante": number, "passivo_total": number, "passivo_circulante": number, "patrimonio_liquido": number, "liquidez_corrente": number, "endividamento_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}`,
+        extrato: `Você é um especialista em conciliação bancária. Analise o extrato bancário e retorne JSON com:
+{"saldo_inicial": number, "saldo_final": number, "total_entradas": number, "total_saidas": number, "num_transacoes": number, "categorias": [{"nome": "string", "valor": number}], "anomalias": ["string"], "itens_conciliacao": [{"data": "string", "descricao": "string", "valor": number, "tipo": "entrada|saida", "categoria": "string", "flag": "string"}], "recomendacoes": ["string"], "resumo": "string"}`
+    };
+
+    const systemPrompt = prompts[tipoDoc] || prompts.dre;
+    const texto = textoDoc.slice(0, 12000); // Groq context limit safety
+
+    try {
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: `Documento:\n\n${texto}\n\nContexto adicional: ${contexto}\n\nRetorne SOMENTE o JSON, sem markdown, sem explicações.` }
+                ],
+                max_tokens: 2000,
+                temperature: 0.2
+            })
+        });
+        const payload = await resp.json();
+        const content = payload?.choices?.[0]?.message?.content || '';
+        const jsonStr = content.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+        return { sucesso: true, dados: JSON.parse(jsonStr), fonte: 'groq-llama3' };
+    } catch (e) {
+        console.error('Groq error:', e.message);
+        return analisarLocalmente(tipoDoc, textoDoc);
+    }
+}
+
+function analisarLocalmente(tipoDoc, texto) {
+    const numeros = (texto.match(/[\d.]+,\d{2}/g) || [])
+        .map(n => parseFloat(n.replace(/\./g, '').replace(',', '.')))
+        .filter(n => !isNaN(n) && n > 0);
+    const soma = numeros.reduce((a, b) => a + b, 0);
+    const max = numeros.length ? Math.max(...numeros) : 0;
+
+    if (tipoDoc === 'extrato') {
+        const entradas = numeros.filter((_, i) => i % 2 === 0).reduce((a, b) => a + b, 0);
+        const saidas = numeros.filter((_, i) => i % 2 !== 0).reduce((a, b) => a + b, 0);
+        return {
+            sucesso: true,
+            dados: {
+                saldo_inicial: 0, saldo_final: entradas - saidas,
+                total_entradas: entradas, total_saidas: saidas,
+                num_transacoes: numeros.length,
+                categorias: [{ nome: 'Outros', valor: soma }],
+                anomalias: soma > 100000 ? ['Movimentação elevada detectada'] : [],
+                recomendacoes: ['Configure a integração Groq para análise detalhada por IA'],
+                resumo: `Extrato processado com ${numeros.length} valores identificados. Saldo líquido estimado: R$ ${(entradas - saidas).toLocaleString('pt-BR')}.`
+            },
+            fonte: 'local'
+        };
+    }
+    return {
+        sucesso: true,
+        dados: {
+            receita_bruta: max, deducoes: max * 0.08, receita_liquida: max * 0.92,
+            custos: max * 0.45, lucro_bruto: max * 0.47,
+            despesas_operacionais: max * 0.25, ebitda: max * 0.22, lucro_liquido: max * 0.12,
+            margem_bruta_pct: 47, margem_liquida_pct: 12,
+            alertas: ['Análise local aproximada — configure GROQ_API_KEY para análise por IA'],
+            recomendacoes: ['Obtenha chave gratuita em console.groq.com para análise completa'],
+            resumo: `Documento processado localmente. ${numeros.length} valores financeiros identificados.`
+        },
+        fonte: 'local'
+    };
+}
+
+app.post('/api/upload-documento', verificarTokenMiddleware, upload.single('arquivo'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ erro: 'Nenhum arquivo enviado.' });
+    const { tipo = 'dre', contexto = '' } = req.body;
+
+    let texto = '';
+    const mime = req.file.mimetype;
+    const nome = req.file.originalname.toLowerCase();
+
+    if (mime === 'application/pdf' || nome.endsWith('.pdf')) {
+        texto = await extrairTextoPDF(req.file.buffer);
+    } else if (nome.match(/\.(xlsx|xls|ods)$/)) {
+        texto = extrairTextoExcel(req.file.buffer);
+    } else {
+        texto = req.file.buffer.toString('utf-8');
+    }
+
+    if (!texto.trim()) {
+        return res.status(422).json({ erro: 'Não foi possível extrair texto do documento. Tente um PDF com texto selecionável ou Excel.' });
+    }
+
+    const analise = await analisarComGroq(tipo, texto, contexto);
+
+    // Salva a análise no histórico do usuário
+    const dados = lerDados();
+    if (!dados.analises) dados.analises = [];
+    dados.analises.push({
+        id: Date.now(),
+        email: req.userEmail,
+        tipo,
+        nomeArquivo: req.file.originalname,
+        tamanho: req.file.size,
+        data: new Date().toISOString(),
+        resultado: analise.dados,
+        fonte: analise.fonte
+    });
+    salvarDados(dados);
+
+    res.json({ sucesso: true, ...analise, nomeArquivo: req.file.originalname });
+});
+
+// ===============================
+// CONCILIAÇÃO BANCÁRIA
+// ===============================
+app.post('/api/conciliacao', verificarTokenMiddleware, async (req, res) => {
+    const { transacoes = [], lancamentos = [] } = req.body;
+    // Concilia: busca pares com valores iguais e datas próximas
+    const conciliados = [];
+    const naoEncontrados = [];
+    const usados = new Set();
+
+    transacoes.forEach(t => {
+        const match = lancamentos.find((l, i) => {
+            if (usados.has(i)) return false;
+            const valorOk = Math.abs(parseFloat(l.valor) - parseFloat(t.valor)) < 0.01;
+            const dataOk = Math.abs(new Date(l.data) - new Date(t.data)) < 5 * 24 * 3600000; // 5 dias
+            return valorOk && dataOk;
+        });
+        if (match) {
+            const idx = lancamentos.indexOf(match);
+            usados.add(idx);
+            conciliados.push({ extrato: t, sistema: match, status: 'conciliado' });
+        } else {
+            naoEncontrados.push({ extrato: t, status: 'pendente', motivo: 'Não encontrado nos lançamentos' });
+        }
+    });
+
+    const resumo = {
+        total: transacoes.length,
+        conciliados: conciliados.length,
+        pendentes: naoEncontrados.length,
+        percentualConciliado: transacoes.length ? Math.round((conciliados.length / transacoes.length) * 100) : 0
+    };
+    res.json({ sucesso: true, resumo, conciliados, pendentes: naoEncontrados });
+});
+
+// ===============================
+// HISTÓRICO DE ANÁLISES
+// ===============================
+app.get('/api/analises', verificarTokenMiddleware, (req, res) => {
+    const dados = lerDados();
+    const analises = (dados.analises || []).filter(a => a.email === req.userEmail);
+    res.json({ sucesso: true, analises });
+});
+
+// ===============================
 // START
 // ===============================
 app.listen(PORT, () => {
+
     console.log(`
 ====================================
 FinPJ Backend rodando 🚀
