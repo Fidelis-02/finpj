@@ -4,17 +4,16 @@ const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
 const path = require('path');
 const fs = require('fs');
-const fetch = require('node-fetch');
-
 const uri = process.env.MONGO_URI;
-const client = new MongoClient(uri);
-
-let db;
+let mongoClient = null;
+let db = null;
 
 async function conectarDB() {
-    if (!db) {
-        await client.connect();
-        db = client.db('finpj');
+    if (!uri) return null;
+    if (!mongoClient) {
+        mongoClient = new MongoClient(uri);
+        await mongoClient.connect();
+        db = mongoClient.db('finpj');
     }
     return db;
 }
