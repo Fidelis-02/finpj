@@ -39,6 +39,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Rota /login — serve index.html (JS abre o modal automaticamente)
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Passport middleware
 app.use(passport.initialize());
 

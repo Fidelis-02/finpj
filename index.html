@@ -172,6 +172,25 @@
             gap: 8px;
             align-items: center;
         }
+
+        .nav-cta {
+            padding: 9px 20px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+        }
+        .nav-cta:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+            transform: translateY(-1px);
+        }
         
         .btn-nav-login {
             background: transparent;
@@ -1100,6 +1119,7 @@
         <div class="nav-auth-group" id="nav-auth-group">
             <button type="button" class="btn-nav-login" id="nav-login-btn" onclick="openModal('login')">Entrar</button>
             <button type="button" class="btn-nav-signup" id="nav-signup-btn" onclick="openModal('register')">Criar conta</button>
+            <button class="nav-cta" onclick="window.location.href='/login'">Login</button>
         </div>
     </nav>
     
