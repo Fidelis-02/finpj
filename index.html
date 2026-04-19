@@ -963,7 +963,7 @@
             
             <div class="tabs" id="onboarding-tabs" style="margin-bottom: 20px;">
                 <button class="tab-btn active" onclick="switchTab(1)">1. Empresa</button>
-                <button class="tab-btn" onclick="switchTab(2)">2. Dados</button>
+                <button class="btn-primary" onclick="irParaEtapa2()">2. Dados</button>
                 <button class="tab-btn" onclick="switchTab(3)">3. Análise</button>
                 <button class="tab-btn" onclick="switchTab(4)">4. Resultado</button>
             </div>
@@ -975,8 +975,7 @@
                 </div>
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">CNPJ</label>
-<input  
-    <input  
+<input    
     type="text" 
     placeholder="00.000.000/0001-00" 
     id="inp-cnpj"
@@ -1178,9 +1177,50 @@
         function closeModal(name) {
             document.getElementById(name + '-modal').classList.remove('active');
         }
-        function validarEtapa1() {
-    const nome = document.getElementById('inp-nome').value.trim();
-    const cnpj = document.getElementById('inp-cnpj').value.replace(/\D/g, '');
+        async function validarEtapa1() {
+            async function irParaEtapa2() {
+    const valido = await validarEtapa1();
+    if (valido) {
+        switchTab(2);
+    }
+}
+    const nome = document.getElementById('inp-nome');
+    const cnpjInput = document.getElementById('inp-cnpj');
+
+    let valido = true;
+
+    if (!nome.value.trim()) {
+        marcarErro('inp-nome');
+        valido = false;
+    } else {
+        limparErro('inp-nome');
+    }
+
+    if (!validarCNPJ(cnpjInput.value)) {
+        marcarErro('inp-cnpj');
+        return false;
+    }
+
+    const cnpj = cnpjInput.value.replace(/\D/g, '');
+
+    try {
+        const res = await fetch(`/api/cnpj?cnpj=${cnpj}`);
+        const data = await res.json();
+
+        if (!data.ativo) {
+            alert('CNPJ não está ativo na Receita Federal');
+            marcarErro('inp-cnpj');
+            return false;
+        }
+
+        limparErro('inp-cnpj');
+        return true;
+
+    } catch (e) {
+        alert('Erro ao validar CNPJ');
+        return false;
+    }
+}
 
     if (!nome) {
         alert('Preencha a razão social');
