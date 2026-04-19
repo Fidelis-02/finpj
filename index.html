@@ -1032,7 +1032,10 @@
                 </div>
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">CNPJ</label>
-                    <input type="text" placeholder="00.000.000/0001-00" id="inp-cnpj" maxlength="18" oninput="onCnpjInput(this)" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                    <div style="display: flex; gap: 10px; align-items: stretch;">
+                        <input type="text" placeholder="00.000.000/0001-00" id="inp-cnpj" maxlength="18" oninput="onCnpjInput(this)" autocomplete="off" inputmode="numeric" style="flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                        <button type="button" class="btn-secondary" style="padding: 10px 16px; font-size: 13px; white-space: nowrap; border-radius: 8px;" onclick="buscarCnpjNaReceita(false)">Buscar</button>
+                    </div>
                     <div id="cnpj-consulta-msg" class="cnpj-msg" aria-live="polite"></div>
                 </div>
                 <div id="linha-cnae" style="display: none; margin-bottom: 14px; padding: 10px 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
@@ -1187,6 +1190,8 @@
 
     <script>
         let cnpjConsultaTimer = null;
+        let cnpjAbortController = null;
+        let cnpjUltimoSucessoDigits = '';
 
         function aliquotaSimplesEfetiva(fat, atividade) {
             let a;
@@ -1370,59 +1375,123 @@
             return true;
         }
 
+        function cancelarConsultaCnpj() {
+            if (cnpjAbortController) {
+                cnpjAbortController.abort();
+                cnpjAbortController = null;
+            }
+        }
+
         async function buscarCnpjNaReceita(silencioso) {
             if (!validarCnpjDigitos()) {
-                if (!silencioso) setCnpjMsg('CNPJ incompleto ou dígitos inválidos.', 'err');
+                if (!silencioso) setCnpjMsg('CNPJ incompleto ou dígitos verificadores inválidos.', 'err');
                 return false;
             }
             const cnpj = document.getElementById('inp-cnpj').value.replace(/\D/g, '');
-            if (!silencioso) setCnpjMsg('Consultando Receita Federal…', '');
+            if (cnpj === cnpjUltimoSucessoDigits && document.getElementById('inp-nome').value.trim()) {
+                if (!silencioso) setCnpjMsg('Dados deste CNPJ já estão carregados.', 'ok');
+                return true;
+            }
+
+            cancelarConsultaCnpj();
+            const ac = new AbortController();
+            cnpjAbortController = ac;
+
+            if (!silencioso) setCnpjMsg('Consultando bases públicas (BrasilAPI / ReceitaWS)…', '');
             try {
-                const res = await fetch('/api/cnpj?cnpj=' + encodeURIComponent(cnpj));
-                let data;
-                try {
-                    data = await res.json();
-                } catch (parseErr) {
-                    if (!silencioso) setCnpjMsg('Resposta inválida do servidor.', 'err');
+                const res = await fetch('/api/cnpj?cnpj=' + encodeURIComponent(cnpj), {
+                    signal: ac.signal,
+                    headers: { Accept: 'application/json' }
+                });
+                const raw = await res.text();
+                let data = null;
+                if (raw) {
+                    try {
+                        data = JSON.parse(raw);
+                    } catch (parseErr) {
+                        if (!silencioso) {
+                            setCnpjMsg(
+                                'O servidor devolveu uma resposta que não é JSON (geralmente HTML de bloqueio ou erro de proxy). Use o app via http://localhost:3000 com npm start.',
+                                'err'
+                            );
+                        }
+                        marcarErro('inp-cnpj');
+                        return false;
+                    }
+                }
+
+                const atual = document.getElementById('inp-cnpj').value.replace(/\D/g, '');
+                if (atual !== cnpj) {
                     return false;
                 }
+
                 if (!res.ok) {
-                    const msg = data.erro || data.message || 'CNPJ não encontrado.';
+                    const msg =
+                        (data && (data.erro || data.message)) ||
+                        (res.status === 502
+                            ? 'Servidor não conseguiu consultar o CNPJ (tempo esgotado ou rede).'
+                            : 'CNPJ não encontrado ou inválido nas bases consultadas.');
                     if (!silencioso) setCnpjMsg(msg, 'err');
                     marcarErro('inp-cnpj');
                     return false;
                 }
+
+                if (!data || typeof data !== 'object') {
+                    if (!silencioso) setCnpjMsg('Resposta vazia do servidor.', 'err');
+                    return false;
+                }
+
                 if (!data.ativo) {
-                    if (!silencioso) setCnpjMsg('Empresa não está ativa na Receita Federal.', 'err');
+                    if (!silencioso) {
+                        setCnpjMsg(
+                            'Empresa encontrada, mas a situação cadastral não é ativa. Ajuste o cadastro ou use outro CNPJ.',
+                            'err'
+                        );
+                    }
                     marcarErro('inp-cnpj');
                     return false;
                 }
+
                 aplicarDadosCnpj(data);
+                cnpjUltimoSucessoDigits = cnpj;
                 if (!silencioso) {
-                    setCnpjMsg('Dados da Receita carregados (razão social, CNAE e setor).', 'ok');
+                    const fonte = data.fonte ? 'Fonte: ' + data.fonte + '.' : '';
+                    setCnpjMsg('Dados carregados: razão social, CNAE e setor. ' + fonte, 'ok');
                 } else {
                     setCnpjMsg('', '');
                 }
                 limparErro('inp-cnpj');
                 return true;
             } catch (e) {
+                if (e && e.name === 'AbortError') {
+                    return false;
+                }
                 console.error(e);
                 if (!silencioso) {
-                    setCnpjMsg('Falha na consulta. Abra o site pelo servidor local (npm start), não como arquivo.', 'err');
+                    setCnpjMsg(
+                        'Não foi possível consultar o CNPJ. Confirme que o site está aberto em http://localhost:3000 (npm start) e que não há bloqueio de rede.',
+                        'err'
+                    );
                 }
                 return false;
+            } finally {
+                if (cnpjAbortController === ac) cnpjAbortController = null;
             }
         }
 
         function onCnpjInput(el) {
             formatarCNPJ(el);
-            setCnpjMsg('', '');
-            if (cnpjConsultaTimer) clearTimeout(cnpjConsultaTimer);
             const digits = el.value.replace(/\D/g, '');
+            if (digits !== cnpjUltimoSucessoDigits) {
+                cnpjUltimoSucessoDigits = '';
+            }
+            setCnpjMsg('', '');
+            cancelarConsultaCnpj();
+            if (cnpjConsultaTimer) clearTimeout(cnpjConsultaTimer);
             if (digits.length === 14 && validarCNPJ(el.value)) {
                 cnpjConsultaTimer = setTimeout(function () {
                     buscarCnpjNaReceita(true);
-                }, 500);
+                }, 600);
             }
         }
 
