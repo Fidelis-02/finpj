@@ -963,7 +963,7 @@
             
             <div class="tabs" id="onboarding-tabs" style="margin-bottom: 20px;">
                 <button class="tab-btn active" onclick="switchTab(1)">1. Empresa</button>
-                <button class="btn-primary" onclick="irParaEtapa2()">2. Dados</button>
+                <button class="tab-btn" onclick="irParaEtapa2()">2. Dados</button>
                 <button class="tab-btn" onclick="switchTab(3)">3. Análise</button>
                 <button class="tab-btn" onclick="switchTab(4)">4. Resultado</button>
             </div>
@@ -1177,11 +1177,49 @@
         function closeModal(name) {
             document.getElementById(name + '-modal').classList.remove('active');
         }
-        async function validarEtapa1() {
-            async function irParaEtapa2() {
+    async function irParaEtapa2() {
     const valido = await validarEtapa1();
     if (valido) {
         switchTab(2);
+    }
+}
+
+async function validarEtapa1() {
+    const nome = document.getElementById('inp-nome');
+    const cnpjInput = document.getElementById('inp-cnpj');
+
+    let valido = true;
+
+    if (!nome.value.trim()) {
+        marcarErro('inp-nome');
+        valido = false;
+    } else {
+        limparErro('inp-nome');
+    }
+
+    if (!validarCNPJ(cnpjInput.value)) {
+        marcarErro('inp-cnpj');
+        return false;
+    }
+
+    const cnpj = cnpjInput.value.replace(/\D/g, '');
+
+    try {
+        const res = await fetch(`/api/cnpj?cnpj=${cnpj}`);
+        const data = await res.json();
+
+        if (!data.ativo) {
+            alert('CNPJ não está ativo na Receita Federal');
+            marcarErro('inp-cnpj');
+            return false;
+        }
+
+        limparErro('inp-cnpj');
+        return valido;
+
+    } catch (e) {
+        alert('Erro ao validar CNPJ');
+        return false;
     }
 }
     const nome = document.getElementById('inp-nome');
@@ -1233,7 +1271,7 @@
     }
 
     return true;
-}
+
         function switchTab(n) {
             const tabs = document.querySelectorAll('.tab-content');
             const btns = document.querySelectorAll('.tab-btn');
@@ -1384,7 +1422,6 @@ function marcarErro(id) {
 function limparErro(id) {
     document.getElementById(id).style.border = '1px solid var(--border)';
 }
-function validarEtapa1() {
     const nome = document.getElementById('inp-nome');
     const cnpj = document.getElementById('inp-cnpj');
 
