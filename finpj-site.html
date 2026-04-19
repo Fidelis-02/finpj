@@ -1259,7 +1259,7 @@ async function enviarDiagnostico() {
 };
     
     try {
-        const response = await fetch('http://localhost:3000/api/diagnosticos', {
+        const response = await fetch('/api/diagnosticos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
