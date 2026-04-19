@@ -32,7 +32,12 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('.'));
+app.use(express.static(__dirname));
+
+// Rota raiz — garante que index.html é servido no / (Vercel)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Passport middleware
 app.use(passport.initialize());
@@ -40,6 +45,10 @@ app.use(passport.initialize());
 // Initialize Google OAuth (only if credentials are provided)
 const initGoogleAuth = require('./api/auth/google/init.js');
 initGoogleAuth(app, passport);
+
+// Initialize Auth0 OAuth (only if credentials are provided)
+const initAuth0 = require('./api/auth/auth0/init.js');
+initAuth0(app, passport);
 
 // ===============================
 // CACHE DE CNPJ (performance)
