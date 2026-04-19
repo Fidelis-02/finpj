@@ -1185,6 +1185,9 @@
                 <div id="res-proximo-passo" style="background: #E1F5EE; border: 1px solid #9FE1CB; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 12px; line-height: 1.6; color: var(--color-secondary);">
                     <strong>Próximo passo:</strong> conclua o diagnóstico para ver recomendações personalizadas.
                 </div>
+                <div id="res-ai-summary" style="background: #FFF8E1; border: 1px solid #F7DC6F; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.5; color: #4D4D38;">
+                    Aguarde o cálculo para ver uma análise financeira inteligente.
+                </div>
                 
                 <button type="button" class="btn-primary" style="width: 100%;" onclick="closeModal('diagnose')">Fechar</button>
                 <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 12px;">
@@ -1214,12 +1217,8 @@
             return a;
         }
         function abrirModalPagamento(plano) {
-    const email = prompt('Qual seu e-mail?');
-    if (!email) return;
-    const stripe = Stripe('pk_test_51TNld1XJS6AZxAvNOJo9skaADMeBImV7xmTA8mrGNiqO6UF9Qnxi7ZpsQ2J06whIsLNY1ZMxCSejpawIFeu8zOTIx00bNXS9dB4');
-    // Aqui você abre um modal com formulário de cartão
-    console.log('Pagamento de:', plano);
-}
+            assinarPlano(plano);
+        }
 
         function basesLucroPresumido(fat, atividade) {
             let pctIrpj = 0.32;
@@ -1398,31 +1397,25 @@ async function assinarPlano(plano) {
     const email = prompt("Digite seu e-mail:");
     if (!email) return;
 
-    const res = await fetch('/api/pagamento', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plano, email })
-    });
+    try {
+        const res = await fetch('/api/pagamento', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plano, email })
+        });
 
-    const data = await res.json();
-
-    if (!data.clientSecret) {
-        alert('Erro ao iniciar pagamento');
-        return;
-    }
-
-    // 👇 AQUI ESTAVA FALTANDO TUDO
-    const result = await stripe.confirmPayment({
-        clientSecret: data.clientSecret,
-        confirmParams: {
-            return_url: window.location.origin + '/sucesso.html'
+        const data = await res.json();
+        if (!res.ok || !data.checkoutUrl) {
+            throw new Error(data.erro || 'Não foi possível iniciar o pagamento.');
         }
-    });
 
-    if (result.error) {
-        alert(result.error.message);
+        window.location.href = data.checkoutUrl;
+    } catch (erro) {
+        console.error('Pagamento:', erro);
+        alert(erro.message || 'Erro ao iniciar o pagamento.');
     }
 }
+
         async function buscarCnpjNaReceita(silencioso) {
             if (!validarCnpjDigitos()) {
                 if (!silencioso) setCnpjMsg('CNPJ incompleto ou dígitos verificadores inválidos.', 'err');
@@ -1676,9 +1669,31 @@ async function assinarPlano(plano) {
             if (np) {
                 np.innerHTML = '<strong>Próximo passo:</strong> revisar regime <strong>' + (r.regimeIdeal || '') + '</strong> com seu contador e priorizar créditos de <strong>' + fmtReais(r.creditosIdentificados) + '</strong> identificados neste diagnóstico.';
             }
+            const sa = document.getElementById('res-ai-summary');
+            if (sa) {
+                if (r.resumo) {
+                    sa.textContent = r.resumo;
+                } else {
+                    sa.textContent = 'Nenhuma análise adicional disponível no momento.';
+                }
+            }
         }
 
         calcularSimulador();
+
+        function showPaymentStatusFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('pagamento') === 'sucesso') {
+                alert('Pagamento confirmado! Obrigado por contratar o FinPJ.');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            if (params.get('pagamento') === 'cancelado') {
+                alert('Pagamento cancelado. Você pode tentar novamente a qualquer momento.');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        showPaymentStatusFromQuery();
 
         function formatarCNPJ(input) {
             let v = input.value.replace(/\D/g, '');

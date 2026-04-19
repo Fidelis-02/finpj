@@ -1,43 +1,54 @@
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+
+function obterValorPlano(plano) {
+    const valores = {
+        starter: 490,
+        growth: 950,
+        enterprise: 1850
+    };
+    return valores[plano] || 490;
+}
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ erro: 'Método não permitido' });
     }
 
+    if (!stripe) {
+        return res.status(500).json({ erro: 'Stripe não configurado. Defina STRIPE_SECRET_KEY.' });
+    }
+
     try {
         const { plano, email } = req.body;
+        const valor = obterValorPlano(plano);
+        const origin = req.headers.origin || `https://${req.headers.host}`;
 
-        const valores = {
-            starter: 490,
-            growth: 950,
-            enterprise: 1850
-        };
-
-        const valor = valores[plano] || 490;
-
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: valor * 100, // centavos
-            currency: 'brl',
-            receipt_email: email,
-            automatic_payment_methods: {
-                enabled: true
-            },
-            metadata: {
-                plano
-            }
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'brl',
+                        product_data: {
+                            name: `FinPJ - Plano ${plano}`
+                        },
+                        unit_amount: valor * 100
+                    },
+                    quantity: 1
+                }
+            ],
+            customer_email: email,
+            success_url: `${origin}/?pagamento=sucesso`,
+            cancel_url: `${origin}/?pagamento=cancelado`
         });
 
-        return res.status(200).json({
-            clientSecret: paymentIntent.client_secret
-        });
-
+        return res.status(200).json({ checkoutUrl: session.url });
     } catch (erro) {
         console.error(erro);
-        return res.status(500).json({
-            erro: 'Erro ao criar pagamento'
-        });
+        return res.status(500).json({ erro: 'Erro ao criar sessão de pagamento' });
     }
 }

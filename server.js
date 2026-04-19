@@ -200,7 +200,7 @@ function salvarDados(dados) {
 // ===============================
 // ROTA 1: DIAGNÓSTICO
 // ===============================
-app.post('/api/diagnosticos', (req, res) => {
+app.post('/api/diagnosticos', async (req, res) => {
     const { nome, cnpj, setor, regime, faturamento, margem } = req.body;
 
     if (!nome || !cnpj) {
@@ -248,6 +248,13 @@ app.post('/api/diagnosticos', (req, res) => {
                 real: Math.round(impostoReal)
             }
         }
+    };
+
+    const analise = await gerarAnaliseFinanceira(diagnostico);
+    diagnostico.resultados = {
+        ...diagnostico.resultados,
+        resumo: analise.resumo,
+        recomendacoes: analise.recomendacoes
     };
 
     const dados = lerDados();
@@ -306,42 +313,10 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// Rota para processar pagamento
-app.post('/api/pagamento', async (req, res) => {
-    const { email, plano, nomeCartao, numeroCartao, mes, ano, cvc } = req.body;
-    
-    try {
-        const charge = await stripe.charges.create({
-            amount: obterValorPlano(plano) * 100,  // em centavos
-            currency: 'brl',
-            source: {
-                object: 'card',
-                number: numeroCartao,
-                exp_month: mes,
-                exp_year: ano,
-                cvc: cvc,
-                name: nomeCartao
-            },
-            description: `FinPJ - Plano ${plano} para ${email}`
-        });
-        
-        res.json({
-            sucesso: true,
-            pagamentoId: charge.id,
-            mensagem: 'Pagamento realizado com sucesso!'
-        });
-        
-    } catch (erro) {
-        res.status(400).json({
-            sucesso: false,
-            erro: erro.message
-        });
-    }
-});
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey ? require('stripe')(stripeSecretKey) : null;
 
-// Helper para obter valor do plano
 function obterValorPlano(plano) {
     const valores = {
         'starter': 490,
@@ -350,6 +325,114 @@ function obterValorPlano(plano) {
     };
     return valores[plano] || 490;
 }
+
+function fmtReais(valor) {
+    return 'R$ ' + Math.round(Number(valor) || 0).toLocaleString('pt-BR');
+}
+
+function gerarAnaliseInterna(diagnostico) {
+    const { faturamento, margem, regime, setor, resultados } = diagnostico;
+    const economia = resultados.economia || 0;
+    const creditos = resultados.creditosIdentificados || 0;
+    const anomalia = resultados.anomaliaValor || 0;
+    const percentualEconomia = faturamento > 0 ? Math.round((economia / faturamento) * 100) : 0;
+
+    const recomendacoes = [];
+    recomendacoes.push(`Revisar o regime tributário: o regime ideal apontado é ${resultados.regimeIdeal}.`);
+    if (percentualEconomia >= 8) {
+        recomendacoes.push('Há uma oportunidade elevada de economia fiscal, priorize ajustes no planejamento tributário.');
+    } else {
+        recomendacoes.push('A economia projetada é moderada; mantenha o acompanhamento mensal da carga tributária.');
+    }
+    if (creditos > 0) {
+        recomendacoes.push(`Identificamos até ${fmtReais(creditos)} em créditos tributários: valide a recuperação desses saldos com seu contador.`);
+    }
+    if (anomalia > 0) {
+        recomendacoes.push(`Detectamos uma possível anomalia de custo de ${fmtReais(anomalia)}; verifique despesas não usuais e fluxo de caixa.`);
+    }
+
+    const resumo = `Este diagnóstico sugere ${resultados.regimeIdeal} como melhor opção fiscal e indica até ${fmtReais(economia)} de economia anual, com ${fmtReais(creditos)} em créditos tributários identificados.`;
+    return {
+        resumo,
+        recomendacoes
+    };
+}
+
+async function gerarAnaliseFinanceira(diagnostico) {
+    if (!process.env.OPENAI_API_KEY) {
+        return gerarAnaliseInterna(diagnostico);
+    }
+
+    try {
+        const prompt = `Você é um analista financeiro para PMEs no Brasil. Com base nos dados abaixo, gere um resumo conciso e três recomendações práticas de melhoria financeira e tributária.`;
+        const mensagem = `Dados do diagnóstico:\nNome: ${diagnostico.nome}\nCNPJ: ${diagnostico.cnpj}\nSetor: ${diagnostico.setor}\nRegime atual: ${diagnostico.regime}\nFaturamento anual: R$ ${diagnostico.faturamento.toLocaleString('pt-BR')}\nMargem: ${diagnostico.margem}\nEconomia estimada: R$ ${diagnostico.resultados.economia}\nCréditos identificados: R$ ${diagnostico.resultados.creditosIdentificados}\nAnomalia identificada: R$ ${diagnostico.resultados.anomaliaValor}\nRegime ideal: ${diagnostico.resultados.regimeIdeal}`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                    { role: 'system', content: prompt },
+                    { role: 'user', content: mensagem }
+                ],
+                max_tokens: 250,
+                temperature: 0.6
+            })
+        });
+
+        const payload = await response.json();
+        const content = payload?.choices?.[0]?.message?.content;
+        if (!content) {
+            return gerarAnaliseInterna(diagnostico);
+        }
+
+        return { resumo: String(content).trim(), recomendacoes: [] };
+    } catch (error) {
+        console.error('OpenAI analysis error:', error);
+        return gerarAnaliseInterna(diagnostico);
+    }
+}
+
+// Rota para processar pagamento
+app.post('/api/pagamento', async (req, res) => {
+    if (!stripe) {
+        return res.status(500).json({ erro: 'Stripe não está configurado. Defina STRIPE_SECRET_KEY.' });
+    }
+
+    const { email, plano } = req.body;
+    const valor = obterValorPlano(plano);
+
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'brl',
+                        product_data: {
+                            name: `FinPJ - Plano ${plano}`
+                        },
+                        unit_amount: valor * 100
+                    },
+                    quantity: 1
+                }
+            ],
+            customer_email: email,
+            success_url: `${req.protocol}://${req.get('host')}/?pagamento=sucesso`,
+            cancel_url: `${req.protocol}://${req.get('host')}/?pagamento=cancelado`
+        });
+
+        res.json({ sucesso: true, checkoutUrl: session.url });
+    } catch (erro) {
+        console.error('Stripe checkout error:', erro);
+        res.status(500).json({ erro: 'Erro ao criar sessão de pagamento. Tente novamente mais tarde.' });
+    }
+});
 
 // ===============================
 // START
