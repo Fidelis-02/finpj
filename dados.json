@@ -474,8 +474,34 @@
           "status": "Atenção"
         }
       ],
-      "lastLogin": "2026-04-19T18:25:46.439Z"
+      "lastLogin": "2026-04-19T18:35:32.218Z"
     }
   ],
-  "bankReports": []
+  "bankReports": [],
+  "analises": [
+    {
+      "id": 1776623733119,
+      "email": "cnpj-99887766000100@finpj.local",
+      "tipo": "dre",
+      "nomeArquivo": "dre.txt",
+      "tamanho": 361,
+      "data": "2026-04-19T18:35:33.119Z",
+      "resultado": {
+        "receita_bruta": 1200000,
+        "deducoes": 96000,
+        "receita_liquida": 1104000,
+        "custos": 540000,
+        "lucro_bruto": 564000,
+        "despesas_operacionais": 300000,
+        "ebitda": 264000,
+        "lucro_liquido": 158400,
+        "margem_bruta_pct": 51,
+        "margem_liquida_pct": 14.3,
+        "alertas": [],
+        "recomendacoes": [],
+        "resumo": "A empresa apresentou um desempenho financeiro razoavel, com margem bruta de 51% e margem liquida de 14,3%"
+      },
+      "fonte": "groq-llama3"
+    }
+  ]
 }
