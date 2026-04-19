@@ -1,8 +1,14 @@
 const bcrypt = require('bcrypt');
 const path = require('path');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const dadosFile = path.join(__dirname, '../../dados.json');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
+const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
+const CODE_EXPIRY_MS = 10 * 60 * 1000;
 
 function lerDados() {
     try {
@@ -100,52 +106,23 @@ function montarDashboard(usuario) {
     };
 }
 
+async function gerarCodigoVerificacao() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function generateCode() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 async function hashCode(code) {
-    return await bcrypt.hash(String(code), 10);
+    return bcrypt.hash(String(code), 10);
 }
 
 async function compareCode(code, hash) {
-    return await bcrypt.compare(String(code), hash);
+    return bcrypt.compare(String(code), hash);
 }
 
-module.exports = {
-    obterUsuario,
-    obterUsuarioPorCnpj,
-    salvarUsuario,
-    gerarRelatorioBancario,
-    montarDashboard,
-    hashCode,
-    compareCode,
-    formatarEmail
-};
-import fs from 'fs';
-import path from 'path';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
-
-const STORAGE_FILE = path.join(process.cwd(), 'dados.json');
-export const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
-export const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
-export const CODE_EXPIRY_MS = 10 * 60 * 1000;
-
-function readStorage() {
-    try {
-        if (fs.existsSync(STORAGE_FILE)) {
-            const content = fs.readFileSync(STORAGE_FILE, 'utf-8');
-            return JSON.parse(content);
-        }
-    } catch {
-        // ignore and recreate storage file if invalid
-    }
-    return { diagnosticos: [], usuarios: [], bankReports: [] };
-}
-
-function writeStorage(data) {
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2));
-}
-
-function createTransporter() {
+function criarTransportadorEmail() {
     if (process.env.MAIL_HOST && process.env.MAIL_USER && process.env.MAIL_PASS) {
         return nodemailer.createTransport({
             host: process.env.MAIL_HOST,
@@ -158,110 +135,79 @@ function createTransporter() {
         });
     }
 
-    return nodemailer.createTransport({ jsonTransport: true });
-}
-
-export async function sendVerificationEmail(email, code) {
-    const transport = createTransporter();
-    await transport.sendMail({
-        from: MAIL_FROM,
-        to: email,
-        subject: 'Seu código de acesso FinPJ',
-        text: `Seu código FinPJ é: ${code}. Use-o em até 10 minutos para continuar.`,
-        html: `<p>Seu código FinPJ é: <strong>${code}</strong></p><p>Use-o em até 10 minutos para continuar.</p>`
-    });
-}
-
-export function validateEmail(email) {
-    return typeof email === 'string' && email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-}
-
-export function formatEmail(email) {
-    return String(email || '').trim().toLowerCase();
-}
-
-export function generateCode() {
-    return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-export async function hashCode(code) {
-    return bcrypt.hash(code, 10);
-}
-
-export async function compareCode(code, hash) {
-    return bcrypt.compare(String(code), hash);
-}
-
-export async function getUser(email) {
-    const normalized = formatEmail(email);
-    const storage = readStorage();
-    return storage.usuarios.find(u => u.email === normalized);
-}
-
-export async function getUserByCnpj(cnpj) {
-    const storage = readStorage();
-    return storage.usuarios.find(u => u.cnpj === cnpj);
-}
-
-export async function saveUser(user) {
-    const normalized = formatEmail(user.email);
-    user.email = normalized;
-    const storage = readStorage();
-    const index = storage.usuarios.findIndex(u => u.email === normalized || u.cnpj === user.cnpj);
-    if (index >= 0) {
-        storage.usuarios[index] = user;
-    } else {
-        storage.usuarios.push(user);
+    // Gmail with App Password fallback (set GMAIL_USER and GMAIL_APP_PASS env vars)
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASS) {
+        return nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASS
+            }
+        });
     }
-    writeStorage(storage);
-    return user;
-}
 
-export function generateBankReports(email) {
-    const today = new Date();
-    const types = [
-        'Conciliação de extrato',
-        'Revisão de lançamentos',
-        'Atualização de saldo',
-        'Alerta de fluxo de caixa',
-        'Recebimento confirmado',
-        'Diferença identificada'
-    ];
-    return Array.from({ length: 6 }, (_, index) => {
-        const date = new Date(today);
-        date.setDate(today.getDate() - index);
-        const amount = Math.round((Math.random() * 20 + 2) * 1000);
-        return {
-            id: `${email}-${date.toISOString().slice(0, 10)}-${index}`,
-            date: date.toISOString().slice(0, 10),
-            title: types[index % types.length],
-            detail: `Atualização diária para ${email.split('@')[0]} baseada em relatório bancário.`,
-            amount,
-            status: index % 2 === 0 ? 'Concluído' : 'Atenção'
-        };
-    });
-}
-
-export function mountDashboard(user) {
-    const reports = user.bankReports && user.bankReports.length ? user.bankReports : generateBankReports(user.email);
-    user.bankReports = reports;
-    saveUser(user);
+    // Dev fallback: log to console
     return {
-        user: {
-            email: user.email,
-            createdAt: user.createdAt,
-            lastLogin: user.lastLogin || user.createdAt
-        },
-        summary: {
-            reportsCount: reports.length,
-            totalMovimentado: reports.reduce((sum, item) => sum + item.amount, 0),
-            pendencias: reports.filter(item => item.status !== 'Concluído').length
-        },
-        reports
+        sendMail: async (options) => {
+            console.log('\n📧 [DEV] EMAIL NÃO ENVIADO — configure MAIL_HOST/USER/PASS ou GMAIL_USER/APP_PASS');
+            console.log(`   Para: ${options.to}`);
+            console.log(`   Assunto: ${options.subject}`);
+            console.log(`   Código: ${options.text}`);
+            console.log('---');
+            return { messageId: 'dev-' + Date.now() };
+        }
     };
 }
 
-export function extractBearerToken(req) {
+async function sendVerificationEmail(email, code) {
+    const transport = criarTransportadorEmail();
+    const mailOptions = {
+        from: MAIL_FROM,
+        to: email,
+        subject: 'Seu código de acesso FinPJ',
+        text: `Seu código FinPJ é: ${code}\nUse-o em até 10 minutos para continuar.`,
+        html: `
+            <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0D1117; border-radius: 16px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #1a2744 0%, #0f3460 100%); padding: 32px; text-align: center;">
+                    <h1 style="color: #60a5fa; margin: 0; font-size: 28px; letter-spacing: -0.5px;">FinPJ</h1>
+                    <p style="color: #94a3b8; margin: 8px 0 0; font-size: 13px;">CFO Digital para PMEs</p>
+                </div>
+                <div style="padding: 32px; background: #0D1117;">
+                    <h2 style="color: #f1f5f9; margin-bottom: 16px; font-size: 20px;">Seu código de acesso</h2>
+                    <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
+                        Use o código abaixo para acessar sua conta FinPJ. Ele expira em <strong style="color: #f1f5f9;">10 minutos</strong>.
+                    </p>
+                    <div style="background: #1e2d4a; border: 2px solid #3b82f6; border-radius: 12px; padding: 28px; text-align: center; margin-bottom: 24px;">
+                        <p style="font-size: 42px; font-weight: 700; letter-spacing: 8px; color: #60a5fa; margin: 0; font-family: monospace;">${code}</p>
+                    </div>
+                    <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">
+                        Se você não solicitou este código, ignore este e-mail com segurança.
+                    </p>
+                </div>
+                <div style="background: #0a0f1a; padding: 20px; text-align: center; border-top: 1px solid #1e293b;">
+                    <p style="color: #475569; font-size: 12px; margin: 0;">© 2026 FinPJ · Todos os direitos reservados</p>
+                </div>
+            </div>
+        `
+    };
+
+    try {
+        const result = await transport.sendMail(mailOptions);
+        console.log('✅ Email enviado:', result.messageId || 'ok');
+        return result;
+    } catch (error) {
+        console.error('❌ Erro ao enviar email:', error.message);
+        // Always log code to console so dev can still test
+        console.log(`📌 CÓDIGO PARA ${email}: ${code}`);
+        // Don't re-throw — let auth flow succeed even if email fails
+    }
+}
+
+function validateEmail(email) {
+    return typeof email === 'string' && email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function extractBearerToken(req) {
     const authorization = req.headers.authorization || req.headers.Authorization;
     if (!authorization || typeof authorization !== 'string') return null;
     const parts = authorization.split(' ');
@@ -269,7 +215,7 @@ export function extractBearerToken(req) {
     return parts[1];
 }
 
-export function verifyToken(req) {
+function verifyToken(req) {
     const token = extractBearerToken(req);
     if (!token) return null;
     try {
@@ -278,3 +224,30 @@ export function verifyToken(req) {
         return null;
     }
 }
+
+module.exports = {
+    obterUsuario,
+    obterUsuarioPorCnpj,
+    salvarUsuario,
+    gerarRelatorioBancario,
+    montarDashboard,
+    hashCode,
+    compareCode,
+    formatarEmail,
+    generateCode,
+    gerarCodigoVerificacao,
+    sendVerificationEmail,
+    validateEmail,
+    extractBearerToken,
+    verifyToken,
+    JWT_SECRET,
+    MAIL_FROM,
+    CODE_EXPIRY_MS,
+    // ESM-compatible aliases used by api/auth/*.js
+    formatEmail: formatarEmail,
+    getUser: obterUsuario,
+    getUserByCnpj: obterUsuarioPorCnpj,
+    saveUser: salvarUsuario,
+    generateBankReports: gerarRelatorioBancario,
+    mountDashboard: montarDashboard
+};

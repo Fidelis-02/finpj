@@ -136,6 +136,62 @@
           "status": "Atenção"
         }
       ]
+    },
+    {
+      "cnpj": "33.592.510/0001-54",
+      "passwordHash": "$2b$10$S7pr7IobcrvogQTOJ8QnyueR9VJgy/ZShx15kIZXIQTK0QqAP.WLq",
+      "email": "cnpj-33.592.510/0001-54@finpj.local",
+      "createdAt": "2026-04-19T18:02:59.815Z",
+      "bankReports": [
+        {
+          "id": "cnpj-33.592.510/0001-54-2026-04-19-0",
+          "date": "2026-04-19",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa cnpj-33.592.510/0001-54 com informações de extrato e movimentações bancárias.",
+          "amount": 8146,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33.592.510/0001-54-2026-04-18-1",
+          "date": "2026-04-18",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa cnpj-33.592.510/0001-54 com informações de extrato e movimentações bancárias.",
+          "amount": 5377,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-33.592.510/0001-54-2026-04-17-2",
+          "date": "2026-04-17",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa cnpj-33.592.510/0001-54 com informações de extrato e movimentações bancárias.",
+          "amount": 20863,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33.592.510/0001-54-2026-04-16-3",
+          "date": "2026-04-16",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa cnpj-33.592.510/0001-54 com informações de extrato e movimentações bancárias.",
+          "amount": 6772,
+          "status": "Atenção"
+        },
+        {
+          "id": "cnpj-33.592.510/0001-54-2026-04-15-4",
+          "date": "2026-04-15",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa cnpj-33.592.510/0001-54 com informações de extrato e movimentações bancárias.",
+          "amount": 7561,
+          "status": "Concluído"
+        },
+        {
+          "id": "cnpj-33.592.510/0001-54-2026-04-14-5",
+          "date": "2026-04-14",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa cnpj-33.592.510/0001-54 com informações de extrato e movimentações bancárias.",
+          "amount": 12385,
+          "status": "Atenção"
+        }
+      ]
     }
   ],
   "bankReports": []

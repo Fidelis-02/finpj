@@ -1,9 +1,7 @@
-import { compareCode, formatEmail, getUser, saveUser, validateEmail, mountDashboard } from '../lib/auth-storage.js';
-import jwt from 'jsonwebtoken';
+const jwt = require('jsonwebtoken');
+const { compareCode, formatEmail, getUser, saveUser, validateEmail, mountDashboard, JWT_SECRET } = require('../lib/auth-storage');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ erro: 'Método não permitido' });
     }
@@ -39,4 +37,4 @@ export default async function handler(req, res) {
     const dashboard = mountDashboard(user);
 
     return res.status(200).json({ sucesso: true, token, dashboard });
-}
+};
