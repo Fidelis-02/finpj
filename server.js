@@ -19,7 +19,7 @@ async function conectarDB() {
 }
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 // Middleware
 app.use(cors());
@@ -306,6 +306,50 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Rota para processar pagamento
+app.post('/api/pagamento', async (req, res) => {
+    const { email, plano, nomeCartao, numeroCartao, mes, ano, cvc } = req.body;
+    
+    try {
+        const charge = await stripe.charges.create({
+            amount: obterValorPlano(plano) * 100,  // em centavos
+            currency: 'brl',
+            source: {
+                object: 'card',
+                number: numeroCartao,
+                exp_month: mes,
+                exp_year: ano,
+                cvc: cvc,
+                name: nomeCartao
+            },
+            description: `FinPJ - Plano ${plano} para ${email}`
+        });
+        
+        res.json({
+            sucesso: true,
+            pagamentoId: charge.id,
+            mensagem: 'Pagamento realizado com sucesso!'
+        });
+        
+    } catch (erro) {
+        res.status(400).json({
+            sucesso: false,
+            erro: erro.message
+        });
+    }
+});
+
+// Helper para obter valor do plano
+function obterValorPlano(plano) {
+    const valores = {
+        'starter': 490,
+        'growth': 950,
+        'enterprise': 1850
+    };
+    return valores[plano] || 490;
+}
 
 // ===============================
 // START
