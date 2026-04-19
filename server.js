@@ -27,7 +27,7 @@ async function conectarDB() {
 }
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -194,28 +194,51 @@ app.get('/api/cnpj', async (req, res) => {
 // ===============================
 // BANCO LOCAL JSON
 // ===============================
-const dadosFile = path.join(__dirname, 'dados.json');
+const isVercel = !!process.env.VERCEL;
+const dadosFileSrc = path.join(__dirname, 'dados.json');
+const dadosFile = isVercel ? '/tmp/dados.json' : dadosFileSrc;
+
+// Na Vercel, copia dados.json do bundle para /tmp na primeira execução
+function garantirDadosNoTmp() {
+    if (isVercel && !fs.existsSync(dadosFile)) {
+        try {
+            if (fs.existsSync(dadosFileSrc)) {
+                fs.copyFileSync(dadosFileSrc, dadosFile);
+            } else {
+                fs.writeFileSync(dadosFile, JSON.stringify({ diagnosticos: [], usuarios: [], bankReports: [] }, null, 2));
+            }
+        } catch (e) {
+            console.error('Erro ao criar dados.json em /tmp:', e.message);
+        }
+    }
+}
+garantirDadosNoTmp();
 
 function lerDados() {
     try {
+        garantirDadosNoTmp();
         if (fs.existsSync(dadosFile)) {
             const conteudo = fs.readFileSync(dadosFile, 'utf-8');
             const parsed = JSON.parse(conteudo);
-            // Ensure all required arrays exist
             return {
                 diagnosticos: parsed.diagnosticos || [],
                 usuarios: parsed.usuarios || [],
-                bankReports: parsed.bankReports || []
+                bankReports: parsed.bankReports || [],
+                analises: parsed.analises || []
             };
         }
     } catch (e) {
         console.log('Criando novo arquivo de dados...');
     }
-    return { diagnosticos: [], usuarios: [], bankReports: [] };
+    return { diagnosticos: [], usuarios: [], bankReports: [], analises: [] };
 }
 
 function salvarDados(dados) {
-    fs.writeFileSync(dadosFile, JSON.stringify(dados, null, 2));
+    try {
+        fs.writeFileSync(dadosFile, JSON.stringify(dados, null, 2));
+    } catch (e) {
+        console.error('Erro ao salvar dados:', e.message);
+    }
 }
 
 function criarTransportadorEmail() {
