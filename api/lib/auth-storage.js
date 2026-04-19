@@ -1,3 +1,123 @@
+const bcrypt = require('bcrypt');
+const path = require('path');
+const fs = require('fs');
+
+const dadosFile = path.join(__dirname, '../../dados.json');
+
+function lerDados() {
+    try {
+        if (fs.existsSync(dadosFile)) {
+            const conteudo = fs.readFileSync(dadosFile, 'utf-8');
+            const parsed = JSON.parse(conteudo);
+            return {
+                diagnosticos: parsed.diagnosticos || [],
+                usuarios: parsed.usuarios || [],
+                bankReports: parsed.bankReports || []
+            };
+        }
+    } catch (e) {
+        console.log('Criando novo arquivo de dados...');
+    }
+    return { diagnosticos: [], usuarios: [], bankReports: [] };
+}
+
+function salvarDados(dados) {
+    fs.writeFileSync(dadosFile, JSON.stringify(dados, null, 2));
+}
+
+function formatarEmail(email) {
+    return String(email || '').trim().toLowerCase();
+}
+
+async function obterUsuario(email) {
+    const emailNorm = formatarEmail(email);
+    const dados = lerDados();
+    return dados.usuarios.find(u => u.email === emailNorm);
+}
+
+async function obterUsuarioPorCnpj(cnpj) {
+    const cnpjNorm = String(cnpj || '').replace(/\D/g, '');
+    const dados = lerDados();
+    return dados.usuarios.find(u => u.cnpj === cnpjNorm);
+}
+
+async function salvarUsuario(usuario) {
+    usuario.email = formatarEmail(usuario.email);
+    const dados = lerDados();
+    const index = dados.usuarios.findIndex(u => u.email === usuario.email);
+    if (index >= 0) {
+        dados.usuarios[index] = usuario;
+    } else {
+        dados.usuarios.push(usuario);
+    }
+    salvarDados(dados);
+    return usuario;
+}
+
+function gerarRelatorioBancario(email) {
+    const hoje = new Date();
+    const tipos = [
+        'Conciliação de extrato',
+        'Revisão de lançamentos',
+        'Atualização de saldo',
+        'Alerta de fluxo de caixa',
+        'Análise de recebimentos',
+        'Detectamos uma diferença bancária'
+    ];
+    return Array.from({ length: 6 }, (_, i) => {
+        const data = new Date(hoje);
+        data.setDate(hoje.getDate() - i);
+        const valor = Math.round((Math.random() * 18 + 3) * 1000);
+        return {
+            id: `${email}-${data.toISOString().slice(0, 10)}-${i}`,
+            date: data.toISOString().slice(0, 10),
+            title: tipos[i % tipos.length],
+            detail: `Atualização diária para a empresa ${email.split('@')[0]} com informações de extrato e movimentações bancárias.`,
+            amount: valor,
+            status: i % 2 === 0 ? 'Concluído' : 'Atenção'
+        };
+    });
+}
+
+function montarDashboard(usuario) {
+    const safeUser = {
+        email: usuario.email,
+        createdAt: usuario.createdAt,
+        lastLogin: usuario.lastLogin || usuario.createdAt
+    };
+    const reports = usuario.bankReports && usuario.bankReports.length ? usuario.bankReports : gerarRelatorioBancario(usuario.email);
+    usuario.bankReports = reports;
+    salvarUsuario(usuario);
+    const totalMovimentado = reports.reduce((sum, item) => sum + item.amount, 0);
+    return {
+        user: safeUser,
+        summary: {
+            reportsCount: reports.length,
+            totalMovimentado,
+            pendencias: reports.filter(r => r.status !== 'Concluído').length
+        },
+        reports
+    };
+}
+
+async function hashCode(code) {
+    return await bcrypt.hash(String(code), 10);
+}
+
+async function compareCode(code, hash) {
+    return await bcrypt.compare(String(code), hash);
+}
+
+module.exports = {
+    obterUsuario,
+    obterUsuarioPorCnpj,
+    salvarUsuario,
+    gerarRelatorioBancario,
+    montarDashboard,
+    hashCode,
+    compareCode,
+    formatarEmail
+};
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcrypt';
@@ -78,11 +198,16 @@ export async function getUser(email) {
     return storage.usuarios.find(u => u.email === normalized);
 }
 
+export async function getUserByCnpj(cnpj) {
+    const storage = readStorage();
+    return storage.usuarios.find(u => u.cnpj === cnpj);
+}
+
 export async function saveUser(user) {
     const normalized = formatEmail(user.email);
     user.email = normalized;
     const storage = readStorage();
-    const index = storage.usuarios.findIndex(u => u.email === normalized);
+    const index = storage.usuarios.findIndex(u => u.email === normalized || u.cnpj === user.cnpj);
     if (index >= 0) {
         storage.usuarios[index] = user;
     } else {

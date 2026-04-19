@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
+const passport = require('passport');
 const uri = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
@@ -31,6 +32,13 @@ const PORT = 3001;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('.'));
+
+// Passport middleware
+app.use(passport.initialize());
+
+// Initialize Google OAuth (only if credentials are provided)
+const initGoogleAuth = require('./api/auth/google/init.js');
+initGoogleAuth(app, passport);
 
 // ===============================
 // CACHE DE CNPJ (performance)
@@ -191,7 +199,13 @@ function lerDados() {
     try {
         if (fs.existsSync(dadosFile)) {
             const conteudo = fs.readFileSync(dadosFile, 'utf-8');
-            return JSON.parse(conteudo);
+            const parsed = JSON.parse(conteudo);
+            // Ensure all required arrays exist
+            return {
+                diagnosticos: parsed.diagnosticos || [],
+                usuarios: parsed.usuarios || [],
+                bankReports: parsed.bankReports || []
+            };
         }
     } catch (e) {
         console.log('Criando novo arquivo de dados...');
@@ -255,6 +269,19 @@ async function obterUsuario(email) {
     return dados.usuarios.find(u => u.email === emailNorm);
 }
 
+async function obterUsuarioPorCnpj(cnpj) {
+    const cnpjNorm = String(cnpj || '').replace(/\D/g, '');
+    if (!db && uri) {
+        await conectarDB();
+    }
+    if (db) {
+        const usuario = await db.collection('usuarios').findOne({ cnpj: cnpjNorm });
+        if (usuario) return usuario;
+    }
+    const dados = lerDados();
+    return dados.usuarios.find(u => u.cnpj === cnpjNorm);
+}
+
 async function salvarUsuario(usuario) {
     usuario.email = formatarEmail(usuario.email);
     if (!db && uri) {
@@ -298,6 +325,10 @@ function gerarRelatorioBancario(email) {
             status: i % 2 === 0 ? 'Concluído' : 'Atenção'
         };
     });
+}
+
+function gerarRelatoriosBancarios(email) {
+    return gerarRelatorioBancario(email);
 }
 
 function montarDashboard(usuario) {
@@ -411,6 +442,58 @@ app.get('/api/dashboard', async (req, res) => {
         return res.status(404).json({ erro: 'Usuário não encontrado.' });
     }
     res.json({ sucesso: true, dashboard: montarDashboard(usuario) });
+});
+
+// ===============================
+// NOVAS ROTAS DE AUTENTICAÇÃO
+// ===============================
+app.post('/api/auth/login-cnpj', async (req, res) => {
+    const { cnpj, password } = req.body || {};
+    if (!cnpj || !password) {
+        return res.status(400).json({ erro: 'CNPJ e senha são obrigatórios' });
+    }
+
+    const usuario = await obterUsuarioPorCnpj(cnpj);
+    if (!usuario || !usuario.passwordHash) {
+        return res.status(400).json({ erro: 'CNPJ ou senha incorretos.' });
+    }
+
+    const isValid = await bcrypt.compare(password, usuario.passwordHash);
+    if (!isValid) {
+        return res.status(400).json({ erro: 'CNPJ ou senha incorretos.' });
+    }
+
+    usuario.lastLogin = new Date().toISOString();
+    await salvarUsuario(usuario);
+
+    const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '7d' });
+    const dashboard = montarDashboard(usuario);
+
+    res.json({ sucesso: true, token, email: usuario.email, dashboard });
+});
+
+app.post('/api/auth/register-cnpj', async (req, res) => {
+    const { cnpj, password } = req.body || {};
+    if (!cnpj || !password || password.length < 6) {
+        return res.status(400).json({ erro: 'CNPJ e senha (mínimo 6 caracteres) são obrigatórios' });
+    }
+
+    let usuario = await obterUsuarioPorCnpj(cnpj);
+    if (usuario) {
+        return res.status(400).json({ erro: 'CNPJ já cadastrado.' });
+    }
+
+    usuario = {
+        cnpj,
+        passwordHash: await bcrypt.hash(password, 10),
+        email: `cnpj-${cnpj}@finpj.local`, // dummy email
+        createdAt: new Date().toISOString(),
+        bankReports: gerarRelatoriosBancarios(`cnpj-${cnpj}`)
+    };
+
+    await salvarUsuario(usuario);
+
+    res.json({ sucesso: true, mensagem: 'Conta criada com sucesso.' });
 });
 
 // ===============================

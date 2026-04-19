@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinPJ</title>
+    <title>FinPJ - CFO Digital para PMEs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A2540'/%3E%3Ctext x='16' y='22' font-family='Montserrat, sans-serif' font-size='18' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E">
     <style>
         * {
             box-sizing: border-box;
@@ -12,25 +16,26 @@
         }
         
         :root {
-            --color-primary: #1d469e;
-            --color-secondary: #0f0850;
+            --color-primary: #1D74F2;
+            --color-secondary: #0A2540;
+            --color-accent: #00D4FF;
             --color-danger: #E24B4A;
             --color-warning: #BA7517;
             --color-info: #378ADD;
-            --text-primary: #2C2C2A;
-            --text-secondary: #888780;
-            --text-muted: #B4B2A9;
+            --text-primary: #0A2540;
+            --text-secondary: #5A6B7D;
+            --text-muted: #8B95A7;
             --bg-primary: #FFFFFF;
-            --bg-secondary: #F1EFE8;
-            --bg-tertiary: #F9F8F5;
-            --border: #E5E3DB;
-            --success: #0F6E56;
+            --bg-secondary: #F0F5FF;
+            --bg-tertiary: #F8FAFF;
+            --border: #D9E2F0;
+            --success: #00B341;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             color: var(--text-primary);
-            background: radial-gradient(circle at top, #ffffff 0%, #f7f6f1 30%, #f1efe8 100%);
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFF 50%, #F0F5FF 100%);
             line-height: 1.6;
             min-height: 100vh;
         }
@@ -75,14 +80,15 @@
         .logo-mark {
             width: 32px;
             height: 32px;
-            background: var(--color-primary);
-            border-radius: 8px;
+            background: #0A2540;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
-            font-weight: 600;
-            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
         }
         
         .nav-links {
@@ -137,18 +143,18 @@
             background: var(--color-primary);
             color: #fff;
             border: none;
-            border-radius: 10px;
-            padding: 12px 24px;
+            border-radius: 8px;
+            padding: 11px 28px;
             font-size: 13px;
             font-weight: 600;
-            box-shadow: 0 10px 22px rgba(29, 70, 158, 0.14);
+            box-shadow: 0 4px 15px rgba(29, 116, 242, 0.25);
             transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
         }
         
         .nav-cta:hover {
-            background: #214eaf;
-            transform: translateY(-1px);
-            box-shadow: 0 16px 30px rgba(29, 70, 158, 0.18);
+            background: #1563D8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(29, 116, 242, 0.35);
         }
         
         /* HERO */
@@ -858,11 +864,28 @@
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .navbar {
-                padding: 14px 16px;
+                padding: 12px 16px;
+                flex-wrap: wrap;
+                gap: 10px;
             }
             
             .nav-links {
                 display: none;
+                width: 100%;
+                flex-direction: column;
+            }
+            
+            .nav-links.mobile-visible {
+                display: flex;
+            }
+            
+            .logo {
+                flex: 1;
+            }
+            
+            .nav-cta {
+                padding: 10px 20px;
+                font-size: 12px;
             }
             
             .features, .steps, .plans, .testimonials {
@@ -870,19 +893,90 @@
             }
             
             .stats {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr;
             }
             
             .hero {
-                padding: 60px 20px;
+                padding: 40px 20px;
             }
             
             .hero h1 {
-                font-size: 32px;
+                font-size: 28px;
+                line-height: 1.3;
+            }
+            
+            .hero-sub {
+                font-size: 14px;
             }
             
             .section {
                 padding: 40px 20px;
+            }
+            
+            .section-title {
+                font-size: 24px;
+            }
+            
+            .btn-primary, .btn-secondary {
+                padding: 12px 24px;
+                font-size: 13px;
+            }
+            
+            .modal-content {
+                max-width: 90vw;
+                padding: 24px;
+            }
+            
+            .report-table {
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .navbar {
+                padding: 10px 12px;
+            }
+            
+            .logo-mark {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+            
+            .logo {
+                font-size: 16px;
+            }
+            
+            .nav-cta {
+                padding: 8px 16px;
+                font-size: 11px;
+            }
+            
+            .hero {
+                padding: 30px 16px;
+            }
+            
+            .hero h1 {
+                font-size: 24px;
+            }
+            
+            .section {
+                padding: 30px 16px;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+                padding: 20px 16px;
+            }
+            
+            .stat {
+                padding: 20px 16px;
+                border-right: none !important;
+                border-bottom: 1px solid var(--border);
+            }
+            
+            .stat:last-child {
+                border-bottom: none;
             }
         }
     </style>
@@ -898,11 +992,12 @@
             <button type="button" class="nav-link" data-target="features" onclick="scrollTo('features')">Funcionalidades</button>
             <button type="button" class="nav-link" data-target="howitworks" onclick="scrollTo('howitworks')">Como funciona</button>
             <button type="button" class="nav-link" data-target="planos" onclick="scrollTo('planos')">Planos</button>
-            <button type="button" class="nav-link" data-target="casos" onclick="scrollTo('casos')">Cases</button>
-            <button type="button" class="nav-link" onclick="openModal('login')">Entrar</button>
+            <button type="button" class="nav-link" id="nav-login-btn" onclick="openModal('login')">Entrar</button>
             <button type="button" class="nav-link" id="dashboard-link" onclick="openDashboard()" style="display:none;">Dashboard</button>
+            <button type="button" class="nav-link" id="nav-logout-btn" onclick="logoutCliente()" style="display:none; color:#E24B4A;">Sair</button>
         </div>
-        <button class="nav-cta" onclick="openModal('diagnose')">Diagnóstico grátis</button>
+        <button class="nav-cta" id="nav-signup-btn" onclick="openModal('register')">Criar conta</button>
+        <button class="nav-cta" id="nav-login-cta" onclick="openModal('login')" style="display:none; background:#0A2540; margin-left:8px;">Entrar</button>
     </nav>
     
     <!-- HERO -->
@@ -924,19 +1019,19 @@
     <section class="stats">
         <div class="stat">
             <div class="stat-num">R$ 23.700</div>
-            <div class="stat-label">Créditos médios identificados/mês</div>
+            <div class="stat-label">Créditos tributários médios identificados/mês</div>
         </div>
         <div class="stat">
             <div class="stat-num">2–5%</div>
-            <div class="stat-label">Faturamento economizado por cliente</div>
+            <div class="stat-label">Redução média de carga tributária</div>
         </div>
         <div class="stat">
-            <div class="stat-num">16,6x</div>
-            <div class="stat-label">Retorno sobre investimento (LTV/CAC)</div>
+            <div class="stat-num">2 horas</div>
+            <div class="stat-label">Economia de tempo em relatórios financeiros por semana</div>
         </div>
         <div class="stat">
-            <div class="stat-num">14 meses</div>
-            <div class="stat-label">Payback descontado</div>
+            <div class="stat-num">98%</div>
+            <div class="stat-label">Precisão em conformidade fiscal automatizada</div>
         </div>
     </section>
     
@@ -1145,37 +1240,6 @@
         </p>
     </section>
     
-    <!-- CASOS -->
-    <section id="casos" class="section">
-        <div class="section-label">Resultados reais</div>
-        <div class="section-title">O que nossos clientes estão economizando</div>
-        <p class="section-sub">Casos reais com dados anonimizados.</p>
-        <div class="testimonials">
-            <div class="testi">
-                <div class="testi-text">"Em 45 dias o FinPJ identificou que estávamos no regime errado fazia 3 anos. A migração para o Lucro Real nos gerou uma economia de R$ 87 mil só no primeiro ano."</div>
-                <div class="testi-author">
-                    <div class="testi-avatar">MF</div>
-                    <div class="testi-info">
-                        <div class="testi-name">Marcelo F.</div>
-                        <div class="testi-role">Sócio · Distribuidora alimentícia · R$ 8,2 mi</div>
-                        <div class="testi-saving">Economia: R$ 87.000/ano</div>
-                    </div>
-                </div>
-            </div>
-            <div class="testi">
-                <div class="testi-text">"Nossa equipe não entende de contabilidade. O FinPJ traduz tudo em números simples. Identificamos um vazamento de R$ 12 mil/mês em custos que nem sabíamos que existia."</div>
-                <div class="testi-author">
-                    <div class="testi-avatar">AP</div>
-                    <div class="testi-info">
-                        <div class="testi-name">Ana P.</div>
-                        <div class="testi-role">Fundadora · Clínica de estética · R$ 2,1 mi</div>
-                        <div class="testi-saving">Recuperado: R$ 144.000/ano</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
     <!-- CTA FINAL -->
     <section class="cta-section">
         <div class="cta-title">Descubra quanto dinheiro sua empresa está deixando na mesa</div>
@@ -1227,15 +1291,36 @@
     <div id="login-modal" class="modal">
         <div class="modal-content" style="max-width: 520px;">
             <button class="modal-close" onclick="closeModal('login')">&times;</button>
-            <h2 class="modal-title">Entrar com seu e-mail</h2>
-            <p class="login-note">Use seu e-mail para receber um código seguro. Sem senha, com um passo rápido para sua área de cliente.</p>
+            <h2 class="modal-title">Entrar na sua conta</h2>
+            <div class="tabs" id="login-tabs" style="margin-bottom: 20px;">
+                <button type="button" class="tab-btn active" data-tab="email" onclick="setLoginTab('email')">E-mail</button>
+                <button type="button" class="tab-btn" data-tab="cnpj" onclick="setLoginTab('cnpj')">CNPJ</button>
+                <button type="button" class="tab-btn" data-tab="google" onclick="setLoginTab('google')">Google</button>
+            </div>
             <div class="login-step active" id="login-step-email">
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
-                    <div style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--color-primary);">G</div>
-                    <div style="font-size:14px; color:var(--text-primary);">Entrada com Gmail</div>
+                    <div style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:#1D74F2;">@</div>
+                    <div style="font-size:14px; color:var(--text-primary);">Entrada com E-mail</div>
                 </div>
                 <input id="login-email" type="email" class="login-input" placeholder="seunome@gmail.com" autocomplete="email">
                 <button type="button" class="btn-primary" style="width:100%;" onclick="sendLoginCode()">Enviar código</button>
+            </div>
+            <div class="login-step" id="login-step-cnpj">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:#1D74F2;">🏢</div>
+                    <div style="font-size:14px; color:var(--text-primary);">Entrada com CNPJ</div>
+                </div>
+                <input id="login-cnpj" type="text" class="login-input" placeholder="00.000.000/0001-00" autocomplete="off">
+                <input id="login-password" type="password" class="login-input" placeholder="Senha" autocomplete="current-password">
+                <button type="button" class="btn-primary" style="width:100%;" onclick="loginWithCnpj()">Entrar</button>
+                <button type="button" class="btn-secondary" style="width:100%; margin-top:12px;" onclick="openModal('register')">Criar conta</button>
+            </div>
+            <div class="login-step" id="login-step-google">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:#1D74F2;">G</div>
+                    <div style="font-size:14px; color:var(--text-primary);">Entrada com Google</div>
+                </div>
+                <button type="button" class="btn-primary" style="width:100%;" onclick="loginWithGoogle()">Continuar com Google</button>
             </div>
             <div class="login-step" id="login-step-code">
                 <p class="login-note">Digitando o código enviado para <strong id="login-email-preview"></strong>.</p>
@@ -1244,6 +1329,17 @@
                 <button type="button" class="btn-secondary" style="width:100%; margin-top:12px;" onclick="setLoginStep('email')">Usar outro e-mail</button>
             </div>
             <div id="login-message" class="login-note" style="min-height:20px;"></div>
+        </div>
+    </div>
+    <div id="register-modal" class="modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <button class="modal-close" onclick="closeModal('register')">&times;</button>
+            <h2 class="modal-title">Criar conta com CNPJ</h2>
+            <input id="register-cnpj" type="text" class="login-input" placeholder="CNPJ" autocomplete="off">
+            <input id="register-password" type="password" class="login-input" placeholder="Senha" autocomplete="new-password">
+            <input id="register-confirm-password" type="password" class="login-input" placeholder="Confirmar senha" autocomplete="new-password">
+            <button type="button" class="btn-primary" style="width:100%;" onclick="registerWithCnpj()">Criar conta</button>
+            <div id="register-message" class="login-note" style="min-height:20px;"></div>
         </div>
     </div>
     <div id="diagnose-modal" class="modal">
@@ -1629,11 +1725,13 @@
             }
         }
 function isLoggedIn() {
-    return Boolean(localStorage.getItem('finpjToken')) && Boolean(localStorage.getItem('finpjAuthEmail'));
+    return Boolean(localStorage.getItem('finpjToken') || localStorage.getItem('authToken'));
 }
 
 function setLoginStep(step) {
     document.getElementById('login-step-email').classList.toggle('active', step === 'email');
+    document.getElementById('login-step-cnpj').classList.toggle('active', step === 'cnpj');
+    document.getElementById('login-step-google').classList.toggle('active', step === 'google');
     document.getElementById('login-step-code').classList.toggle('active', step === 'code');
     document.getElementById('login-message').textContent = '';
     if (step === 'code') {
@@ -1642,9 +1740,26 @@ function setLoginStep(step) {
     }
 }
 
+function setLoginTab(tab) {
+    const tabs = document.querySelectorAll('#login-tabs .tab-btn');
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelector(`#login-tabs .tab-btn[data-tab="${tab}"]`).classList.add('active');
+    setLoginStep(tab);
+}
+
 function showLoginMessage(message) {
     const el = document.getElementById('login-message');
     if (el) el.textContent = message;
+}
+
+async function safeJsonParse(response) {
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        console.error('Response is not JSON:', text);
+        throw new Error('Resposta do servidor inválida (não é JSON).');
+    }
 }
 
 async function sendLoginCode() {
@@ -1660,7 +1775,7 @@ async function sendLoginCode() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         if (!res.ok || !data.sucesso) {
             throw new Error(data.erro || 'Não foi possível enviar o código.');
         }
@@ -1686,7 +1801,7 @@ async function verifyLoginCode() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, code })
         });
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         if (!res.ok || !data.sucesso) {
             throw new Error(data.erro || 'Código inválido.');
         }
@@ -1718,7 +1833,7 @@ async function iniciarCompra(plano) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plano, email })
         });
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         if (!res.ok || !data.checkoutUrl) {
             throw new Error(data.erro || 'Não foi possível iniciar o pagamento.');
         }
@@ -1741,13 +1856,13 @@ async function openDashboard() {
 }
 
 async function loadDashboard() {
-    const token = localStorage.getItem('finpjToken');
+    const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
     if (!token) return;
     try {
         const res = await fetch('/api/dashboard', {
             headers: { Authorization: 'Bearer ' + token }
         });
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         if (!res.ok || !data.sucesso) {
             throw new Error(data.erro || 'Falha ao carregar o dashboard.');
         }
@@ -1778,19 +1893,105 @@ async function loadDashboard() {
 function updateAuthState() {
     const logged = isLoggedIn();
     const dashboardLink = document.getElementById('dashboard-link');
+    const navSignupBtn = document.getElementById('nav-signup-btn');
+    const navLoginBtn = document.getElementById('nav-login-btn');
+    const navLoginCta = document.getElementById('nav-login-cta');
+    const navLogoutBtn = document.getElementById('nav-logout-btn');
+    
     if (dashboardLink) {
         dashboardLink.style.display = logged ? 'inline-flex' : 'none';
+    }
+    if (navSignupBtn) {
+        navSignupBtn.style.display = logged ? 'none' : 'inline-block';
+    }
+    if (navLoginBtn) {
+        navLoginBtn.style.display = logged ? 'none' : 'inline-block';
+    }
+    if (navLoginCta) {
+        navLoginCta.style.display = logged ? 'none' : 'inline-block';
+    }
+    if (navLogoutBtn) {
+        navLogoutBtn.style.display = logged ? 'inline-block' : 'none';
     }
 }
 
 function logoutCliente() {
     localStorage.removeItem('finpjToken');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('finpjAuthEmail');
     updateAuthState();
+    closeModal('login');
     const dashboard = document.getElementById('dashboard');
     if (dashboard) {
         dashboard.classList.add('dashboard-hidden');
     }
+}
+
+async function loginWithCnpj() {
+    const cnpj = document.getElementById('login-cnpj').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    if (!cnpj || !password) {
+        showLoginMessage('Preencha CNPJ e senha.');
+        return;
+    }
+    try {
+        const res = await fetch('/api/auth/login-cnpj', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cnpj, password })
+        });
+        const data = await safeJsonParse(res);
+        if (!res.ok || !data.sucesso) {
+            throw new Error(data.erro || 'Login falhou.');
+        }
+        localStorage.setItem('finpjToken', data.token);
+        localStorage.setItem('finpjAuthEmail', data.email);
+        updateAuthState();
+        closeModal('login');
+        if (pendingPlano) {
+            iniciarCompra(pendingPlano);
+            pendingPlano = null;
+            return;
+        }
+        openDashboard();
+    } catch (erro) {
+        console.error('Login CNPJ:', erro);
+        showLoginMessage(erro.message || 'Erro no login.');
+    }
+}
+
+async function registerWithCnpj() {
+    const cnpj = document.getElementById('register-cnpj').value.trim();
+    const password = document.getElementById('register-password').value.trim();
+    const confirm = document.getElementById('register-confirm-password').value.trim();
+    if (!cnpj || !password || password !== confirm) {
+        document.getElementById('register-message').textContent = 'Preencha todos os campos e confirme a senha.';
+        return;
+    }
+    try {
+        const res = await fetch('/api/auth/register-cnpj', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cnpj, password })
+        });
+        const data = await safeJsonParse(res);
+        if (!res.ok || !data.sucesso) {
+            throw new Error(data.erro || 'Registro falhou.');
+        }
+        document.getElementById('register-message').textContent = 'Conta criada com sucesso. Faça login.';
+        setTimeout(() => {
+            closeModal('register');
+            openModal('login');
+            setLoginTab('cnpj');
+        }, 2000);
+    } catch (erro) {
+        console.error('Registro CNPJ:', erro);
+        document.getElementById('register-message').textContent = erro.message || 'Erro no registro.';
+    }
+}
+
+function loginWithGoogle() {
+    window.location.href = '/api/auth/google';
 }
 
         async function buscarCnpjNaReceita(silencioso) {
@@ -2012,6 +2213,18 @@ function logoutCliente() {
         document.addEventListener('DOMContentLoaded', () => {
             updateActiveNav();
             updateAuthState();
+            // Check for token in URL params (e.g., after Google OAuth)
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const loginStatus = urlParams.get('login');
+            if (token) {
+                localStorage.setItem('authToken', token);
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                if (loginStatus === 'success') {
+                    loadDashboard();
+                }
+            }
             if (isLoggedIn()) {
                 loadDashboard();
             }
@@ -2039,7 +2252,7 @@ function logoutCliente() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dados)
                 });
-                const resultado = await response.json();
+                const resultado = await safeJsonParse(response);
                 if (!response.ok) {
                     alert(resultado.erro || 'Não foi possível salvar o diagnóstico.');
                     return false;
