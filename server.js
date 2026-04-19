@@ -1,7 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const fs = require('fs');
+const { MongoClient } = require('mongodb');
+
+const uri = process.env.MONGO_URI;
+const client = new MongoClient(uri);
+
+let db;
+
+async function conectarDB() {
+    if (!db) {
+        await client.connect();
+        db = client.db('finpj');
+    }
+    return db;
+}
 const path = require('path');
 
 const app = express();
@@ -158,4 +171,5 @@ app.listen(PORT, () => {
     Pressione CTRL+C para parar
     ====================================
     `);
-});
+}); 
+module.exports = app;
