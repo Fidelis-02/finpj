@@ -907,7 +907,9 @@
                         <span class="feat-check">+</span> Integração Open Finance
                     </div>
                 </div>
-                <button class="plan-btn plan-btn-secondary">Começar grátis</button>
+                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('growth')">
+    Saiba
+</button>
             </div>
             
             <div class="plan featured">
@@ -933,7 +935,7 @@
                         <span class="feat-check">+</span> Monitor de créditos monofásicos
                     </div>
                 </div>
-                <button class="plan-btn plan-btn-primary">Começar grátis</button>
+                <button class="plan-btn plan-btn-primary">Saiba mais</button>
             </div>
             
             <div class="plan">
@@ -1207,6 +1209,13 @@
             if (atividade === 'industria') return a * 0.95;
             return a;
         }
+        function abrirModalPagamento(plano) {
+    const email = prompt('Qual seu e-mail?');
+    if (!email) return;
+    
+    // Aqui você abre um modal com formulário de cartão
+    console.log('Pagamento de:', plano);
+}
 
         function basesLucroPresumido(fat, atividade) {
             let pctIrpj = 0.32;
