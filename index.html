@@ -3732,9 +3732,16 @@
         }
 
         async function regSubmit() {
-            const cnpj = (document.getElementById('reg-cnpj') || {}).value || '';
+            const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
+            // Envia apenas os 14 dígitos, sem formatação
+            const cnpj = cnpjRaw.replace(/\D/g, '');
             const pwd  = (document.getElementById('reg-password') || {}).value || '';
             const btn  = document.getElementById('reg-btn-2');
+
+            if (cnpj.length !== 14) {
+                regSetMsg(2, 'CNPJ inválido. Verifique e tente novamente.', '#ef4444');
+                return;
+            }
 
             if (btn) { btn.disabled = true; btn.textContent = 'Criando conta...'; }
             regSetMsg(2, '');
@@ -3751,6 +3758,7 @@
                     throw new Error(data.erro || 'Não foi possível criar a conta.');
                 }
 
+                // Avança para tela de sucesso
                 regGoStep(3);
 
             } catch (e) {
@@ -3759,14 +3767,15 @@
             }
         }
 
-        // Reset do modal ao abrir
-        const _origOpenModal = typeof openModal === 'function' ? openModal : null;
-        function openModal(name) {
+        // Patch do openModal para resetar o modal de cadastro ao abrir
+        // e preencher CNPJ no modal de login após cadastro bem-sucedido
+        const _openModalBase = openModal;
+        openModal = function(name) {
             if (name === 'register') {
                 // Reset todos os campos e estado
                 ['reg-cnpj', 'reg-password', 'reg-confirm'].forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) { el.value = ''; el.className = 'login-input'; if (el.type !== el.getAttribute('type')) el.type = 'password'; }
+                    if (el) { el.value = ''; el.className = 'login-input'; el.type = 'password'; }
                 });
                 ['reg-cnpj-icon', 'reg-str-label', 'reg-confirm-icon'].forEach(id => {
                     const el = document.getElementById(id);
@@ -3776,8 +3785,10 @@
                     const b = document.getElementById('reg-str-' + i);
                     if (b) b.style.background = 'var(--border)';
                 });
-                document.getElementById('reg-company-card').style.display = 'none';
-                document.getElementById('reg-btn-1').disabled = true;
+                const card = document.getElementById('reg-company-card');
+                if (card) card.style.display = 'none';
+                const btn1 = document.getElementById('reg-btn-1');
+                if (btn1) btn1.disabled = true;
                 const btn2 = document.getElementById('reg-btn-2');
                 if (btn2) { btn2.disabled = true; btn2.textContent = 'Criar conta'; }
                 regSetMsg(1, '');
@@ -3785,10 +3796,9 @@
                 _regCompanyData = null;
                 regGoStep(1);
             }
-            // Chama o openModal original
-            const modal = document.getElementById(name + '-modal');
-            if (modal) modal.style.display = 'flex';
-        }
+            // Usa o openModal original (que adiciona a classe 'active')
+            _openModalBase(name);
+        };
     </script>
 </body>
 
