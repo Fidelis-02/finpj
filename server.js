@@ -1067,17 +1067,261 @@ app.get('/api/analises', verificarTokenMiddleware, (req, res) => {
 });
 
 // ===============================
+// CHAT IA (Groq)
+// ===============================
+app.post('/api/chat', verificarTokenMiddleware, async (req, res) => {
+    const { message, context } = req.body;
+    if (!message) return res.status(400).json({ erro: 'Mensagem obrigatória.' });
+    const GROQ_KEY = process.env.GROQ_API_KEY;
+    if (!GROQ_KEY) return res.json({ sucesso: true, resposta: 'Configure GROQ_API_KEY para usar o chat IA.', fonte: 'local' });
+    try {
+        const usuario = await obterUsuario(req.userEmail);
+        const banks = usuario?.connectedBanks || [];
+        const txSummary = banks.flatMap(b => (b.transactions || []).slice(0, 5).map(t => `${t.data}: ${t.descricao} R$${t.valor}`)).join('\n');
+        const sysPrompt = `Você é o assistente financeiro FinPJ para PMEs brasileiras. Responda de forma concisa e prática em português. Dados do usuário:\n- Email: ${req.userEmail}\n- Bancos conectados: ${banks.length}\n- Últimas transações:\n${txSummary || 'Nenhuma'}\n${context || ''}`;
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+            body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: message }], max_tokens: 1000, temperature: 0.4 })
+        });
+        const payload = await resp.json();
+        const content = payload?.choices?.[0]?.message?.content || 'Não consegui processar sua pergunta.';
+        res.json({ sucesso: true, resposta: content, fonte: 'groq-llama3' });
+    } catch (e) { console.error('Chat error:', e); res.json({ sucesso: true, resposta: 'Erro ao processar. Tente novamente.', fonte: 'error' }); }
+});
+
+// ===============================
+// NOTIFICAÇÕES
+// ===============================
+app.get('/api/notifications', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    const notifs = [];
+    const banks = usuario.connectedBanks || [];
+    const totalTx = banks.reduce((s, b) => s + (b.transactions || []).length, 0);
+    if (banks.length === 0) notifs.push({ id: 'no-bank', tipo: 'info', msg: 'Conecte um banco via Open Finance para importar transações.', data: new Date().toISOString() });
+    banks.forEach(b => {
+        const lastSync = new Date(b.lastSync);
+        const diffDays = Math.floor((Date.now() - lastSync) / 86400000);
+        if (diffDays > 3) notifs.push({ id: `sync-${b.bankId}`, tipo: 'warning', msg: `${b.bankName}: última sincronização há ${diffDays} dias.`, data: b.lastSync });
+        const saidas = (b.transactions || []).filter(t => t.tipo === 'saida');
+        const maxSaida = saidas.reduce((m, t) => Math.max(m, Math.abs(t.valor)), 0);
+        if (maxSaida > 10000) notifs.push({ id: `alert-${b.bankId}`, tipo: 'danger', msg: `${b.bankName}: saída de R$ ${maxSaida.toLocaleString('pt-BR')} detectada.`, data: new Date().toISOString() });
+    });
+    const hoje = new Date();
+    const dia = hoje.getDate();
+    if (dia >= 15 && dia <= 20) notifs.push({ id: 'das', tipo: 'warning', msg: 'Prazo do DAS/Simples Nacional se aproxima (dia 20).', data: hoje.toISOString() });
+    if (dia >= 20 && dia <= 25) notifs.push({ id: 'darf', tipo: 'warning', msg: 'Prazo de DARF/PIS/COFINS se aproxima (dia 25).', data: hoje.toISOString() });
+    res.json({ sucesso: true, notifications: notifs });
+});
+
+// ===============================
+// CALENDÁRIO FISCAL
+// ===============================
+app.get('/api/fiscal-calendar', verificarTokenMiddleware, (req, res) => {
+    const hoje = new Date();
+    const mes = hoje.getMonth();
+    const ano = hoje.getFullYear();
+    const eventos = [
+        { dia: 7, titulo: 'FGTS', desc: 'Recolhimento do FGTS', tipo: 'imposto' },
+        { dia: 10, titulo: 'GPS/INSS', desc: 'Guia da Previdência Social', tipo: 'imposto' },
+        { dia: 15, titulo: 'ISS', desc: 'Imposto Sobre Serviços (municipal)', tipo: 'imposto' },
+        { dia: 20, titulo: 'DAS', desc: 'Documento de Arrecadação do Simples Nacional', tipo: 'imposto' },
+        { dia: 20, titulo: 'IRRF', desc: 'Imposto de Renda Retido na Fonte', tipo: 'imposto' },
+        { dia: 25, titulo: 'PIS/COFINS', desc: 'Contribuição PIS e COFINS', tipo: 'imposto' },
+        { dia: 25, titulo: 'ICMS', desc: 'Imposto sobre Circulação de Mercadorias', tipo: 'imposto' },
+        { dia: 28, titulo: 'CSLL', desc: 'Contribuição Social sobre o Lucro Líquido', tipo: 'imposto' },
+        { dia: 1, titulo: 'Folha', desc: 'Processamento da folha de pagamento', tipo: 'rh' },
+        { dia: 5, titulo: 'Pro-labore', desc: 'Pagamento de pro-labore aos sócios', tipo: 'rh' },
+        { dia: 30, titulo: 'Balanço', desc: 'Fechamento contábil mensal', tipo: 'contabil' },
+    ].map(e => ({ ...e, data: new Date(ano, mes, e.dia).toISOString().slice(0, 10), passado: e.dia < hoje.getDate() }));
+    res.json({ sucesso: true, eventos, mesAtual: `${ano}-${String(mes + 1).padStart(2, '0')}` });
+});
+
+// ===============================
+// PROJEÇÃO DE FLUXO DE CAIXA
+// ===============================
+app.get('/api/cashflow-projection', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    const banks = usuario?.connectedBanks || [];
+    const allTx = banks.flatMap(b => b.transactions || []);
+    const entradas = allTx.filter(t => t.tipo === 'entrada').reduce((s, t) => s + Math.abs(t.valor), 0);
+    const saidas = allTx.filter(t => t.tipo === 'saida').reduce((s, t) => s + Math.abs(t.valor), 0);
+    const mediaDiariaE = entradas / Math.max(1, allTx.length / 2);
+    const mediaDiariaS = saidas / Math.max(1, allTx.length / 2);
+    const projecao = [];
+    let saldo = entradas - saidas;
+    for (let i = 1; i <= 90; i++) {
+        const d = new Date(); d.setDate(d.getDate() + i);
+        const e = mediaDiariaE * (0.8 + Math.random() * 0.4);
+        const s = mediaDiariaS * (0.7 + Math.random() * 0.6);
+        saldo += e - s;
+        if (i % 7 === 0 || i <= 7) projecao.push({ data: d.toISOString().slice(0, 10), entrada: Math.round(e), saida: Math.round(s), saldo: Math.round(saldo) });
+    }
+    res.json({ sucesso: true, projecao, saldoAtual: Math.round(entradas - saidas), mediaEntrada: Math.round(mediaDiariaE), mediaSaida: Math.round(mediaDiariaS) });
+});
+
+// ===============================
+// CALCULADORA DAS/DARF
+// ===============================
+app.post('/api/calcular-das', verificarTokenMiddleware, (req, res) => {
+    const { faturamento, regime, atividade } = req.body;
+    const fat = Number(faturamento) || 0;
+    if (fat <= 0) return res.status(400).json({ erro: 'Informe o faturamento.' });
+    let aliq, valor, guia, vencimento;
+    const hoje = new Date();
+    const proxMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 20);
+    vencimento = proxMes.toISOString().slice(0, 10);
+    if (regime === 'simples') {
+        if (fat <= 180000) aliq = 0.06; else if (fat <= 360000) aliq = 0.112; else if (fat <= 720000) aliq = 0.135;
+        else if (fat <= 1800000) aliq = 0.16; else if (fat <= 3600000) aliq = 0.21; else aliq = 0.33;
+        if (atividade === 'comercio') aliq *= 0.85;
+        valor = Math.round((fat / 12) * aliq);
+        guia = 'DAS';
+    } else if (regime === 'presumido') {
+        const base = atividade === 'comercio' ? fat * 0.08 : fat * 0.32;
+        valor = Math.round((base * 0.15 + Math.max(0, base - 240000) * 0.10 + base * 0.09 + fat * 0.0925) / 12);
+        aliq = valor / (fat / 12);
+        guia = 'DARF';
+    } else {
+        valor = Math.round((fat * 0.12 * 0.34 + fat * 0.0925) / 12);
+        aliq = valor / (fat / 12);
+        guia = 'DARF';
+    }
+    res.json({ sucesso: true, guia, valor, aliquotaEfetiva: (aliq * 100).toFixed(2), vencimento, faturamentoMensal: Math.round(fat / 12) });
+});
+
+// ===============================
+// PERFIL DO USUÁRIO
+// ===============================
+app.get('/api/profile', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    const { verificationCodeHash, codeExpiresAt, passwordHash, ...safe } = usuario;
+    res.json({ sucesso: true, profile: safe });
+});
+
+app.put('/api/profile', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    const { nomeEmpresa, cnpj, regime, setor } = req.body;
+    if (nomeEmpresa) usuario.nomeEmpresa = nomeEmpresa;
+    if (cnpj) usuario.cnpj = cnpj.replace(/\D/g, '');
+    if (regime) usuario.regime = regime;
+    if (setor) usuario.setor = setor;
+    await salvarUsuario(usuario);
+    res.json({ sucesso: true });
+});
+
+// ===============================
+// TAGS EM TRANSAÇÕES
+// ===============================
+app.post('/api/openfinance/transactions/:txId/tags', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    const { tag, nota } = req.body;
+    const banks = usuario.connectedBanks || [];
+    for (const bank of banks) {
+        const tx = (bank.transactions || []).find(t => t.id === req.params.txId);
+        if (tx) { tx.tag = tag || tx.tag; tx.nota = nota || tx.nota; break; }
+    }
+    await salvarUsuario(usuario);
+    res.json({ sucesso: true });
+});
+
+// ===============================
+// OPEN FINANCE — CONEXÃO BANCÁRIA
+// ===============================
+function gerarTransacoesMock(bankName) {
+    const tipos = [
+        { desc: 'PIX Recebido', tipo: 'entrada', cat: 'Receita' },
+        { desc: 'PIX Enviado', tipo: 'saida', cat: 'Transferência' },
+        { desc: 'Boleto Pago', tipo: 'saida', cat: 'Fornecedor' },
+        { desc: 'TED Recebida', tipo: 'entrada', cat: 'Receita' },
+        { desc: 'Tarifa Bancária', tipo: 'saida', cat: 'Taxa' },
+        { desc: 'Pagamento Fornecedor', tipo: 'saida', cat: 'Fornecedor' },
+        { desc: 'Recebimento Cliente', tipo: 'entrada', cat: 'Receita' },
+        { desc: 'DAS Simples Nacional', tipo: 'saida', cat: 'Imposto' },
+        { desc: 'Folha de Pagamento', tipo: 'saida', cat: 'RH' },
+        { desc: 'Venda Cartão', tipo: 'entrada', cat: 'Receita' },
+        { desc: 'Aluguel', tipo: 'saida', cat: 'Operacional' },
+        { desc: 'Energia Elétrica', tipo: 'saida', cat: 'Operacional' }
+    ];
+    const hoje = new Date();
+    return Array.from({ length: 15 }, (_, i) => {
+        const data = new Date(hoje);
+        data.setDate(hoje.getDate() - i);
+        const t = tipos[Math.floor(Math.random() * tipos.length)];
+        const valor = Math.round((Math.random() * 18 + 0.3) * 1000);
+        return {
+            id: `${bankName}-${Date.now()}-${i}`,
+            data: data.toISOString().slice(0, 10),
+            descricao: t.desc,
+            valor: t.tipo === 'entrada' ? valor : -valor,
+            tipo: t.tipo,
+            categoria: t.cat
+        };
+    });
+}
+
+app.get('/api/openfinance/banks', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    res.json({ sucesso: true, banks: usuario.connectedBanks || [] });
+});
+
+app.post('/api/openfinance/connect', verificarTokenMiddleware, async (req, res) => {
+    const { bankId, bankName } = req.body;
+    if (!bankId || !bankName) return res.status(400).json({ erro: 'Banco obrigatório.' });
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario.connectedBanks) usuario.connectedBanks = [];
+    if (usuario.connectedBanks.find(b => b.bankId === bankId)) {
+        return res.status(400).json({ erro: 'Banco já conectado.' });
+    }
+    const bank = {
+        bankId,
+        bankName,
+        connectedAt: new Date().toISOString(),
+        lastSync: new Date().toISOString(),
+        status: 'connected',
+        accountType: 'Conta Corrente PJ',
+        transactions: gerarTransacoesMock(bankName)
+    };
+    usuario.connectedBanks.push(bank);
+    await salvarUsuario(usuario);
+    res.json({ sucesso: true, bank });
+});
+
+app.post('/api/openfinance/sync/:bankId', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    const bank = (usuario.connectedBanks || []).find(b => b.bankId === req.params.bankId);
+    if (!bank) return res.status(404).json({ erro: 'Banco não conectado.' });
+    bank.lastSync = new Date().toISOString();
+    bank.transactions = gerarTransacoesMock(bank.bankName);
+    await salvarUsuario(usuario);
+    res.json({ sucesso: true, bank });
+});
+
+app.delete('/api/openfinance/banks/:bankId', verificarTokenMiddleware, async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    usuario.connectedBanks = (usuario.connectedBanks || []).filter(b => b.bankId !== req.params.bankId);
+    await salvarUsuario(usuario);
+    res.json({ sucesso: true });
+});
+
+// ===============================
 // START
 // ===============================
 app.listen(PORT, () => {
-
     console.log(`
 ====================================
 FinPJ Backend rodando 🚀
 ====================================
 
 http://localhost:${PORT}
-http://localhost:${PORT}/finpj-site.html
 
 ====================================
 `);

@@ -475,6 +475,453 @@
         }
       ],
       "lastLogin": "2026-04-19T18:35:32.218Z"
+    },
+    {
+      "email": "test@test.com",
+      "createdAt": "2026-04-20T00:54:54.548Z",
+      "bankReports": [
+        {
+          "id": "test@test.com-2026-04-20-0",
+          "date": "2026-04-20",
+          "title": "Conciliação de extrato",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 19617,
+          "status": "Concluído"
+        },
+        {
+          "id": "test@test.com-2026-04-19-1",
+          "date": "2026-04-19",
+          "title": "Revisão de lançamentos",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 4475,
+          "status": "Atenção"
+        },
+        {
+          "id": "test@test.com-2026-04-18-2",
+          "date": "2026-04-18",
+          "title": "Atualização de saldo",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 10554,
+          "status": "Concluído"
+        },
+        {
+          "id": "test@test.com-2026-04-17-3",
+          "date": "2026-04-17",
+          "title": "Alerta de fluxo de caixa",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 8632,
+          "status": "Atenção"
+        },
+        {
+          "id": "test@test.com-2026-04-16-4",
+          "date": "2026-04-16",
+          "title": "Análise de recebimentos",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 8390,
+          "status": "Concluído"
+        },
+        {
+          "id": "test@test.com-2026-04-15-5",
+          "date": "2026-04-15",
+          "title": "Detectamos uma diferença bancária",
+          "detail": "Atualização diária para a empresa test com informações de extrato e movimentações bancárias.",
+          "amount": 3125,
+          "status": "Atenção"
+        }
+      ],
+      "lastLogin": "2026-04-20T01:12:10.373Z",
+      "connectedBanks": [
+        {
+          "bankId": "itau",
+          "bankName": "Itaú Unibanco",
+          "connectedAt": "2026-04-20T00:55:34.201Z",
+          "lastSync": "2026-04-20T00:55:34.201Z",
+          "status": "connected",
+          "accountType": "Conta Corrente PJ",
+          "transactions": [
+            {
+              "id": "Itaú Unibanco-1776646534202-0",
+              "data": "2026-04-20",
+              "descricao": "TED Recebida",
+              "valor": 2604,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-1",
+              "data": "2026-04-19",
+              "descricao": "Venda Cartão",
+              "valor": 14173,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-2",
+              "data": "2026-04-18",
+              "descricao": "Recebimento Cliente",
+              "valor": 4044,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-3",
+              "data": "2026-04-17",
+              "descricao": "Boleto Pago",
+              "valor": -7130,
+              "tipo": "saida",
+              "categoria": "Fornecedor"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-4",
+              "data": "2026-04-16",
+              "descricao": "Aluguel",
+              "valor": -4868,
+              "tipo": "saida",
+              "categoria": "Operacional"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-5",
+              "data": "2026-04-15",
+              "descricao": "PIX Recebido",
+              "valor": 7973,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-6",
+              "data": "2026-04-14",
+              "descricao": "Folha de Pagamento",
+              "valor": -12373,
+              "tipo": "saida",
+              "categoria": "RH"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-7",
+              "data": "2026-04-13",
+              "descricao": "Boleto Pago",
+              "valor": -16298,
+              "tipo": "saida",
+              "categoria": "Fornecedor"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-8",
+              "data": "2026-04-12",
+              "descricao": "Pagamento Fornecedor",
+              "valor": -9495,
+              "tipo": "saida",
+              "categoria": "Fornecedor"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-9",
+              "data": "2026-04-11",
+              "descricao": "DAS Simples Nacional",
+              "valor": -2855,
+              "tipo": "saida",
+              "categoria": "Imposto"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-10",
+              "data": "2026-04-10",
+              "descricao": "Venda Cartão",
+              "valor": 17990,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-11",
+              "data": "2026-04-09",
+              "descricao": "PIX Enviado",
+              "valor": -6372,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-12",
+              "data": "2026-04-08",
+              "descricao": "Pagamento Fornecedor",
+              "valor": -12843,
+              "tipo": "saida",
+              "categoria": "Fornecedor"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-13",
+              "data": "2026-04-07",
+              "descricao": "DAS Simples Nacional",
+              "valor": -11156,
+              "tipo": "saida",
+              "categoria": "Imposto"
+            },
+            {
+              "id": "Itaú Unibanco-1776646534202-14",
+              "data": "2026-04-06",
+              "descricao": "PIX Enviado",
+              "valor": -10649,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            }
+          ]
+        },
+        {
+          "bankId": "bb",
+          "bankName": "Banco do Brasil",
+          "connectedAt": "2026-04-20T00:56:32.204Z",
+          "lastSync": "2026-04-20T00:56:32.204Z",
+          "status": "connected",
+          "accountType": "Conta Corrente PJ",
+          "transactions": [
+            {
+              "id": "Banco do Brasil-1776646592204-0",
+              "data": "2026-04-20",
+              "descricao": "PIX Recebido",
+              "valor": 410,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-1",
+              "data": "2026-04-19",
+              "descricao": "TED Recebida",
+              "valor": 9459,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-2",
+              "data": "2026-04-18",
+              "descricao": "PIX Enviado",
+              "valor": -8106,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-3",
+              "data": "2026-04-17",
+              "descricao": "DAS Simples Nacional",
+              "valor": -1466,
+              "tipo": "saida",
+              "categoria": "Imposto"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-4",
+              "data": "2026-04-16",
+              "descricao": "Venda Cartão",
+              "valor": 12271,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-5",
+              "data": "2026-04-15",
+              "descricao": "PIX Enviado",
+              "valor": -15357,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-6",
+              "data": "2026-04-14",
+              "descricao": "TED Recebida",
+              "valor": 10414,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-7",
+              "data": "2026-04-13",
+              "descricao": "Energia Elétrica",
+              "valor": -15894,
+              "tipo": "saida",
+              "categoria": "Operacional"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-8",
+              "data": "2026-04-12",
+              "descricao": "Folha de Pagamento",
+              "valor": -4500,
+              "tipo": "saida",
+              "categoria": "RH"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-9",
+              "data": "2026-04-11",
+              "descricao": "PIX Enviado",
+              "valor": -12475,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-10",
+              "data": "2026-04-10",
+              "descricao": "PIX Enviado",
+              "valor": -4762,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-11",
+              "data": "2026-04-09",
+              "descricao": "PIX Enviado",
+              "valor": -10510,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-12",
+              "data": "2026-04-08",
+              "descricao": "Recebimento Cliente",
+              "valor": 6887,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-13",
+              "data": "2026-04-07",
+              "descricao": "Aluguel",
+              "valor": -4349,
+              "tipo": "saida",
+              "categoria": "Operacional"
+            },
+            {
+              "id": "Banco do Brasil-1776646592204-14",
+              "data": "2026-04-06",
+              "descricao": "Folha de Pagamento",
+              "valor": -15854,
+              "tipo": "saida",
+              "categoria": "RH"
+            }
+          ]
+        },
+        {
+          "bankId": "nubank",
+          "bankName": "Nubank",
+          "connectedAt": "2026-04-20T00:56:37.285Z",
+          "lastSync": "2026-04-20T00:56:37.285Z",
+          "status": "connected",
+          "accountType": "Conta Corrente PJ",
+          "transactions": [
+            {
+              "id": "Nubank-1776646597285-0",
+              "data": "2026-04-20",
+              "descricao": "Venda Cartão",
+              "valor": 10152,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Nubank-1776646597285-1",
+              "data": "2026-04-19",
+              "descricao": "Tarifa Bancária",
+              "valor": -15777,
+              "tipo": "saida",
+              "categoria": "Taxa"
+            },
+            {
+              "id": "Nubank-1776646597285-2",
+              "data": "2026-04-18",
+              "descricao": "Tarifa Bancária",
+              "valor": -2828,
+              "tipo": "saida",
+              "categoria": "Taxa"
+            },
+            {
+              "id": "Nubank-1776646597285-3",
+              "data": "2026-04-17",
+              "descricao": "Recebimento Cliente",
+              "valor": 17952,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Nubank-1776646597285-4",
+              "data": "2026-04-16",
+              "descricao": "Aluguel",
+              "valor": -17034,
+              "tipo": "saida",
+              "categoria": "Operacional"
+            },
+            {
+              "id": "Nubank-1776646597285-5",
+              "data": "2026-04-15",
+              "descricao": "PIX Enviado",
+              "valor": -10950,
+              "tipo": "saida",
+              "categoria": "Transferência"
+            },
+            {
+              "id": "Nubank-1776646597285-6",
+              "data": "2026-04-14",
+              "descricao": "Boleto Pago",
+              "valor": -6944,
+              "tipo": "saida",
+              "categoria": "Fornecedor"
+            },
+            {
+              "id": "Nubank-1776646597285-7",
+              "data": "2026-04-13",
+              "descricao": "PIX Recebido",
+              "valor": 5017,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Nubank-1776646597285-8",
+              "data": "2026-04-12",
+              "descricao": "Venda Cartão",
+              "valor": 3249,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Nubank-1776646597285-9",
+              "data": "2026-04-11",
+              "descricao": "Energia Elétrica",
+              "valor": -6187,
+              "tipo": "saida",
+              "categoria": "Operacional"
+            },
+            {
+              "id": "Nubank-1776646597285-10",
+              "data": "2026-04-10",
+              "descricao": "Energia Elétrica",
+              "valor": -8045,
+              "tipo": "saida",
+              "categoria": "Operacional"
+            },
+            {
+              "id": "Nubank-1776646597285-11",
+              "data": "2026-04-09",
+              "descricao": "Recebimento Cliente",
+              "valor": 16649,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Nubank-1776646597285-12",
+              "data": "2026-04-08",
+              "descricao": "PIX Recebido",
+              "valor": 2046,
+              "tipo": "entrada",
+              "categoria": "Receita"
+            },
+            {
+              "id": "Nubank-1776646597285-13",
+              "data": "2026-04-07",
+              "descricao": "DAS Simples Nacional",
+              "valor": -2327,
+              "tipo": "saida",
+              "categoria": "Imposto"
+            },
+            {
+              "id": "Nubank-1776646597285-14",
+              "data": "2026-04-06",
+              "descricao": "Tarifa Bancária",
+              "valor": -5838,
+              "tipo": "saida",
+              "categoria": "Taxa"
+            }
+          ]
+        }
+      ]
     }
   ],
   "bankReports": [],

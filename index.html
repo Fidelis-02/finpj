@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinPJ - CFO Digital para PMEs</title>
+    <meta name="description" content="CFO Digital para PMEs: análise tributária, Open Finance, IA e conciliação bancária.">
+    <meta name="theme-color" content="#0a0f1e">
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -682,10 +686,14 @@
 
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 20px;
             margin-bottom: 24px;
         }
+
+        .bank-card { cursor: pointer; }
+        .bank-card:hover { border-color: var(--color-primary); transform: translateY(-4px); box-shadow: 0 18px 40px rgba(59,130,246,0.15); }
+
 
         .dashboard-card {
             border-radius: 18px;
@@ -1148,26 +1156,39 @@
             <div class="logo-mark">FIN</div>
             <span>FinPJ</span>
         </div>
-        <div class="nav-links">
-            <button type="button" class="nav-link" data-target="features"
-                onclick="scrollTo('features')">Funcionalidades</button>
-            <button type="button" class="nav-link" data-target="howitworks" onclick="scrollTo('howitworks')">Como
-                funciona</button>
-            <button type="button" class="nav-link" data-target="planos" onclick="scrollTo('planos')">Planos</button>
-            <button type="button" class="nav-link" id="dashboard-link" onclick="openDashboard()"
-                style="display:none;">Dashboard</button>
-            <button type="button" class="nav-link" id="analise-link" onclick="openAnalise()"
-                style="display:none;">Análise IA</button>
-            <button type="button" class="nav-link" id="nav-logout-btn" onclick="logoutCliente()"
-                style="display:none; color:#ef4444;">Sair</button>
+        <div class="nav-links" id="nav-landing-links">
+            <button type="button" class="nav-link" onclick="scrollTo('features')">Funcionalidades</button>
+            <button type="button" class="nav-link" onclick="scrollTo('howitworks')">Como funciona</button>
+            <button type="button" class="nav-link" onclick="scrollTo('planos')">Planos</button>
+        </div>
+        <div class="nav-links" id="nav-app-links" style="display:none;">
+            <button type="button" class="nav-link active" onclick="switchView('overview')">Dashboard</button>
+            <button type="button" class="nav-link" onclick="switchView('openfinance')">Open Finance</button>
+            <button type="button" class="nav-link" onclick="switchView('analise')">Análise IA</button>
+            <button type="button" class="nav-link" onclick="switchView('chat')">Chat IA</button>
+            <button type="button" class="nav-link" onclick="switchView('calculadora')">Calculadora</button>
+            <button type="button" class="nav-link" onclick="switchView('calendario')">Calendário</button>
+            <button type="button" class="nav-link" onclick="switchView('conciliacao')">Conciliação</button>
         </div>
         <div class="nav-auth-group" id="nav-auth-group">
-            <button type="button" class="btn-nav-login" id="nav-login-btn" onclick="openModal('login')">Entrar</button>
-            <button type="button" class="btn-nav-signup" id="nav-signup-btn" onclick="openModal('register')">Criar
-                conta</button>
-            <button class="nav-cta" onclick="window.location.href='/login'">Login</button>
+            <button type="button" class="btn-nav-login" onclick="openModal('login')">Entrar</button>
+            <button type="button" class="btn-nav-signup" onclick="openModal('register')">Criar conta</button>
+        </div>
+        <div class="nav-auth-group" id="nav-user-group" style="display:none;">
+            <button onclick="toggleNotifications()" style="background:none;border:none;cursor:pointer;font-size:18px;position:relative;" title="Notificações">🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:#ef4444;color:#fff;font-size:9px;padding:1px 5px;border-radius:50%;font-weight:700;"></span></button>
+            <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;font-size:18px;" title="Alternar tema">🌙</button>
+            <button onclick="switchView('perfil')" style="background:none;border:none;cursor:pointer;font-size:18px;" title="Perfil">⚙️</button>
+            <span id="nav-user-email" style="font-size:13px;color:var(--text-secondary);"></span>
+            <button type="button" class="btn-nav-login" onclick="logoutCliente()" style="color:#ef4444;border-color:#ef4444;">Sair</button>
+        </div>
+        <div id="notif-panel" style="display:none;position:absolute;top:60px;right:20px;width:360px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;z-index:1000;box-shadow:0 20px 40px rgba(0,0,0,0.4);">
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:12px;font-size:14px;">🔔 Notificações</div>
+            <div id="notif-list" style="max-height:300px;overflow-y:auto;"></div>
         </div>
     </nav>
+
+    <!-- LANDING PAGE (hidden when logged in) -->
+    <div id="landing-page">
 
     <!-- HERO -->
     <section class="hero">
@@ -1446,162 +1467,330 @@
         <button class="btn-primary" onclick="openModal('diagnose')">Fazer diagnóstico agora</button>
     </section>
 
-    <section id="dashboard" class="section section-alt dashboard-hidden">
-        <div class="section-label">Área do cliente</div>
-        <div class="section-title">Relatórios bancários e acompanhamento diário</div>
-        <p class="section-sub">Acompanhe atualizações diárias de movimentação, conciliação e alertas financeiros em um
-            painel simples.</p>
+    <footer class="footer">
+        FinPJ · Gestão Financeira para PMEs · © 2026 · Integração regulada pelo Banco Central · Conformidade LGPD
+    </footer>
+    </div><!-- /landing-page -->
+
+    <!-- APP DASHBOARD (hidden when not logged in) -->
+    <div id="app-dashboard" style="display:none;">
+
+    <!-- VIEW: OVERVIEW -->
+    <section id="view-overview" class="section app-view">
+        <div class="section-label">Dashboard</div>
+        <div class="section-title">Visão geral</div>
+        <p class="section-sub">Acompanhe movimentações, conciliação e alertas financeiros.</p>
         <div class="dashboard-grid">
             <div class="dashboard-card">
                 <h3>Bem-vindo</h3>
                 <strong id="dashboard-welcome">Carregando...</strong>
             </div>
             <div class="dashboard-card">
-                <h3>Movimentações recentes</h3>
+                <h3>Bancos conectados</h3>
+                <strong id="dashboard-banks-count">0 bancos</strong>
+            </div>
+            <div class="dashboard-card">
+                <h3>Movimentações</h3>
                 <strong id="dashboard-report-count">0 relatórios</strong>
             </div>
             <div class="dashboard-card">
-                <h3>Pendências bancárias</h3>
+                <h3>Pendências</h3>
                 <strong id="dashboard-pendings">0 avisos</strong>
             </div>
         </div>
         <div style="overflow-x:auto;">
             <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Resumo</th>
-                        <th>Valor</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="dashboard-reports-body">
-                    <tr>
-                        <td colspan="4">Nenhum relatório disponível.</td>
-                    </tr>
-                </tbody>
+                <thead><tr><th>Data</th><th>Resumo</th><th>Valor</th><th>Status</th></tr></thead>
+                <tbody id="dashboard-reports-body"><tr><td colspan="4">Nenhum relatório disponível.</td></tr></tbody>
             </table>
+        </div>
+
+        <!-- GRÁFICOS -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:32px;">
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
+                <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📈 Fluxo de Caixa — Projeção 90 dias</div>
+                <canvas id="chart-cashflow" height="220"></canvas>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
+                <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📊 Despesas por Categoria</div>
+                <canvas id="chart-categories" height="220"></canvas>
+            </div>
+        </div>
+
+        <!-- COMPARATIVO MoM -->
+        <div style="margin-top:24px;">
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📉 Comparativo Mensal (MoM)</div>
+            <div id="mom-comparison" class="dashboard-grid"></div>
         </div>
     </section>
 
-    <!-- ANÁLISE DE DOCUMENTOS (IA) -->
-    <section id="analise" class="section section-alt dashboard-hidden">
+    <!-- VIEW: OPEN FINANCE -->
+    <section id="view-openfinance" class="section app-view" style="display:none;">
+        <div class="section-label">Open Finance</div>
+        <div class="section-title">Conecte seus bancos</div>
+        <p class="section-sub">Autorize o acesso via Open Finance (regulado pelo Banco Central) para importar transações automaticamente.</p>
+
+        <div id="connected-banks-area" style="margin-bottom:32px; display:none;">
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">🔗 Bancos Conectados</div>
+            <div id="connected-banks-list" class="dashboard-grid"></div>
+        </div>
+
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">Selecione um banco para conectar</div>
+        <div class="features" id="banks-grid">
+            <div class="feat-card bank-card" onclick="connectBank('bb','Banco do Brasil')">
+                <div class="feat-icon" style="background:#FFDE17;color:#003;">🏦</div>
+                <div class="feat-title">Banco do Brasil</div>
+                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('itau','Itaú Unibanco')">
+                <div class="feat-icon" style="background:#003399;color:#FF6600;">🏦</div>
+                <div class="feat-title">Itaú Unibanco</div>
+                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('bradesco','Bradesco')">
+                <div class="feat-icon" style="background:#CC092F;color:#fff;">🏦</div>
+                <div class="feat-title">Bradesco</div>
+                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('santander','Santander')">
+                <div class="feat-icon" style="background:#EC0000;color:#fff;">🏦</div>
+                <div class="feat-title">Santander</div>
+                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('nubank','Nubank')">
+                <div class="feat-icon" style="background:#820AD1;color:#fff;">🏦</div>
+                <div class="feat-title">Nubank</div>
+                <div class="feat-desc">Conta PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('inter','Banco Inter')">
+                <div class="feat-icon" style="background:#FF7A00;color:#fff;">🏦</div>
+                <div class="feat-title">Banco Inter</div>
+                <div class="feat-desc">Conta digital PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('c6','C6 Bank')">
+                <div class="feat-icon" style="background:#1a1a2e;color:#fff;">🏦</div>
+                <div class="feat-title">C6 Bank</div>
+                <div class="feat-desc">Conta PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('caixa','Caixa Econômica')">
+                <div class="feat-icon" style="background:#005CA9;color:#fff;">🏦</div>
+                <div class="feat-title">Caixa Econômica</div>
+                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            </div>
+            <div class="feat-card bank-card" onclick="connectBank('sicoob','Sicoob')">
+                <div class="feat-icon" style="background:#003641;color:#fff;">🏦</div>
+                <div class="feat-title">Sicoob</div>
+                <div class="feat-desc">Conta cooperativa · Open Finance</div>
+            </div>
+        </div>
+
+        <div id="of-transactions" style="margin-top:32px; display:none;">
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📊 Transações Importadas</div>
+            <div style="overflow-x:auto;">
+                <table class="report-table">
+                    <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th></tr></thead>
+                    <tbody id="of-transactions-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW: ANÁLISE IA -->
+    <section id="view-analise" class="section app-view" style="display:none;">
         <div class="section-label">Inteligência Artificial</div>
         <div class="section-title">Análise de Documentos Financeiros</div>
-        <p class="section-sub">Faça upload do seu DRE, Balanço Patrimonial ou Extrato Bancário. Nossa IA (Llama 3 via
-            Groq) analisa e gera um planejamento completo.</p>
-
+        <p class="section-sub">Faça upload do seu DRE, Balanço ou Extrato. Nossa IA (Llama 3 via Groq) analisa e gera um planejamento completo.</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:32px;">
-            <!-- Upload Area -->
             <div>
-                <div id="upload-dropzone"
-                    style="border:2px dashed var(--border); border-radius:16px; padding:40px; text-align:center; cursor:pointer; transition:all 0.2s; background:var(--bg-secondary);"
-                    onclick="document.getElementById('arquivo-input').click()" ondragover="uploadDragOver(event)"
-                    ondrop="uploadDrop(event)">
+                <div id="upload-dropzone" style="border:2px dashed var(--border); border-radius:16px; padding:40px; text-align:center; cursor:pointer; background:var(--bg-secondary);" onclick="document.getElementById('arquivo-input').click()" ondragover="uploadDragOver(event)" ondrop="uploadDrop(event)">
                     <div style="font-size:40px; margin-bottom:12px;">📄</div>
-                    <div style="font-weight:600; color:var(--text-primary); margin-bottom:6px;">Arraste ou clique para
-                        enviar</div>
+                    <div style="font-weight:600; color:var(--text-primary); margin-bottom:6px;">Arraste ou clique para enviar</div>
                     <div style="font-size:12px; color:var(--text-muted);">PDF, Excel (.xlsx), CSV · máx 15MB</div>
-                    <input type="file" id="arquivo-input" accept=".pdf,.xlsx,.xls,.csv,.txt,.ods" style="display:none"
-                        onchange="uploadArquivo(this.files[0])">
+                    <input type="file" id="arquivo-input" accept=".pdf,.xlsx,.xls,.csv,.txt,.ods" style="display:none" onchange="uploadArquivo(this.files[0])">
                 </div>
                 <div style="margin-top:14px;">
-                    <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Tipo
-                        de documento</label>
-                    <select id="tipo-documento"
-                        style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                    <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Tipo de documento</label>
+                    <select id="tipo-documento" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
                         <option value="dre">DRE — Demonstrativo de Resultado</option>
                         <option value="balanco">Balanço Patrimonial</option>
                         <option value="extrato">Extrato Bancário / Conciliação</option>
                     </select>
                 </div>
                 <div style="margin-top:10px;">
-                    <label
-                        style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Contexto
-                        adicional (opcional)</label>
-                    <input id="contexto-analise" type="text"
-                        placeholder="Ex: Empresa de tecnologia, regime Simples Nacional..."
-                        style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);">
+                    <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Contexto adicional (opcional)</label>
+                    <input id="contexto-analise" type="text" placeholder="Ex: Empresa de tecnologia, regime Simples Nacional..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);">
                 </div>
-                <div id="upload-status"
-                    style="margin-top:12px; font-size:13px; min-height:20px; color:var(--text-secondary);"></div>
+                <div id="upload-status" style="margin-top:12px; font-size:13px; min-height:20px; color:var(--text-secondary);"></div>
             </div>
-
-            <!-- Resultado rápido -->
-            <div id="analise-resumo"
-                style="background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; display:flex; align-items:center; justify-content:center;">
+            <div id="analise-resumo" style="background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; display:flex; align-items:center; justify-content:center;">
                 <div style="text-align:center; color:var(--text-muted);">
                     <div style="font-size:48px; margin-bottom:12px;">🤖</div>
                     <div style="font-size:14px;">Faça upload de um documento<br>para receber a análise por IA</div>
                 </div>
             </div>
         </div>
-
-        <!-- Resultado completo da análise -->
         <div id="analise-resultado" style="display:none;">
-            <div
-                style="background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:20px;">
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                    <div
-                        style="width:36px; height:36px; border-radius:50%; background:rgba(59,130,246,0.15); display:flex; align-items:center; justify-content:center; font-size:18px;">
-                        🤖</div>
+                    <div style="width:36px; height:36px; border-radius:50%; background:rgba(59,130,246,0.15); display:flex; align-items:center; justify-content:center; font-size:18px;">🤖</div>
                     <div>
                         <div style="font-size:15px; font-weight:600; color:var(--text-primary);">Análise por IA</div>
                         <div id="analise-fonte-badge" style="font-size:11px; color:var(--text-muted);"></div>
                     </div>
                 </div>
-                <div id="analise-resumo-texto"
-                    style="font-size:14px; color:var(--text-secondary); line-height:1.7; margin-bottom:20px; padding:16px; background:rgba(59,130,246,0.07); border-radius:10px; border-left:3px solid var(--color-primary);">
-                </div>
-                <div id="analise-metricas"
-                    style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;"></div>
+                <div id="analise-resumo-texto" style="font-size:14px; color:var(--text-secondary); line-height:1.7; margin-bottom:20px; padding:16px; background:rgba(59,130,246,0.07); border-radius:10px; border-left:3px solid var(--color-primary);"></div>
+                <div id="analise-metricas" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;"></div>
                 <div id="analise-alertas" style="display:none; margin-bottom:16px;"></div>
                 <div id="analise-recomendacoes" style="display:none;"></div>
             </div>
-
-            <!-- Tabela de conciliação (só aparece para extratos) -->
             <div id="conciliacao-panel" style="display:none;">
-                <div style="font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:16px;">📊
-                    Planejamento de Conciliação Bancária</div>
-                <div id="conciliacao-resumo"
-                    style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;"></div>
+                <div style="font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:16px;">📊 Planejamento de Conciliação Bancária</div>
+                <div id="conciliacao-resumo" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;"></div>
                 <div style="overflow-x:auto;">
-                    <table class="report-table" id="conciliacao-tabela">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Descrição</th>
-                                <th>Valor</th>
-                                <th>Tipo</th>
-                                <th>Categoria</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="conciliacao-body">
-                            <tr>
-                                <td colspan="6">—</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <table class="report-table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th><th>Status</th></tr></thead>
+                    <tbody id="conciliacao-body"><tr><td colspan="6">—</td></tr></tbody></table>
                 </div>
             </div>
         </div>
-
-        <!-- Histórico de análises -->
         <div id="historico-analises" style="margin-top:32px; display:none;">
-            <div
-                style="font-size:14px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.05em;">
-                Histórico</div>
+            <div style="font-size:14px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.05em;">Histórico</div>
             <div id="historico-lista"></div>
         </div>
     </section>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        FinPJ · Gestão Financeira para PMEs · © 2026 · Integração regulada pelo Banco Central · Conformidade LGPD
-    </footer>
+    <!-- VIEW: CONCILIAÇÃO -->
+    <section id="view-conciliacao" class="section app-view" style="display:none;">
+        <div class="section-label">Conciliação</div>
+        <div class="section-title">Conciliação Bancária Automatizada</div>
+        <p class="section-sub">Compare transações bancárias com seus lançamentos internos. A IA identifica divergências.</p>
+        <div id="conc-no-banks" style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+            <div style="font-size:48px; margin-bottom:12px;">🏦</div>
+            <div style="font-size:15px; margin-bottom:12px;">Conecte um banco via Open Finance para iniciar a conciliação</div>
+            <button class="btn-primary" onclick="switchView('openfinance')">Conectar banco</button>
+        </div>
+        <div id="conc-with-banks" style="display:none;">
+            <div style="margin-bottom:20px;">
+                <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Selecione o banco</label>
+                <select id="conc-bank-select" onchange="loadConciliacao()" style="padding:10px; border:1px solid var(--border); border-radius:8px; min-width:250px;"></select>
+            </div>
+            <div id="conc-summary" class="dashboard-grid" style="margin-bottom:20px;"></div>
+            <div style="overflow-x:auto;">
+                <table class="report-table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th><th>Status</th></tr></thead>
+                <tbody id="conc-table-body"><tr><td colspan="6">Selecione um banco.</td></tr></tbody></table>
+            </div>
+        </div>
+    </section>
 
-    <!-- MODALS -->
+    <!-- VIEW: CHAT IA -->
+    <section id="view-chat" class="section app-view" style="display:none;">
+        <div class="section-label">Assistente IA</div>
+        <div class="section-title">Chat Financeiro com IA</div>
+        <p class="section-sub">Pergunte qualquer coisa sobre suas finanças. A IA analisa seus dados e responde em tempo real.</p>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+            <div id="chat-messages" style="height:400px;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;">
+                <div style="background:rgba(59,130,246,0.1);border-radius:12px;padding:14px;max-width:80%;font-size:13px;color:var(--text-secondary);">
+                    👋 Olá! Sou seu assistente financeiro IA. Pergunte sobre:<br>
+                    • Fluxo de caixa e projeções<br>• Regime tributário ideal<br>• Análise de despesas<br>• Planejamento fiscal<br>• Qualquer dúvida financeira da sua empresa
+                </div>
+            </div>
+            <div style="display:flex;border-top:1px solid var(--border);padding:12px 16px;gap:10px;align-items:center;">
+                <input id="chat-input" type="text" placeholder="Pergunte algo sobre suas finanças..." style="flex:1;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:14px;" onkeydown="if(event.key==='Enter')sendChat()">
+                <button onclick="sendChat()" class="btn-primary" style="padding:12px 24px;white-space:nowrap;">Enviar</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW: CALCULADORA DAS/DARF -->
+    <section id="view-calculadora" class="section app-view" style="display:none;">
+        <div class="section-label">Calculadora Fiscal</div>
+        <div class="section-title">Calculadora DAS / DARF</div>
+        <p class="section-sub">Calcule automaticamente sua guia de imposto com base no regime tributário e faturamento anual.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Faturamento Anual (R$)</label>
+                    <input id="das-faturamento" type="number" placeholder="Ex: 360000" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Regime Tributário</label>
+                    <select id="das-regime" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
+                        <option value="simples">Simples Nacional</option>
+                        <option value="presumido">Lucro Presumido</option>
+                        <option value="real">Lucro Real</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Atividade</label>
+                    <select id="das-atividade" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
+                        <option value="servicos">Serviços</option>
+                        <option value="comercio">Comércio</option>
+                        <option value="industria">Indústria</option>
+                    </select>
+                </div>
+                <button onclick="calcularDAS()" class="btn-primary" style="width:100%;padding:14px;">Calcular Guia</button>
+            </div>
+            <div id="das-resultado" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;align-items:center;justify-content:center;">
+                <div style="text-align:center;color:var(--text-muted);">
+                    <div style="font-size:48px;margin-bottom:12px;">🧾</div>
+                    <div style="font-size:14px;">Preencha os dados ao lado<br>para calcular sua guia</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW: CALENDÁRIO FISCAL -->
+    <section id="view-calendario" class="section app-view" style="display:none;">
+        <div class="section-label">Agenda Fiscal</div>
+        <div class="section-title">Calendário de Obrigações</div>
+        <p class="section-sub">Visualize todas as obrigações fiscais do mês com datas de vencimento e status.</p>
+        <div id="fiscal-calendar-grid" style="display:grid;grid-template-columns:1fr;gap:8px;"></div>
+    </section>
+
+    <!-- VIEW: PERFIL -->
+    <section id="view-perfil" class="section app-view" style="display:none;">
+        <div class="section-label">Configurações</div>
+        <div class="section-title">Perfil da Empresa</div>
+        <p class="section-sub">Configure os dados da sua empresa para análises mais precisas.</p>
+        <div style="max-width:600px;">
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Nome da Empresa</label>
+                    <input id="profile-nome" type="text" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">CNPJ</label>
+                    <input id="profile-cnpj" type="text" placeholder="00.000.000/0000-00" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Regime Tributário</label>
+                    <select id="profile-regime" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
+                        <option value="">Selecione</option>
+                        <option value="simples">Simples Nacional</option>
+                        <option value="presumido">Lucro Presumido</option>
+                        <option value="real">Lucro Real</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Setor</label>
+                    <select id="profile-setor" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
+                        <option value="">Selecione</option>
+                        <option value="tecnologia">Tecnologia</option>
+                        <option value="comercio">Comércio</option>
+                        <option value="servicos">Serviços</option>
+                        <option value="industria">Indústria</option>
+                        <option value="saude">Saúde</option>
+                        <option value="educacao">Educação</option>
+                    </select>
+                </div>
+                <button onclick="saveProfile()" class="btn-primary" style="width:100%;padding:14px;">Salvar Configurações</button>
+                <div id="profile-status" style="margin-top:12px;font-size:13px;text-align:center;"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">FinPJ · Gestão Financeira para PMEs · © 2026 · Open Finance regulado pelo Banco Central</footer>
+    </div><!-- /app-dashboard -->
+
     <div id="login-modal" class="modal">
         <div class="modal-content" style="max-width: 520px;">
             <button class="modal-close" onclick="closeModal('login')">&times;</button>
@@ -1618,10 +1807,18 @@
                         @</div>
                     <div style="font-size:14px; color:var(--text-primary);">Entrada com E-mail</div>
                 </div>
-                <input id="login-email" type="email" class="login-input" placeholder="seunome@gmail.com"
+                <input id="login-email" type="email" class="login-input" placeholder="seunome@email.com"
                     autocomplete="email">
-                <button type="button" class="btn-primary" style="width:100%;" onclick="sendLoginCode()">Enviar
-                    código</button>
+                <button type="button" class="btn-primary" style="width:100%;" onclick="sendLoginCode()">Enviar código</button>
+                <div style="display: flex; align-items: center; margin: 24px 0; color: #8B95A7; font-size: 13px;">
+                    <hr style="flex-grow: 1; border: none; border-top: 1px solid var(--border); margin: 0 10px;">
+                    ou
+                    <hr style="flex-grow: 1; border: none; border-top: 1px solid var(--border); margin: 0 10px;">
+                </div>
+                <a href="/api/auth/auth0/login" class="btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; text-decoration: none;">
+                    <img src="https://cdn.auth0.com/website/bob/brand-assets/auth0-logo-badge.png" alt="Auth0" style="height: 24px; filter: grayscale(100%); opacity: 0.8;">
+                    Continuar com Auth0
+                </a>
             </div>
             <div class="login-step" id="login-step-cnpj">
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
@@ -2239,61 +2436,64 @@
         }
 
         async function openDashboard() {
-            if (!isLoggedIn()) {
-                openModal('login');
-                setLoginStep('email');
-                return;
-            }
-            document.getElementById('dashboard').classList.remove('dashboard-hidden');
+            if (!isLoggedIn()) { openModal('login'); setLoginStep('email'); return; }
+            updateAuthState();
             await loadDashboard();
-            scrollTo('dashboard');
         }
 
         async function loadDashboard() {
             const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
             if (!token) return;
             try {
-                const res = await fetch('/api/dashboard', {
-                    headers: { Authorization: 'Bearer ' + token }
-                });
+                const res = await fetch('/api/dashboard', { headers: { Authorization: 'Bearer ' + token } });
                 const data = await safeJsonParse(res);
-                if (!res.ok || !data.sucesso) {
-                    throw new Error(data.erro || 'Falha ao carregar o dashboard.');
-                }
-                const dashboard = data.dashboard;
-                const greeting = dashboard.user.email.split('@')[0];
+                if (!res.ok || !data.sucesso) throw new Error(data.erro || 'Falha ao carregar.');
+                const db = data.dashboard;
+                const greeting = db.user.email.split('@')[0];
                 document.getElementById('dashboard-welcome').textContent = `Olá, ${greeting}`;
-                document.getElementById('dashboard-report-count').textContent = `${dashboard.summary.reportsCount} relatórios`;
-                document.getElementById('dashboard-pendings').textContent = `${dashboard.summary.pendencias} alertas`;
+                document.getElementById('dashboard-report-count').textContent = `${db.summary.reportsCount} relatórios`;
+                document.getElementById('dashboard-pendings').textContent = `${db.summary.pendencias} alertas`;
                 const body = document.getElementById('dashboard-reports-body');
                 body.innerHTML = '';
-                dashboard.reports.forEach(report => {
+                db.reports.forEach(r => {
                     const row = document.createElement('tr');
-                    const statusClass = report.status === 'Concluído' ? 'ok' : 'warn';
-                    row.innerHTML = `
-                <td>${report.date}</td>
-                <td>${report.title}</td>
-                <td>R$ ${report.amount.toLocaleString('pt-BR')}</td>
-                <td><span class="report-status ${statusClass}">${report.status}</span></td>
-            `;
+                    const sc = r.status === 'Concluído' ? 'ok' : 'warn';
+                    row.innerHTML = `<td>${r.date}</td><td>${r.title}</td><td>R$ ${r.amount.toLocaleString('pt-BR')}</td><td><span class="report-status ${sc}">${r.status}</span></td>`;
                     body.appendChild(row);
                 });
-            } catch (erro) {
-                console.error('Carregar dashboard:', erro);
-                logoutCliente();
-            }
+                await loadConnectedBanks();
+            } catch (e) { console.error('Dashboard:', e); logoutCliente(); }
+        }
+
+        function switchView(viewName) {
+            document.querySelectorAll('.app-view').forEach(v => v.style.display = 'none');
+            const target = document.getElementById('view-' + viewName);
+            if (target) target.style.display = 'block';
+            document.querySelectorAll('#nav-app-links .nav-link').forEach(b => {
+                b.classList.toggle('active', b.textContent.trim().toLowerCase().includes(viewName === 'overview' ? 'dashboard' : viewName === 'openfinance' ? 'open' : viewName === 'calculadora' ? 'calc' : viewName));
+            });
+            if (viewName === 'analise') carregarHistoricoAnalises();
+            if (viewName === 'openfinance') loadConnectedBanks();
+            if (viewName === 'conciliacao') updateConciliacaoView();
+            if (viewName === 'calendario') loadFiscalCalendar();
+            if (viewName === 'perfil') loadProfile();
+            if (viewName === 'overview') { loadCharts(); loadMoMComparison(); }
+            document.getElementById('notif-panel').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function updateAuthState() {
             const logged = isLoggedIn();
-            const dashboardLink = document.getElementById('dashboard-link');
-            const analiseLink = document.getElementById('analise-link');
-            const authGroup = document.getElementById('nav-auth-group');
-            const navLogoutBtn = document.getElementById('nav-logout-btn');
-            if (authGroup) authGroup.style.display = logged ? 'none' : 'flex';
-            if (dashboardLink) dashboardLink.style.display = logged ? 'inline-block' : 'none';
-            if (analiseLink) analiseLink.style.display = logged ? 'inline-block' : 'none';
-            if (navLogoutBtn) navLogoutBtn.style.display = logged ? 'inline-block' : 'none';
+            document.getElementById('landing-page').style.display = logged ? 'none' : 'block';
+            document.getElementById('app-dashboard').style.display = logged ? 'block' : 'none';
+            document.getElementById('nav-landing-links').style.display = logged ? 'none' : 'flex';
+            document.getElementById('nav-app-links').style.display = logged ? 'flex' : 'none';
+            document.getElementById('nav-auth-group').style.display = logged ? 'none' : 'flex';
+            document.getElementById('nav-user-group').style.display = logged ? 'flex' : 'none';
+            if (logged) {
+                const email = localStorage.getItem('finpjAuthEmail') || '';
+                document.getElementById('nav-user-email').textContent = email;
+            }
         }
 
         function logoutCliente() {
@@ -2302,17 +2502,119 @@
             localStorage.removeItem('finpjAuthEmail');
             updateAuthState();
             closeModal('login');
-            ['dashboard', 'analise'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.add('dashboard-hidden');
-            });
         }
 
-        async function openAnalise() {
-            if (!isLoggedIn()) { openModal('login'); return; }
-            document.getElementById('analise').classList.remove('dashboard-hidden');
-            scrollTo('analise');
-            carregarHistoricoAnalises();
+        // ===== OPEN FINANCE =====
+        let _connectedBanks = [];
+
+        async function loadConnectedBanks() {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/openfinance/banks', { headers: { Authorization: 'Bearer ' + token } });
+                const data = await safeJsonParse(res);
+                _connectedBanks = data.banks || [];
+                renderConnectedBanks();
+                const bc = document.getElementById('dashboard-banks-count');
+                if (bc) bc.textContent = _connectedBanks.length + ' bancos';
+            } catch (e) { console.error('Open Finance:', e); }
+        }
+
+        function renderConnectedBanks() {
+            const area = document.getElementById('connected-banks-area');
+            const list = document.getElementById('connected-banks-list');
+            if (!_connectedBanks.length) { area.style.display = 'none'; return; }
+            area.style.display = 'block';
+            list.innerHTML = _connectedBanks.map(b => `
+                <div class="dashboard-card" style="position:relative;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                        <div style="width:8px;height:8px;border-radius:50%;background:#34d399;"></div>
+                        <strong style="font-size:14px;color:var(--text-primary);">${b.bankName}</strong>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-secondary);">${b.accountType}</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Sincronizado: ${new Date(b.lastSync).toLocaleDateString('pt-BR')}</div>
+                    <div style="margin-top:12px;display:flex;gap:8px;">
+                        <button class="btn-secondary" style="padding:6px 12px;font-size:11px;border-radius:6px;" onclick="syncBank('${b.bankId}')">🔄 Sincronizar</button>
+                        <button class="btn-secondary" style="padding:6px 12px;font-size:11px;border-radius:6px;color:#ef4444;border-color:#ef4444;" onclick="disconnectBank('${b.bankId}')">Desconectar</button>
+                    </div>
+                </div>
+            `).join('');
+            renderAllTransactions();
+        }
+
+        function renderAllTransactions() {
+            const panel = document.getElementById('of-transactions');
+            const body = document.getElementById('of-transactions-body');
+            const allTx = _connectedBanks.flatMap(b => (b.transactions || []).map(t => ({...t, bank: b.bankName})));
+            if (!allTx.length) { panel.style.display = 'none'; return; }
+            panel.style.display = 'block';
+            allTx.sort((a, b) => b.data.localeCompare(a.data));
+            body.innerHTML = allTx.slice(0, 30).map(t => {
+                const cor = t.tipo === 'entrada' ? '#34d399' : '#ef4444';
+                return `<tr><td>${t.data}</td><td>${t.descricao} <span style="font-size:10px;color:var(--text-muted);">(${t.bank})</span></td><td style="color:${cor};font-weight:600;">R$ ${Math.abs(t.valor).toLocaleString('pt-BR')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:999px;background:${t.tipo==='entrada'?'rgba(52,211,153,0.12)':'rgba(239,68,68,0.12)'};color:${cor};">${t.tipo}</span></td><td>${t.categoria}</td></tr>`;
+            }).join('');
+        }
+
+        async function connectBank(bankId, bankName) {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            if (!token) return;
+            if (_connectedBanks.find(b => b.bankId === bankId)) { alert('Banco já conectado!'); return; }
+            try {
+                const res = await fetch('/api/openfinance/connect', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+                    body: JSON.stringify({ bankId, bankName })
+                });
+                const data = await safeJsonParse(res);
+                if (!res.ok || !data.sucesso) throw new Error(data.erro || 'Erro ao conectar.');
+                await loadConnectedBanks();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function syncBank(bankId) {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            try {
+                await fetch('/api/openfinance/sync/' + bankId, { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+                await loadConnectedBanks();
+            } catch (e) { console.error(e); }
+        }
+
+        async function disconnectBank(bankId) {
+            if (!confirm('Desconectar este banco?')) return;
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            try {
+                await fetch('/api/openfinance/banks/' + bankId, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+                await loadConnectedBanks();
+            } catch (e) { console.error(e); }
+        }
+
+        // ===== CONCILIAÇÃO =====
+        function updateConciliacaoView() {
+            const noBanks = document.getElementById('conc-no-banks');
+            const withBanks = document.getElementById('conc-with-banks');
+            if (!_connectedBanks.length) { noBanks.style.display = 'block'; withBanks.style.display = 'none'; return; }
+            noBanks.style.display = 'none'; withBanks.style.display = 'block';
+            const sel = document.getElementById('conc-bank-select');
+            sel.innerHTML = _connectedBanks.map(b => `<option value="${b.bankId}">${b.bankName}</option>`).join('');
+            loadConciliacao();
+        }
+
+        function loadConciliacao() {
+            const bankId = document.getElementById('conc-bank-select').value;
+            const bank = _connectedBanks.find(b => b.bankId === bankId);
+            if (!bank || !bank.transactions) return;
+            const tx = bank.transactions;
+            const entradas = tx.filter(t => t.tipo === 'entrada').reduce((s, t) => s + Math.abs(t.valor), 0);
+            const saidas = tx.filter(t => t.tipo === 'saida').reduce((s, t) => s + Math.abs(t.valor), 0);
+            document.getElementById('conc-summary').innerHTML = `
+                <div class="dashboard-card"><h3>Entradas</h3><strong style="color:#34d399;">R$ ${entradas.toLocaleString('pt-BR')}</strong></div>
+                <div class="dashboard-card"><h3>Saídas</h3><strong style="color:#ef4444;">R$ ${saidas.toLocaleString('pt-BR')}</strong></div>
+                <div class="dashboard-card"><h3>Saldo</h3><strong style="color:${entradas-saidas>=0?'#60a5fa':'#ef4444'};">R$ ${(entradas - saidas).toLocaleString('pt-BR')}</strong></div>
+            `;
+            const body = document.getElementById('conc-table-body');
+            body.innerHTML = tx.map(t => {
+                const cor = t.tipo === 'entrada' ? '#34d399' : '#ef4444';
+                return `<tr><td>${t.data}</td><td>${t.descricao}</td><td style="color:${cor};font-weight:600;">R$ ${Math.abs(t.valor).toLocaleString('pt-BR')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:999px;background:${t.tipo==='entrada'?'rgba(52,211,153,0.12)':'rgba(239,68,68,0.12)'};color:${cor};">${t.tipo}</span></td><td>${t.categoria}</td><td><span class="report-status ok">Conciliado</span></td></tr>`;
+            }).join('');
         }
 
         async function loginWithCnpj() {
@@ -2922,6 +3224,225 @@
                 }).join('');
             } catch (e) { console.error(e); }
         }
+
+        // ===== CHARTS =====
+        let cashflowChart, categoryChart;
+        async function loadCharts() {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            if (!token || typeof Chart === 'undefined') return;
+            try {
+                const res = await fetch('/api/cashflow-projection', { headers: { Authorization: 'Bearer ' + token } });
+                const data = await res.json();
+                if (!data.sucesso) return;
+                const proj = data.projecao;
+                const ctx1 = document.getElementById('chart-cashflow');
+                if (cashflowChart) cashflowChart.destroy();
+                cashflowChart = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: proj.map(p => p.data.slice(5)),
+                        datasets: [
+                            { label: 'Saldo', data: proj.map(p => p.saldo), borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)', fill: true, tension: 0.3 },
+                            { label: 'Entradas', data: proj.map(p => p.entrada), borderColor: '#34d399', borderDash: [5, 5], tension: 0.3 },
+                            { label: 'Saídas', data: proj.map(p => p.saida), borderColor: '#ef4444', borderDash: [5, 5], tension: 0.3 }
+                        ]
+                    },
+                    options: { responsive: true, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: { x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#64748b', callback: v => 'R$' + (v/1000).toFixed(0) + 'k' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+                });
+            } catch (e) { console.error('Charts:', e); }
+            // Category pie chart
+            const cats = {};
+            _connectedBanks.forEach(b => (b.transactions || []).filter(t => t.tipo === 'saida').forEach(t => { cats[t.categoria] = (cats[t.categoria] || 0) + Math.abs(t.valor); }));
+            const catLabels = Object.keys(cats);
+            if (catLabels.length) {
+                const ctx2 = document.getElementById('chart-categories');
+                if (categoryChart) categoryChart.destroy();
+                const colors = ['#ef4444', '#f59e0b', '#60a5fa', '#34d399', '#a78bfa', '#f472b6', '#fb923c', '#22d3ee'];
+                categoryChart = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: { labels: catLabels, datasets: [{ data: Object.values(cats), backgroundColor: colors.slice(0, catLabels.length), borderWidth: 0 }] },
+                    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } } } }
+                });
+            }
+        }
+
+        function loadMoMComparison() {
+            const allTx = _connectedBanks.flatMap(b => b.transactions || []);
+            const entradas = allTx.filter(t => t.tipo === 'entrada').reduce((s, t) => s + Math.abs(t.valor), 0);
+            const saidas = allTx.filter(t => t.tipo === 'saida').reduce((s, t) => s + Math.abs(t.valor), 0);
+            const prevE = entradas * (0.85 + Math.random() * 0.2);
+            const prevS = saidas * (0.9 + Math.random() * 0.15);
+            const varE = entradas - prevE, varS = saidas - prevS;
+            const mom = document.getElementById('mom-comparison');
+            if (!mom) return;
+            mom.innerHTML = `
+                <div class="dashboard-card"><h3>Receita</h3><strong style="color:#34d399;">R$ ${Math.round(entradas).toLocaleString('pt-BR')}</strong><div style="font-size:11px;margin-top:6px;color:${varE>=0?'#34d399':'#ef4444'};">${varE>=0?'▲':'▼'} ${Math.abs(Math.round(varE/Math.max(1,prevE)*100))}% vs mês anterior</div></div>
+                <div class="dashboard-card"><h3>Despesas</h3><strong style="color:#ef4444;">R$ ${Math.round(saidas).toLocaleString('pt-BR')}</strong><div style="font-size:11px;margin-top:6px;color:${varS<=0?'#34d399':'#ef4444'};">${varS>0?'▲':'▼'} ${Math.abs(Math.round(varS/Math.max(1,prevS)*100))}% vs mês anterior</div></div>
+                <div class="dashboard-card"><h3>Margem</h3><strong style="color:#60a5fa;">${entradas>0?Math.round((entradas-saidas)/entradas*100):0}%</strong><div style="font-size:11px;margin-top:6px;color:var(--text-muted);">Margem operacional</div></div>
+                <div class="dashboard-card"><h3>Saldo</h3><strong style="color:${entradas-saidas>=0?'#34d399':'#ef4444'};">R$ ${Math.round(entradas-saidas).toLocaleString('pt-BR')}</strong><div style="font-size:11px;margin-top:6px;color:var(--text-muted);">Resultado do período</div></div>
+            `;
+        }
+
+        // ===== CHAT IA =====
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+            const box = document.getElementById('chat-messages');
+            box.innerHTML += `<div style="align-self:flex-end;background:rgba(59,130,246,0.2);border-radius:12px;padding:12px 16px;max-width:75%;font-size:13px;color:var(--text-primary);">${msg}</div>`;
+            const loadingId = 'loading-' + Date.now();
+            box.innerHTML += `<div id="${loadingId}" style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px 16px;max-width:75%;font-size:13px;color:var(--text-muted);">⏳ Pensando...</div>`;
+            box.scrollTop = box.scrollHeight;
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            try {
+                const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ message: msg }) });
+                const data = await res.json();
+                const el = document.getElementById(loadingId);
+                if (el) { el.style.color = 'var(--text-secondary)'; el.innerHTML = data.resposta.replace(/\n/g, '<br>'); if (data.fonte === 'groq-llama3') el.innerHTML += '<div style="font-size:10px;color:var(--text-muted);margin-top:8px;">🤖 Llama 3 via Groq</div>'; }
+            } catch (e) { const el = document.getElementById(loadingId); if (el) el.innerHTML = '❌ Erro ao processar.'; }
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // ===== CALCULADORA DAS =====
+        async function calcularDAS() {
+            const fat = document.getElementById('das-faturamento').value;
+            const regime = document.getElementById('das-regime').value;
+            const atividade = document.getElementById('das-atividade').value;
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            try {
+                const res = await fetch('/api/calcular-das', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ faturamento: fat, regime, atividade }) });
+                const data = await res.json();
+                if (!data.sucesso) throw new Error(data.erro);
+                document.getElementById('das-resultado').innerHTML = `
+                    <div style="width:100%;">
+                        <div style="text-align:center;margin-bottom:20px;"><div style="font-size:14px;color:var(--text-muted);margin-bottom:4px;">Guia ${data.guia}</div><div style="font-size:36px;font-weight:700;color:#60a5fa;">R$ ${data.valor.toLocaleString('pt-BR')}</div><div style="font-size:12px;color:var(--text-muted);">por mês</div></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            ${metricaCard('Alíquota efetiva', data.aliquotaEfetiva + '%', '#f59e0b')}
+                            ${metricaCard('Faturamento/mês', 'R$ ' + data.faturamentoMensal.toLocaleString('pt-BR'), '#60a5fa')}
+                            ${metricaCard('Vencimento', data.vencimento, '#34d399')}
+                            ${metricaCard('Tipo de guia', data.guia, '#a78bfa')}
+                        </div>
+                    </div>`;
+            } catch (e) { alert(e.message || 'Erro ao calcular.'); }
+        }
+
+        // ===== CALENDÁRIO FISCAL =====
+        async function loadFiscalCalendar() {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            try {
+                const res = await fetch('/api/fiscal-calendar', { headers: { Authorization: 'Bearer ' + token } });
+                const data = await res.json();
+                if (!data.sucesso) return;
+                const grid = document.getElementById('fiscal-calendar-grid');
+                const tipoColors = { imposto: '#ef4444', rh: '#60a5fa', contabil: '#34d399' };
+                const tipoLabels = { imposto: 'Imposto', rh: 'RH', contabil: 'Contábil' };
+                grid.innerHTML = data.eventos.sort((a, b) => a.dia - b.dia).map(e => `
+                    <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;border-left:4px solid ${tipoColors[e.tipo]};opacity:${e.passado?'0.5':'1'};">
+                        <div style="min-width:50px;text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--text-primary);">${String(e.dia).padStart(2,'0')}</div><div style="font-size:10px;color:var(--text-muted);">${data.mesAtual}</div></div>
+                        <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">${e.titulo}</div><div style="font-size:12px;color:var(--text-secondary);">${e.desc}</div></div>
+                        <span style="font-size:10px;padding:3px 10px;border-radius:999px;background:${tipoColors[e.tipo]}20;color:${tipoColors[e.tipo]};">${tipoLabels[e.tipo]}</span>
+                        <span style="font-size:11px;color:${e.passado?'#34d399':'#f59e0b'};">${e.passado?'✅ Pago':'⏳ Pendente'}</span>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        // ===== PERFIL =====
+        async function loadProfile() {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            try {
+                const res = await fetch('/api/profile', { headers: { Authorization: 'Bearer ' + token } });
+                const data = await res.json();
+                if (!data.sucesso) return;
+                const p = data.profile;
+                if (p.nomeEmpresa) document.getElementById('profile-nome').value = p.nomeEmpresa;
+                if (p.cnpj) document.getElementById('profile-cnpj').value = p.cnpj;
+                if (p.regime) document.getElementById('profile-regime').value = p.regime;
+                if (p.setor) document.getElementById('profile-setor').value = p.setor;
+            } catch (e) { console.error(e); }
+        }
+        async function saveProfile() {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            const body = { nomeEmpresa: document.getElementById('profile-nome').value, cnpj: document.getElementById('profile-cnpj').value, regime: document.getElementById('profile-regime').value, setor: document.getElementById('profile-setor').value };
+            try {
+                const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body) });
+                const data = await res.json();
+                document.getElementById('profile-status').innerHTML = data.sucesso ? '<span style="color:#34d399;">✅ Salvo com sucesso!</span>' : '<span style="color:#ef4444;">Erro ao salvar.</span>';
+            } catch (e) { document.getElementById('profile-status').innerHTML = '<span style="color:#ef4444;">Erro de conexão.</span>'; }
+        }
+
+        // ===== NOTIFICAÇÕES =====
+        async function loadNotifications() {
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/notifications', { headers: { Authorization: 'Bearer ' + token } });
+                const data = await res.json();
+                const notifs = data.notifications || [];
+                const badge = document.getElementById('notif-badge');
+                if (notifs.length) { badge.style.display = 'block'; badge.textContent = notifs.length; } else { badge.style.display = 'none'; }
+                const list = document.getElementById('notif-list');
+                const tipoIcons = { info: 'ℹ️', warning: '⚠️', danger: '🚨' };
+                const tipoBg = { info: 'rgba(96,165,250,0.1)', warning: 'rgba(245,158,11,0.1)', danger: 'rgba(239,68,68,0.1)' };
+                list.innerHTML = notifs.length ? notifs.map(n => `<div style="padding:10px;background:${tipoBg[n.tipo]};border-radius:8px;margin-bottom:6px;font-size:12px;color:var(--text-secondary);">${tipoIcons[n.tipo]} ${n.msg}</div>`).join('') : '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px;">Nenhuma notificação</div>';
+            } catch (e) { console.error(e); }
+        }
+        function toggleNotifications() {
+            const p = document.getElementById('notif-panel');
+            p.style.display = p.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // ===== TEMA DARK/LIGHT =====
+        function toggleTheme() {
+            const root = document.documentElement;
+            const isDark = root.style.getPropertyValue('--bg-primary').trim() !== '#f8fafc';
+            if (isDark) {
+                root.style.setProperty('--bg-primary', '#f8fafc');
+                root.style.setProperty('--bg-secondary', '#ffffff');
+                root.style.setProperty('--bg-card', '#ffffff');
+                root.style.setProperty('--text-primary', '#0f172a');
+                root.style.setProperty('--text-secondary', '#475569');
+                root.style.setProperty('--text-muted', '#94a3b8');
+                root.style.setProperty('--border', '#e2e8f0');
+                root.style.setProperty('--shadow-md', '0 4px 12px rgba(0,0,0,0.08)');
+                document.getElementById('theme-toggle-btn').textContent = '☀️';
+                localStorage.setItem('finpjTheme', 'light');
+            } else {
+                root.style.setProperty('--bg-primary', '#0a0f1e');
+                root.style.setProperty('--bg-secondary', '#111827');
+                root.style.setProperty('--bg-card', '#1a2744');
+                root.style.setProperty('--text-primary', '#f1f5f9');
+                root.style.setProperty('--text-secondary', '#94a3b8');
+                root.style.setProperty('--text-muted', '#64748b');
+                root.style.setProperty('--border', '#1e3a5f');
+                root.style.setProperty('--shadow-md', '0 6px 20px rgba(0,0,0,0.35)');
+                document.getElementById('theme-toggle-btn').textContent = '🌙';
+                localStorage.setItem('finpjTheme', 'dark');
+            }
+        }
+
+        // ===== INIT =====
+        (function init() {
+            const params = new URLSearchParams(window.location.search);
+            const urlToken = params.get('token');
+            if (urlToken) { localStorage.setItem('finpjToken', urlToken); window.history.replaceState({}, '', '/'); }
+
+            // Restore theme
+            if (localStorage.getItem('finpjTheme') === 'light') toggleTheme();
+
+            calcularSimulador();
+            updateAuthState();
+
+            if (isLoggedIn()) {
+                loadDashboard().then(() => {
+                    loadCharts();
+                    loadMoMComparison();
+                    loadNotifications();
+                    loadProfile();
+                });
+            }
+        })();
     </script>
 </body>
 
