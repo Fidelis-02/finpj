@@ -1850,17 +1850,112 @@
         </div>
     </div>
     <div id="register-modal" class="modal">
-        <div class="modal-content" style="max-width: 520px;">
-            <button class="modal-close" onclick="closeModal('register')">&times;</button>
-            <h2 class="modal-title">Criar conta com CNPJ</h2>
-            <input id="register-cnpj" type="text" class="login-input" placeholder="CNPJ" autocomplete="off">
-            <input id="register-password" type="password" class="login-input" placeholder="Senha"
-                autocomplete="new-password">
-            <input id="register-confirm-password" type="password" class="login-input" placeholder="Confirmar senha"
-                autocomplete="new-password">
-            <button type="button" class="btn-primary" style="width:100%;" onclick="registerWithCnpj()">Criar
-                conta</button>
-            <div id="register-message" class="login-note" style="min-height:20px;"></div>
+        <div class="modal-content" style="max-width: 560px; padding: 0; overflow: hidden;">
+            <!-- Header com gradiente e progresso -->
+            <div id="reg-header" style="background: linear-gradient(135deg, #0A2540 0%, #1D74F2 100%); padding: 28px 32px 24px; position: relative;">
+                <button class="modal-close" onclick="closeModal('register')" style="color: rgba(255,255,255,0.7); top: 16px; right: 16px;">&times;</button>
+                <div id="reg-step-label" style="font-size: 12px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;">Etapa 1 de 2</div>
+                <h2 style="color: #fff; font-size: 22px; margin: 0 0 20px;">Criar sua conta FinPJ</h2>
+                <!-- Barra de progresso -->
+                <div style="background: rgba(255,255,255,0.2); border-radius: 999px; height: 4px;">
+                    <div id="reg-progress-bar" style="height: 4px; border-radius: 999px; background: #fff; width: 50%; transition: width 0.5s ease;"></div>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 32px;">
+
+                <!-- ETAPA 1: CNPJ -->
+                <div id="reg-step-1">
+                    <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 24px;">Informe o CNPJ da sua empresa para começar. Buscaremos os dados automaticamente.</p>
+
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">CNPJ da Empresa</label>
+                    <div style="position: relative;">
+                        <input id="reg-cnpj" type="text" class="login-input" placeholder="00.000.000/0001-00"
+                            autocomplete="off" oninput="regOnCnpjInput(this)"
+                            style="padding-right: 48px; font-size: 16px; letter-spacing: 1px;">
+                        <div id="reg-cnpj-icon" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px;"></div>
+                    </div>
+                    <div id="reg-cnpj-status" style="margin-top: 10px; min-height: 44px;"></div>
+
+                    <div id="reg-company-card" style="display: none; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 4px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #1D74F2, #0A2540); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🏢</div>
+                            <div>
+                                <div id="reg-company-name" style="font-weight: 700; font-size: 15px; color: var(--text-primary);"></div>
+                                <div id="reg-company-detail" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;"></div>
+                            </div>
+                            <div style="margin-left: auto;">
+                                <span style="background: rgba(52,211,153,0.15); color: #34d399; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600;">✓ Ativa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="reg-message-1" style="min-height: 20px; margin-top: 12px; font-size: 13px;"></div>
+
+                    <button type="button" id="reg-btn-1" class="btn-primary" style="width: 100%; margin-top: 24px; height: 48px; font-size: 15px;" onclick="regNextStep()" disabled>
+                        Continuar →
+                    </button>
+                    <p style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-secondary);">Já tem conta? <button type="button" onclick="closeModal('register');openModal('login')" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:13px;font-weight:600;">Entrar</button></p>
+                </div>
+
+                <!-- ETAPA 2: Senha -->
+                <div id="reg-step-2" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 24px; border: 1px solid var(--border);">
+                        <span style="font-size: 20px;">🏢</span>
+                        <div>
+                            <div id="reg-step2-company" style="font-weight: 600; font-size: 14px; color: var(--text-primary);"></div>
+                            <div id="reg-step2-cnpj" style="font-size: 12px; color: var(--text-secondary);"></div>
+                        </div>
+                        <button onclick="regGoStep(1)" style="margin-left: auto; background: none; border: none; color: var(--color-primary); font-size: 12px; cursor: pointer; font-weight: 600;">Alterar</button>
+                    </div>
+
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Crie uma senha</label>
+                    <div style="position: relative;">
+                        <input id="reg-password" type="password" class="login-input" placeholder="Mínimo 6 caracteres"
+                            autocomplete="new-password" oninput="regCheckPassword()"
+                            style="padding-right: 48px;">
+                        <button onclick="regTogglePassword('reg-password', this)" type="button"
+                            style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-secondary);">👁</button>
+                    </div>
+
+                    <!-- Indicador de força da senha -->
+                    <div style="margin-top: 10px;">
+                        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                            <div id="reg-str-1" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
+                            <div id="reg-str-2" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
+                            <div id="reg-str-3" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
+                            <div id="reg-str-4" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
+                        </div>
+                        <div id="reg-str-label" style="font-size: 12px; color: var(--text-secondary);"></div>
+                    </div>
+
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin: 18px 0 6px;">Confirmar senha</label>
+                    <div style="position: relative;">
+                        <input id="reg-confirm" type="password" class="login-input" placeholder="Digite a senha novamente"
+                            autocomplete="new-password" oninput="regCheckConfirm()"
+                            style="padding-right: 48px;">
+                        <span id="reg-confirm-icon" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 16px;"></span>
+                    </div>
+
+                    <div id="reg-message-2" style="min-height: 20px; margin-top: 12px; font-size: 13px;"></div>
+
+                    <button type="button" id="reg-btn-2" class="btn-primary" style="width: 100%; margin-top: 24px; height: 48px; font-size: 15px;" onclick="regSubmit()" disabled>
+                        Criar conta
+                    </button>
+                </div>
+
+                <!-- ETAPA 3: Sucesso -->
+                <div id="reg-step-3" style="display: none; text-align: center; padding: 16px 0;">
+                    <div style="font-size: 64px; margin-bottom: 16px; animation: regBounce 0.6s ease;">🎉</div>
+                    <h3 style="font-size: 22px; color: var(--text-primary); margin-bottom: 10px;">Conta criada!</h3>
+                    <p style="color: var(--text-secondary); font-size: 15px; margin-bottom: 28px;">Sua conta FinPJ está pronta. Faça login para começar a gestão financeira da sua empresa.</p>
+                    <button type="button" class="btn-primary" style="width: 100%; height: 48px; font-size: 15px;" onclick="closeModal('register');openModal('login');setLoginTab('cnpj')">
+                        Fazer Login →
+                    </button>
+                </div>
+
+            </div>
         </div>
     </div>
     <div id="diagnose-modal" class="modal">
@@ -3443,6 +3538,257 @@
                 });
             }
         })();
+    </script>
+
+    <style>
+        @keyframes regBounce {
+            0%   { transform: scale(0.5); opacity: 0; }
+            70%  { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        @keyframes regFadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #reg-step-1, #reg-step-2, #reg-step-3 { animation: regFadeIn 0.3s ease; }
+        #reg-cnpj.valid   { border-color: #34d399 !important; }
+        #reg-cnpj.invalid { border-color: #ef4444 !important; }
+    </style>
+
+    <script>
+        // ============================================================
+        // NOVA JORNADA DE CRIAÇÃO DE CONTA (multi-step)
+        // ============================================================
+        let _regStep = 1;
+        let _regCompanyData = null;
+        let _regCnpjTimer = null;
+
+        function regGoStep(n) {
+            _regStep = n;
+            [1, 2, 3].forEach(i => {
+                const el = document.getElementById('reg-step-' + i);
+                if (el) el.style.display = i === n ? 'block' : 'none';
+            });
+
+            const bar   = document.getElementById('reg-progress-bar');
+            const label = document.getElementById('reg-step-label');
+            const hdr   = document.getElementById('reg-header');
+
+            if (n === 1) {
+                if (bar)   bar.style.width = '50%';
+                if (label) label.textContent = 'Etapa 1 de 2';
+                if (hdr)   hdr.style.display = 'block';
+            } else if (n === 2) {
+                if (bar)   bar.style.width = '100%';
+                if (label) label.textContent = 'Etapa 2 de 2';
+                if (hdr)   hdr.style.display = 'block';
+                // Preenche o card de contexto no step 2
+                const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
+                document.getElementById('reg-step2-company').textContent = (_regCompanyData && _regCompanyData.nome) || 'Empresa';
+                document.getElementById('reg-step2-cnpj').textContent    = 'CNPJ: ' + cnpjRaw;
+            } else if (n === 3) {
+                if (hdr) hdr.style.display = 'none';
+            }
+        }
+
+        function regNextStep() {
+            if (_regStep === 1) regGoStep(2);
+        }
+
+        function regSetMsg(stepN, msg, color) {
+            const el = document.getElementById('reg-message-' + stepN);
+            if (!el) return;
+            el.textContent = msg;
+            el.style.color = color || 'var(--text-secondary)';
+        }
+
+        // ---- Step 1: CNPJ ----
+        function regOnCnpjInput(el) {
+            // Formata CNPJ
+            let v = el.value.replace(/\D/g, '');
+            if (v.length > 14) v = v.slice(0, 14);
+            v = v
+                .replace(/^(\d{2})(\d)/, '$1.$2')
+                .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+                .replace(/\.(\d{3})(\d)/, '.$1/$2')
+                .replace(/(\d{4})(\d)/, '$1-$2');
+            el.value = v;
+
+            // Reset estado
+            el.className = 'login-input';
+            document.getElementById('reg-cnpj-icon').textContent = '';
+            document.getElementById('reg-company-card').style.display = 'none';
+            document.getElementById('reg-btn-1').disabled = true;
+            regSetMsg(1, '');
+            _regCompanyData = null;
+
+            const digits = el.value.replace(/\D/g, '');
+            if (digits.length === 14) {
+                document.getElementById('reg-cnpj-icon').textContent = '⏳';
+                if (_regCnpjTimer) clearTimeout(_regCnpjTimer);
+                _regCnpjTimer = setTimeout(() => regLookupCnpj(digits), 700);
+            }
+        }
+
+        async function regLookupCnpj(digits) {
+            const icon = document.getElementById('reg-cnpj-icon');
+            icon.textContent = '⏳';
+            regSetMsg(1, 'Consultando CNPJ...', 'var(--text-secondary)');
+            try {
+                const res = await fetch('/api/cnpj?cnpj=' + digits);
+                const data = await res.json();
+                const input = document.getElementById('reg-cnpj');
+
+                if (!res.ok || data.erro) {
+                    icon.textContent = '❌';
+                    input.classList.add('invalid');
+                    regSetMsg(1, data.erro || 'CNPJ não encontrado. Verifique e tente novamente.', '#ef4444');
+                    return;
+                }
+
+                if (!data.ativo) {
+                    icon.textContent = '⚠️';
+                    input.classList.add('invalid');
+                    regSetMsg(1, 'Este CNPJ está inativo na Receita Federal.', '#f59e0b');
+                    return;
+                }
+
+                // Sucesso
+                _regCompanyData = data;
+                icon.textContent = '✅';
+                input.classList.add('valid');
+                regSetMsg(1, '');
+
+                const card   = document.getElementById('reg-company-card');
+                const nome   = document.getElementById('reg-company-name');
+                const detail = document.getElementById('reg-company-detail');
+                nome.textContent   = data.nome || 'Empresa encontrada';
+                detail.textContent = [data.municipio, data.uf].filter(Boolean).join(' – ') + (data.cnae_descricao ? ' · ' + data.cnae_descricao : '');
+                card.style.display = 'block';
+
+                document.getElementById('reg-btn-1').disabled = false;
+
+            } catch (e) {
+                document.getElementById('reg-cnpj-icon').textContent = '❌';
+                regSetMsg(1, 'Falha ao consultar CNPJ. Verifique sua conexão.', '#ef4444');
+            }
+        }
+
+        // ---- Step 2: Senha ----
+        function regCheckPassword() {
+            const pwd = (document.getElementById('reg-password') || {}).value || '';
+            const bars = [1, 2, 3, 4].map(i => document.getElementById('reg-str-' + i));
+            const lbl  = document.getElementById('reg-str-label');
+
+            let strength = 0;
+            if (pwd.length >= 6)  strength++;
+            if (pwd.length >= 10) strength++;
+            if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) strength++;
+            if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+
+            const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#34d399'];
+            const labels = ['Muito fraca', 'Fraca', 'Boa', 'Forte'];
+
+            bars.forEach((b, i) => {
+                if (b) b.style.background = i < strength ? colors[strength - 1] : 'var(--border)';
+            });
+            if (lbl) {
+                lbl.textContent = pwd.length ? labels[strength - 1] || '' : '';
+                lbl.style.color = strength > 0 ? colors[strength - 1] : 'var(--text-secondary)';
+            }
+
+            regCheckConfirm();
+        }
+
+        function regCheckConfirm() {
+            const pwd  = (document.getElementById('reg-password') || {}).value || '';
+            const conf = (document.getElementById('reg-confirm')  || {}).value || '';
+            const icon = document.getElementById('reg-confirm-icon');
+            const btn  = document.getElementById('reg-btn-2');
+
+            const validPwd  = pwd.length >= 6;
+            const validConf = conf.length > 0 && pwd === conf;
+
+            if (icon) {
+                if (conf.length === 0) { icon.textContent = ''; }
+                else if (validConf)    { icon.textContent = '✅'; }
+                else                   { icon.textContent = '❌'; }
+            }
+
+            if (btn) btn.disabled = !(validPwd && validConf);
+            regSetMsg(2, (!validConf && conf.length > 0) ? 'As senhas não coincidem.' : '', '#ef4444');
+        }
+
+        function regTogglePassword(id, btn) {
+            const inp = document.getElementById(id);
+            if (!inp) return;
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                inp.type = 'password';
+                btn.textContent = '👁';
+            }
+        }
+
+        async function regSubmit() {
+            const cnpj = (document.getElementById('reg-cnpj') || {}).value || '';
+            const pwd  = (document.getElementById('reg-password') || {}).value || '';
+            const btn  = document.getElementById('reg-btn-2');
+
+            if (btn) { btn.disabled = true; btn.textContent = 'Criando conta...'; }
+            regSetMsg(2, '');
+
+            try {
+                const res = await fetch('/api/auth/register-cnpj', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cnpj, password: pwd })
+                });
+                const data = await res.json();
+
+                if (!res.ok || !data.sucesso) {
+                    throw new Error(data.erro || 'Não foi possível criar a conta.');
+                }
+
+                regGoStep(3);
+
+            } catch (e) {
+                regSetMsg(2, e.message || 'Erro ao criar conta.', '#ef4444');
+                if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
+            }
+        }
+
+        // Reset do modal ao abrir
+        const _origOpenModal = typeof openModal === 'function' ? openModal : null;
+        function openModal(name) {
+            if (name === 'register') {
+                // Reset todos os campos e estado
+                ['reg-cnpj', 'reg-password', 'reg-confirm'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) { el.value = ''; el.className = 'login-input'; if (el.type !== el.getAttribute('type')) el.type = 'password'; }
+                });
+                ['reg-cnpj-icon', 'reg-str-label', 'reg-confirm-icon'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = '';
+                });
+                [1, 2, 3, 4].forEach(i => {
+                    const b = document.getElementById('reg-str-' + i);
+                    if (b) b.style.background = 'var(--border)';
+                });
+                document.getElementById('reg-company-card').style.display = 'none';
+                document.getElementById('reg-btn-1').disabled = true;
+                const btn2 = document.getElementById('reg-btn-2');
+                if (btn2) { btn2.disabled = true; btn2.textContent = 'Criar conta'; }
+                regSetMsg(1, '');
+                regSetMsg(2, '');
+                _regCompanyData = null;
+                regGoStep(1);
+            }
+            // Chama o openModal original
+            const modal = document.getElementById(name + '-modal');
+            if (modal) modal.style.display = 'flex';
+        }
     </script>
 </body>
 

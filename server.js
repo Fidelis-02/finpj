@@ -31,7 +31,9 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
 // Rota raiz — garante que index.html é servido no / (Vercel)
@@ -1331,6 +1333,23 @@ app.delete('/api/openfinance/banks/:bankId', verificarTokenMiddleware, async (re
     usuario.connectedBanks = (usuario.connectedBanks || []).filter(b => b.bankId !== req.params.bankId);
     await salvarUsuario(usuario);
     res.json({ sucesso: true });
+});
+
+// ===============================
+// GLOBAL ERROR HANDLER (garante que erros como 413 sejam JSON)
+// ===============================
+app.use((err, req, res, next) => {
+    if (err.type === 'entity.too.large') {
+        return res.status(413).json({ erro: 'Payload muito grande. Limite máximo: 10MB.' });
+    }
+    if (err.status === 413) {
+        return res.status(413).json({ erro: 'Payload muito grande. Limite máximo: 10MB.' });
+    }
+    if (err.type === 'entity.parse.failed') {
+        return res.status(400).json({ erro: 'JSON inválido na requisição.' });
+    }
+    console.error('Erro não tratado:', err.message || err);
+    res.status(err.status || 500).json({ erro: err.message || 'Erro interno do servidor.' });
 });
 
 // ===============================
