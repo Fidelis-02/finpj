@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+  </defs>
+  <!-- Logo mark -->
+  <rect x="0" y="10" width="40" height="40" rx="10" fill="url(#bg)"/>
+  <text x="20" y="38" font-family="Montserrat, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="middle">F</text>
+  <!-- FinPJ text -->
+  <text x="52" y="38" font-family="Montserrat, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">Fin</text>
+  <text x="94" y="38" font-family="Montserrat, Arial, sans-serif" font-size="22" font-weight="700" fill="#3b82f6">PJ</text>
+</svg>

@@ -41,6 +41,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Servir logo.svg publicamente (necessário para Auth0 Universal Login)
+app.get('/logo.svg', (req, res) => {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.sendFile(path.join(__dirname, 'logo.svg'));
+});
+
 // Rota /login — serve index.html (JS abre o modal automaticamente)
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
