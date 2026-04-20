@@ -44,8 +44,29 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Session middleware (required by passport-auth0 / OAuth2 state management)
+const session = require('express-session');
+app.use(session({
+    secret: process.env.JWT_SECRET || 'finpj-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24h
+    }
+}));
+
 // Passport middleware
 app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport session serialization (required for OAuth flows)
+passport.serializeUser((user, done) => {
+    done(null, user.email || user.id || user);
+});
+passport.deserializeUser((id, done) => {
+    done(null, { email: id });
+});
 
 // Initialize Google OAuth (only if credentials are provided)
 const initGoogleAuth = require('./api/auth/google/init.js');
