@@ -85,13 +85,33 @@ let cnpjConsultaTimer = null;
         }
         // Modals
         function openModal(name) {
-            document.getElementById(name + '-modal').classList.add('active');
+            const modal = document.getElementById(name + '-modal');
+            if (modal) modal.classList.add('active');
             if (name === 'diagnose') {
                 calcularSimulador();
             }
+            // When opening login modal, reset to email step
+            if (name === 'login') {
+                setLoginStep('email');
+                setTimeout(() => {
+                    const emailInput = document.getElementById('login-email');
+                    if (emailInput) emailInput.focus();
+                }, 100);
+            }
         }
         function closeModal(name) {
-            document.getElementById(name + '-modal').classList.remove('active');
+            const modal = document.getElementById(name + '-modal');
+            if (modal) modal.classList.remove('active');
+            // Reset login form state when closing
+            if (name === 'login') {
+                setLoginStep('email');
+                const emailInput = document.getElementById('login-email');
+                if (emailInput) emailInput.value = '';
+                const codeInput = document.getElementById('login-code');
+                if (codeInput) codeInput.value = '';
+                const loginMsg = document.getElementById('login-message');
+                if (loginMsg) loginMsg.textContent = '';
+            }
         }
         function fmtReais(v) {
             return 'R$ ' + Math.round(Number(v) || 0).toLocaleString('pt-BR');
@@ -212,11 +232,12 @@ let cnpjConsultaTimer = null;
             const emailInput = document.getElementById('login-email');
             const email = emailInput ? emailInput.value.trim() : '';
             if (!email || !email.includes('@')) {
-                showLoginMessage('Digite um e-mail válido para continuar.');
+                showLoginMessage('❌ Digite um e-mail válido para continuar.');
                 return;
             }
             const btn = document.querySelector('#login-step-email .btn-primary');
             if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+            showLoginMessage('⏳ Enviando código para ' + email + '...');
             try {
                 const res = await fetch('/api/auth/send-code', {
                     method: 'POST',
@@ -225,29 +246,57 @@ let cnpjConsultaTimer = null;
                 });
                 const data = await safeJsonParse(res);
                 if (!res.ok || !data.sucesso) throw new Error(data.erro || 'Não foi possível enviar o código.');
+                
+                // CRITICAL: Save email BEFORE switching step
                 localStorage.setItem('finpjAuthEmail', email);
+                
+                // Switch step and update preview FIRST
                 setLoginStep('code');
-                if (data._devCode) {
-                    // Sem SMTP configurado: preenche automaticamente e avisa
-                    const codeInput = document.getElementById('login-code');
-                    if (codeInput) codeInput.value = data._devCode;
-                    showLoginMessage('⚠️ Modo dev: código preenchido automaticamente. Configure SMTP para envio real.');
-                } else {
-                    showLoginMessage('Código enviado! Verifique sua caixa de entrada.');
-                }
+                const emailPrev = document.getElementById('login-email-preview');
+                if (emailPrev) emailPrev.textContent = email;
+                
+                // Show success message AFTER step change
+                setTimeout(() => {
+                    if (data._devCode) {
+                        // Sem SMTP configurado: preenche automaticamente e avisa
+                        const codeInput = document.getElementById('login-code');
+                        if (codeInput) {
+                            codeInput.value = data._devCode;
+                            codeInput.focus();
+                        }
+                        showLoginMessage('✓ Modo dev: código preenchido. Configure SMTP para envio real.');
+                    } else {
+                        showLoginMessage('✓ Código enviado! Verifique sua caixa de entrada.');
+                        const codeInput = document.getElementById('login-code');
+                        if (codeInput) codeInput.focus();
+                    }
+                }, 100);
             } catch (erro) {
-                showLoginMessage(erro.message || 'Falha ao enviar o código. Tente novamente.');
-            } finally {
+                console.error('sendLoginCode error:', erro);
+                showLoginMessage('❌ ' + (erro.message || 'Falha ao enviar o código. Tente novamente.'));
+                // Re-enable button on error and stay on email step
                 if (btn) { btn.disabled = false; btn.textContent = 'Enviar código'; }
             }
         }
         async function verifyLoginCode() {
             const email = localStorage.getItem('finpjAuthEmail');
-            const code = document.getElementById('login-code').value.trim();
+            const codeInput = document.getElementById('login-code');
+            const code = codeInput ? codeInput.value.trim() : '';
+            
             if (!email || !code) {
-                showLoginMessage('Informe o código que você recebeu por e-mail.');
+                showLoginMessage('❌ Informe o código que você recebeu por e-mail.');
                 return;
             }
+            
+            if (code.length !== 6 || !/^\d+$/.test(code)) {
+                showLoginMessage('❌ Código deve ter 6 dígitos.');
+                return;
+            }
+            
+            const btn = document.querySelector('#login-step-code .btn-primary');
+            if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+            showLoginMessage('⏳ Verificando código...');
+            
             try {
                 const res = await fetch('/api/auth/verify-code', {
                     method: 'POST',
@@ -260,8 +309,11 @@ let cnpjConsultaTimer = null;
                 }
                 localStorage.setItem('finpjToken', data.token);
                 localStorage.setItem('finpjAuthEmail', email);
+                showLoginMessage('✓ Autenticação bem-sucedida!');
+                
                 updateAuthState();
                 closeModal('login');
+                
                 if (pendingPlano) {
                     iniciarCompra(pendingPlano);
                     pendingPlano = null;
@@ -270,11 +322,13 @@ let cnpjConsultaTimer = null;
                 openDashboard();
             } catch (erro) {
                 console.error('Verificação de código:', erro);
-                showLoginMessage(erro.message || 'Não foi possível validar o código.');
+                showLoginMessage('❌ ' + (erro.message || 'Não foi possível validar o código.'));
+                if (btn) { btn.disabled = false; btn.textContent = 'Verificar código'; }
             }
         }
         async function iniciarCompra(plano) {
             const email = localStorage.getItem('finpjAuthEmail');
+            const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
             if (!email) {
                 abrirModalPagamento(plano);
                 return;
@@ -282,7 +336,10 @@ let cnpjConsultaTimer = null;
             try {
                 const res = await fetch('/api/pagamento', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { Authorization: 'Bearer ' + token } : {})
+                    },
                     body: JSON.stringify({ plano, email })
                 });
                 const data = await safeJsonParse(res);
@@ -892,14 +949,51 @@ let cnpjConsultaTimer = null;
             }
         }
         calcularSimulador();
-        function showPaymentStatusFromQuery() {
+        async function showPaymentStatusFromQuery() {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('pagamento') === 'sucesso') {
-                alert('Pagamento confirmado! Obrigado por contratar o FinPJ.');
-                window.history.replaceState({}, document.title, window.location.pathname);
+            const paymentStatus = params.get('pagamento');
+            const plan = params.get('plan');
+            
+            if (paymentStatus === 'sucesso') {
+                // Show loading message while webhook processes payment
+                const token = localStorage.getItem('finpjToken');
+                if (!token) {
+                    alert('Pagamento confirmado! Por favor, faça login para acessar sua conta.');
+                    return;
+                }
+                
+                // Show success message
+                alert('✓ Pagamento confirmado! Ativando seu plano...');
+                
+                // Check dashboard to verify plan activation
+                setTimeout(async () => {
+                    try {
+                        const dashRes = await fetch('/api/dashboard', {
+                            headers: { Authorization: 'Bearer ' + token }
+                        });
+                        if (dashRes.ok) {
+                            const dashData = await dashRes.json();
+                            if (dashData && dashData.user && dashData.user.plano) {
+                                // Plan is activated
+                                updateAuthState();
+                                openDashboard();
+                            } else {
+                                // Plan might still be processing
+                                alert('Plano em processamento. Você receberá um e-mail de confirmação em breve!');
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error checking dashboard:', e);
+                    }
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }, 2000);
+                
+                return;
             }
-            if (params.get('pagamento') === 'cancelado') {
-                alert('Pagamento cancelado. Você pode tentar novamente a qualquer momento.');
+            
+            if (paymentStatus === 'cancelado') {
+                alert('❌ Pagamento cancelado. Você pode tentar novamente a qualquer momento.');
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         }

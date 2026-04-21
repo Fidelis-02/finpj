@@ -1,4 +1,4 @@
-const { lerDados, salvarDados, obterUsuario } = require('../services/database');
+const { salvarDiagnostico, obterUsuario } = require('../services/database');
 const { gerarAnaliseFinanceira } = require('../services/aiService');
 const { fetchNotasFiscais, calcularDasAutomatico } = require('../services/nfeService');
 
@@ -91,6 +91,7 @@ async function postDiagnostico(req, res) {
         id: Date.now(),
         nome,
         cnpj,
+        ownerEmail: req.userEmail || null,
         setor,
         regime,
         faturamento: fat,
@@ -117,9 +118,7 @@ async function postDiagnostico(req, res) {
         recomendacoes: analise.recomendacoes
     };
 
-    const dados = lerDados();
-    dados.diagnosticos.push(diagnostico);
-    salvarDados(dados);
+    await salvarDiagnostico(diagnostico);
 
     res.json({ sucesso: true, id: diagnostico.id, resultados: diagnostico.resultados });
 }

@@ -1,74 +1,26 @@
 const bcrypt = require('bcrypt');
-const path = require('path');
-const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const {
+    obterUsuario,
+    obterUsuarioPorCnpj,
+    salvarUsuario,
+    formatarEmail
+} = require('../../src/services/database');
 
-const dadosFile = path.join(__dirname, '../../dados.json');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
+const JWT_SECRET = process.env.JWT_SECRET;
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
-
-function lerDados() {
-    try {
-        if (fs.existsSync(dadosFile)) {
-            const conteudo = fs.readFileSync(dadosFile, 'utf-8');
-            const parsed = JSON.parse(conteudo);
-            return {
-                diagnosticos: parsed.diagnosticos || [],
-                usuarios: parsed.usuarios || [],
-                bankReports: parsed.bankReports || []
-            };
-        }
-    } catch (e) {
-        console.log('Criando novo arquivo de dados...');
-    }
-    return { diagnosticos: [], usuarios: [], bankReports: [] };
-}
-
-function salvarDados(dados) {
-    fs.writeFileSync(dadosFile, JSON.stringify(dados, null, 2));
-}
-
-function formatarEmail(email) {
-    return String(email || '').trim().toLowerCase();
-}
-
-async function obterUsuario(email) {
-    const emailNorm = formatarEmail(email);
-    const dados = lerDados();
-    return dados.usuarios.find(u => u.email === emailNorm);
-}
-
-async function obterUsuarioPorCnpj(cnpj) {
-    const cnpjNorm = String(cnpj || '').replace(/\D/g, '');
-    const dados = lerDados();
-    return dados.usuarios.find(u => u.cnpj === cnpjNorm);
-}
-
-async function salvarUsuario(usuario) {
-    usuario.email = formatarEmail(usuario.email);
-    const dados = lerDados();
-    const index = dados.usuarios.findIndex(u => u.email === usuario.email);
-    if (index >= 0) {
-        dados.usuarios[index] = usuario;
-    } else {
-        dados.usuarios.push(usuario);
-    }
-    salvarDados(dados);
-    return usuario;
-}
 
 function gerarRelatorioBancario(email) {
     const hoje = new Date();
     const tipos = [
-        'Conciliação de extrato',
-        'Revisão de lançamentos',
-        'Atualização de saldo',
+        'Conciliacao de extrato',
+        'Revisao de lancamentos',
+        'Atualizacao de saldo',
         'Alerta de fluxo de caixa',
-        'Análise de recebimentos',
-        'Detectamos uma diferença bancária'
+        'Analise de recebimentos',
+        'Detectamos uma diferenca bancaria'
     ];
     return Array.from({ length: 6 }, (_, i) => {
         const data = new Date(hoje);
@@ -78,9 +30,9 @@ function gerarRelatorioBancario(email) {
             id: `${email}-${data.toISOString().slice(0, 10)}-${i}`,
             date: data.toISOString().slice(0, 10),
             title: tipos[i % tipos.length],
-            detail: `Atualização diária para a empresa ${email.split('@')[0]} com informações de extrato e movimentações bancárias.`,
+            detail: `Atualizacao diaria para a empresa ${email.split('@')[0]} com informacoes de extrato e movimentacoes bancarias.`,
             amount: valor,
-            status: i % 2 === 0 ? 'Concluído' : 'Atenção'
+            status: i % 2 === 0 ? 'Concluido' : 'Atencao'
         };
     });
 }
@@ -100,18 +52,18 @@ function montarDashboard(usuario) {
         summary: {
             reportsCount: reports.length,
             totalMovimentado,
-            pendencias: reports.filter(r => r.status !== 'Concluído').length
+            pendencias: reports.filter(r => r.status !== 'Concluido').length
         },
         reports
     };
 }
 
-async function gerarCodigoVerificacao() {
+function generateCode() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function generateCode() {
-    return String(Math.floor(100000 + Math.random() * 900000));
+async function gerarCodigoVerificacao() {
+    return generateCode();
 }
 
 async function hashCode(code) {
@@ -139,8 +91,8 @@ async function sendVerificationEmail(email, code) {
     const mailOptions = {
         from: MAIL_FROM,
         to: email,
-        subject: 'Seu código de acesso FinPJ',
-        text: `Seu código FinPJ é: ${code}\nUse-o em até 10 minutos para continuar.`,
+        subject: 'Seu codigo de acesso FinPJ',
+        text: `Seu codigo FinPJ e: ${code}\nUse-o em ate 10 minutos para continuar.`,
         html: `
             <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0D1117; border-radius: 16px; overflow: hidden;">
                 <div style="background: linear-gradient(135deg, #1a2744 0%, #0f3460 100%); padding: 32px; text-align: center;">
@@ -148,19 +100,16 @@ async function sendVerificationEmail(email, code) {
                     <p style="color: #94a3b8; margin: 8px 0 0; font-size: 13px;">CFO Digital para PMEs</p>
                 </div>
                 <div style="padding: 32px; background: #0D1117;">
-                    <h2 style="color: #f1f5f9; margin-bottom: 16px; font-size: 20px;">Seu código de acesso</h2>
+                    <h2 style="color: #f1f5f9; margin-bottom: 16px; font-size: 20px;">Seu codigo de acesso</h2>
                     <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
-                        Use o código abaixo para acessar sua conta FinPJ. Ele expira em <strong style="color: #f1f5f9;">10 minutos</strong>.
+                        Use o codigo abaixo para acessar sua conta FinPJ. Ele expira em <strong style="color: #f1f5f9;">10 minutos</strong>.
                     </p>
                     <div style="background: #1e2d4a; border: 2px solid #3b82f6; border-radius: 12px; padding: 28px; text-align: center; margin-bottom: 24px;">
                         <p style="font-size: 42px; font-weight: 700; letter-spacing: 8px; color: #60a5fa; margin: 0; font-family: monospace;">${code}</p>
                     </div>
                     <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">
-                        Se você não solicitou este código, ignore este e-mail com segurança.
+                        Se voce nao solicitou este codigo, ignore este e-mail com seguranca.
                     </p>
-                </div>
-                <div style="background: #0a0f1a; padding: 20px; text-align: center; border-top: 1px solid #1e293b;">
-                    <p style="color: #475569; font-size: 12px; margin: 0;">© 2026 FinPJ · Todos os direitos reservados</p>
                 </div>
             </div>
         `
@@ -168,13 +117,11 @@ async function sendVerificationEmail(email, code) {
 
     try {
         const result = await transport.sendMail(mailOptions);
-        console.log('✅ Email enviado:', result.messageId || 'ok');
+        console.log('Email enviado:', result.messageId || 'ok');
         return result;
     } catch (error) {
-        console.error('❌ Erro ao enviar email:', error.message);
-        // Always log code to console so dev can still test
-        console.log(`📌 CÓDIGO PARA ${email}: ${code}`);
-        // Don't re-throw — let auth flow succeed even if email fails
+        console.error('Erro ao enviar email:', error.message);
+        console.log(`CODIGO PARA ${email}: ${code}`);
     }
 }
 
@@ -192,7 +139,7 @@ function extractBearerToken(req) {
 
 function verifyToken(req) {
     const token = extractBearerToken(req);
-    if (!token) return null;
+    if (!token || !JWT_SECRET) return null;
     try {
         return jwt.verify(token, JWT_SECRET);
     } catch {
@@ -218,7 +165,6 @@ module.exports = {
     JWT_SECRET,
     MAIL_FROM,
     CODE_EXPIRY_MS,
-    // ESM-compatible aliases used by api/auth/*.js
     formatEmail: formatarEmail,
     getUser: obterUsuario,
     getUserByCnpj: obterUsuarioPorCnpj,

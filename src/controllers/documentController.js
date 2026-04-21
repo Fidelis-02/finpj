@@ -1,4 +1,4 @@
-const { lerDados, salvarDados, obterUsuario } = require('../services/database');
+const { salvarAnalise, obterAnalises, obterUsuario } = require('../services/database');
 const { analisarComGroq } = require('../services/aiService');
 
 async function extrairTextoPDF(buffer) {
@@ -46,15 +46,11 @@ async function uploadDocumento(req, res) {
     }
 
     if (!texto.trim()) {
-        return res.status(422).json({ erro: 'Não foi possível extrair texto do documento. Tente um PDF com texto selecionável ou Excel.' });
+        return res.status(422).json({ erro: 'Nao foi possivel extrair texto do documento. Tente um PDF com texto selecionavel ou Excel.' });
     }
 
     const analise = await analisarComGroq(tipo, texto, contexto);
-
-    const dados = lerDados();
-    if (!dados.analises) dados.analises = [];
-    dados.analises.push({
-        id: Date.now(),
+    await salvarAnalise({
         email: req.userEmail,
         tipo,
         nomeArquivo: req.file.originalname,
@@ -63,36 +59,42 @@ async function uploadDocumento(req, res) {
         resultado: analise.dados,
         fonte: analise.fonte
     });
-    salvarDados(dados);
 
     res.json({ sucesso: true, ...analise, nomeArquivo: req.file.originalname });
 }
 
-function getAnalises(req, res) {
-    const dados = lerDados();
-    const analises = (dados.analises || []).filter(a => a.email === req.userEmail);
-    res.json({ sucesso: true, analises });
+async function getAnalises(req, res) {
+    try {
+        const analises = await obterAnalises(req.userEmail);
+        res.json({ sucesso: true, analises });
+    } catch (e) {
+        console.error('Erro ao obter analises:', e);
+        res.status(500).json({ erro: 'Nao foi possivel carregar as analises.' });
+    }
 }
 
 async function postChat(req, res) {
     const { message, context } = req.body;
-    if (!message) return res.status(400).json({ erro: 'Mensagem obrigatória.' });
+    if (!message) return res.status(400).json({ erro: 'Mensagem obrigatoria.' });
     const GROQ_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_KEY) return res.json({ sucesso: true, resposta: 'Configure GROQ_API_KEY para usar o chat IA.', fonte: 'local' });
     try {
         const usuario = await obterUsuario(req.userEmail);
         const banks = usuario?.connectedBanks || [];
         const txSummary = banks.flatMap(b => (b.transactions || []).slice(0, 5).map(t => `${t.data}: ${t.descricao} R$${t.valor}`)).join('\n');
-        const sysPrompt = `Você é o assistente financeiro FinPJ para PMEs brasileiras. Responda de forma concisa e prática em português. Dados do usuário:\n- Email: ${req.userEmail}\n- Bancos conectados: ${banks.length}\n- Últimas transações:\n${txSummary || 'Nenhuma'}\n${context || ''}`;
+        const sysPrompt = `Voce e o assistente financeiro FinPJ para PMEs brasileiras. Responda de forma concisa e pratica em portugues. Dados do usuario:\n- Email: ${req.userEmail}\n- Bancos conectados: ${banks.length}\n- Ultimas transacoes:\n${txSummary || 'Nenhuma'}\n${context || ''}`;
         const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
             body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: message }], max_tokens: 1000, temperature: 0.4 })
         });
         const payload = await resp.json();
-        const content = payload?.choices?.[0]?.message?.content || 'Não consegui processar sua pergunta.';
+        const content = payload?.choices?.[0]?.message?.content || 'Nao consegui processar sua pergunta.';
         res.json({ sucesso: true, resposta: content, fonte: 'groq-llama3' });
-    } catch (e) { console.error('Chat error:', e); res.json({ sucesso: true, resposta: 'Erro ao processar. Tente novamente.', fonte: 'error' }); }
+    } catch (e) {
+        console.error('Chat error:', e);
+        res.json({ sucesso: true, resposta: 'Erro ao processar. Tente novamente.', fonte: 'error' });
+    }
 }
 
 module.exports = {

@@ -34,7 +34,10 @@ module.exports = function initAuth0(app, passport) {
         const Auth0Strategy = require('passport-auth0');
         const { obterUsuario, salvarUsuario, formatarEmail, gerarRelatorioBancario } = require('../../lib/auth-storage.js');
         const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
+        const JWT_SECRET = process.env.JWT_SECRET;
+        if (!JWT_SECRET) {
+            throw new Error('JWT_SECRET nao configurado.');
+        }
 
         const BASE_URL = process.env.BASE_URL || 'https://finpj.vercel.app';
 

@@ -15,7 +15,7 @@ const documentController = require('../controllers/documentController');
 const userController = require('../controllers/userController');
 const paymentController = require('../controllers/paymentController');
 
-// Configuração do multer para upload
+// Configuracao do multer para upload
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 15 * 1024 * 1024 },
@@ -26,18 +26,18 @@ const upload = multer({
         if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|xlsx|xls|csv|txt|ods)$/i)) {
             cb(null, true);
         } else {
-            cb(new Error('Formato não suportado. Use PDF, Excel, CSV ou TXT.'));
+            cb(new Error('Formato nao suportado. Use PDF, Excel, CSV ou TXT.'));
         }
     }
 });
 
 // Rate limiter for sensitive endpoints (OTP/email)
 const otpLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 5,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { erro: 'Muitas solicitações. Tente novamente mais tarde.' }
+    message: { erro: 'Muitas solicitacoes. Tente novamente mais tarde.' }
 });
 
 // ===============================
@@ -68,23 +68,38 @@ router.get('/cashflow-projection', verificarTokenMiddleware, financeController.c
 router.post('/calcular-das', verificarTokenMiddleware, taxController.calcularDas);
 router.post('/gerar-das-automatico', verificarTokenMiddleware, taxController.gerarDasAutomatico);
 router.get('/fiscal-calendar', verificarTokenMiddleware, taxController.fiscalCalendar);
-router.post('/diagnosticos', taxController.postDiagnostico); // Sem auth no landing
-router.get('/diagnosticos', (req, res) => {
-    const { lerDados } = require('../services/database');
-    res.json(lerDados().diagnosticos);
+router.post('/diagnosticos', taxController.postDiagnostico);
+router.get('/diagnosticos', verificarTokenMiddleware, async (req, res) => {
+    try {
+        const { obterDiagnosticos } = require('../services/database');
+        const diagnosticos = await obterDiagnosticos(req.userEmail);
+        res.json(diagnosticos);
+    } catch (erro) {
+        console.error('Erro ao obter diagnosticos:', erro);
+        res.status(500).json({ erro: 'Erro ao obter diagnosticos' });
+    }
 });
-router.get('/diagnosticos/:id', (req, res) => {
-    const { lerDados } = require('../services/database');
-    const d = lerDados().diagnosticos.find(d => d.id == req.params.id);
-    if (!d) return res.status(404).json({ erro: 'Não encontrado' });
-    res.json(d);
+router.get('/diagnosticos/:id', verificarTokenMiddleware, async (req, res) => {
+    try {
+        const { obterDiagnostico } = require('../services/database');
+        const diag = await obterDiagnostico(req.params.id, req.userEmail);
+        if (!diag) return res.status(404).json({ erro: 'Nao encontrado' });
+        res.json(diag);
+    } catch (erro) {
+        console.error('Erro ao obter diagnostico:', erro);
+        res.status(500).json({ erro: 'Erro ao obter diagnostico' });
+    }
 });
-router.delete('/diagnosticos/:id', (req, res) => {
-    const { lerDados, salvarDados } = require('../services/database');
-    const dados = lerDados();
-    dados.diagnosticos = dados.diagnosticos.filter(d => d.id != req.params.id);
-    salvarDados(dados);
-    res.json({ sucesso: true });
+router.delete('/diagnosticos/:id', verificarTokenMiddleware, async (req, res) => {
+    try {
+        const { deletarDiagnostico } = require('../services/database');
+        const deletado = await deletarDiagnostico(req.params.id, req.userEmail);
+        if (!deletado) return res.status(404).json({ erro: 'Nao encontrado' });
+        res.json({ sucesso: true });
+    } catch (erro) {
+        console.error('Erro ao deletar diagnostico:', erro);
+        res.status(500).json({ erro: 'Erro ao deletar diagnostico' });
+    }
 });
 
 // ===============================
@@ -105,9 +120,9 @@ router.post('/notifications/read', verificarTokenMiddleware, userController.read
 // ===============================
 // PAYMENTS & STRIPE ROUTES
 // ===============================
-router.post('/pagamento', paymentController.processarPagamento);
-router.post('/stripe/create-checkout-session', paymentController.createCheckoutSession);
-router.post('/webhooks/stripe', express.raw({type: 'application/json'}), paymentController.webhookStripe);
+router.post('/pagamento', verificarTokenMiddleware, paymentController.processarPagamento);
+router.post('/stripe/create-checkout-session', verificarTokenMiddleware, paymentController.createCheckoutSession);
+router.post('/webhooks/stripe', paymentController.webhookStripe);
 
 // Health check
 router.get('/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));

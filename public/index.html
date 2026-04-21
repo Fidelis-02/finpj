@@ -823,7 +823,7 @@
                     <div style="font-size:14px; color:var(--text-primary);">Entrada com E-mail</div>
                 </div>
                 <input id="login-email" type="email" class="login-input" placeholder="seunome@email.com"
-                    autocomplete="email">
+                    autocomplete="email" onkeydown="if(event.key==='Enter'){event.preventDefault();sendLoginCode();}">
                 <button type="button" class="btn-primary" style="width:100%;" onclick="sendLoginCode()">Enviar código</button>
                 <div style="display: flex; align-items: center; margin: 24px 0; color: #8B95A7; font-size: 13px;">
                     <hr style="flex-grow: 1; border: none; border-top: 1px solid var(--border); margin: 0 10px;">
@@ -855,7 +855,7 @@
             <div class="login-step" id="login-step-code">
                 <p class="login-note">Digitando o código enviado para <strong id="login-email-preview"></strong>.</p>
                 <input id="login-code" type="text" class="login-input" placeholder="Código de 6 dígitos" maxlength="6"
-                    inputmode="numeric">
+                    inputmode="numeric" onkeydown="if(event.key==='Enter'){event.preventDefault();verifyLoginCode();}">
                 <button type="button" class="btn-primary" style="width:100%;" onclick="verifyLoginCode()">Verificar
                     código</button>
                 <button type="button" class="btn-secondary" style="width:100%; margin-top:12px;"
@@ -869,10 +869,10 @@
             <!-- Header gradiente com progress -->
             <div id="reg-header" style="background: linear-gradient(135deg, #0A2540 0%, #1D74F2 100%); padding: 24px 28px 20px; position: relative;">
                 <button class="modal-close" onclick="closeModal('register')" style="color: rgba(255,255,255,0.7);">&#x00d7;</button>
-                <div id="reg-step-label" style="font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;">Etapa 1 de 4</div>
+                <div id="reg-step-label" style="font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;">Etapa 1 de 3</div>
                 <h2 style="color: #fff; font-size: 20px; margin: 0 0 16px;">Criar sua conta FinPJ</h2>
                 <div style="background: rgba(255,255,255,0.2); border-radius: 999px; height: 4px;">
-                    <div id="reg-progress-bar" style="height: 4px; border-radius: 999px; background: #fff; width: 25%; transition: width 0.5s ease;"></div>
+                    <div id="reg-progress-bar" style="height: 4px; border-radius: 999px; background: #fff; width: 33%; transition: width 0.5s ease;"></div>
                 </div>
             </div>
 
@@ -1551,6 +1551,8 @@
                 });
                 const card = document.getElementById('reg-company-card');
                 if (card) card.style.display = 'none';
+                const step4 = document.getElementById('reg-step-4');
+                if (step4) step4.style.display = 'none';
                 const btn1 = document.getElementById('reg-btn-1');
                 if (btn1) btn1.disabled = true;
                 const btn3 = document.getElementById('reg-btn-3');
@@ -1564,6 +1566,64 @@
             }
             // Usa o openModal original (que adiciona a classe 'active')
             _openModalBase(name);
+        };
+
+        // Override do fluxo legado para usar login automatico + checkout hospedado.
+        regSubmit = async function() {
+            const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
+            const cnpj = cnpjRaw.replace(/\D/g, '');
+            const pwd  = (document.getElementById('reg-password') || {}).value || '';
+            const btn  = document.getElementById('reg-btn-3');
+            const planId = _selectedPlan || 'starter';
+
+            if (cnpj.length !== 14) {
+                regSetMsg(3, 'CNPJ invÃ¡lido. Verifique e tente novamente.', '#ef4444');
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.textContent = 'Criando conta...'; }
+            regSetMsg(3, '');
+
+            try {
+                const res = await fetch('/api/auth/register-cnpj', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cnpj, password: pwd, plan: planId })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.sucesso) {
+                    throw new Error(data.erro || 'NÃ£o foi possÃ­vel criar a conta.');
+                }
+
+                regSetMsg(3, 'Conta criada com sucesso. Entrando...', '#34d399');
+
+                const loginRes = await fetch('/api/auth/login-cnpj', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cnpj, password: pwd })
+                });
+                const loginData = await loginRes.json();
+                if (!loginRes.ok || !loginData.sucesso) {
+                    throw new Error(loginData.erro || 'Conta criada, mas o login automÃ¡tico falhou.');
+                }
+
+                localStorage.setItem('finpjToken', loginData.token);
+                localStorage.setItem('finpjAuthEmail', loginData.email || '');
+                if (typeof updateAuthState === 'function') updateAuthState();
+
+                closeModal('register');
+                if (typeof iniciarCompra === 'function') {
+                    iniciarCompra(planId);
+                    return;
+                }
+                if (typeof openDashboard === 'function') openDashboard();
+            } catch (e) {
+                regSetMsg(3, e.message || 'Erro ao criar conta.', '#ef4444');
+                if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
+                return;
+            }
+
+            if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
         };
     </script>
 </body>

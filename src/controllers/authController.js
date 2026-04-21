@@ -48,7 +48,10 @@ function montarDashboard(usuario) {
         createdAt: usuario.createdAt,
         lastLogin: usuario.lastLogin || usuario.createdAt,
         fantasia: usuario.fantasia || usuario.nome || '',
-        nome: usuario.nome || ''
+        nome: usuario.nome || '',
+        plano: usuario.plano || null,
+        statusPagamento: usuario.statusPagamento || null,
+        planAtivadoEm: usuario.planAtivadoEm || null
     };
     const reports = usuario.bankReports && usuario.bankReports.length ? usuario.bankReports : gerarRelatorioBancario(usuario.email);
     usuario.bankReports = reports;
@@ -188,6 +191,7 @@ async function registerCnpj(req, res) {
         passwordHash: await bcrypt.hash(password, 10),
         email: emailSistema,
         plano: plan || 'starter',
+        statusPagamento: 'pendente',
         createdAt: new Date().toISOString(),
         bankReports: gerarRelatorioBancario(emailSistema)
     };

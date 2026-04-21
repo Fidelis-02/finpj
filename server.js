@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
-const fs = require('fs');
 const passport = require('passport');
 const session = require('express-session');
 
@@ -28,9 +27,26 @@ const corsOptions = {
     credentials: true
 };
 app.use(cors(corsOptions));
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-app.use(express.json({ limit: '10mb' }));
+function isStripeWebhookRequest(req) {
+    return req.originalUrl === '/api/webhooks/stripe';
+}
+
+app.use((req, res, next) => {
+    if (isStripeWebhookRequest(req)) return express.raw({ type: 'application/json' })(req, res, next);
+    next();
+});
+app.use((req, res, next) => {
+    if (isStripeWebhookRequest(req)) return next();
+    return bodyParser.json({ limit: '10mb' })(req, res, next);
+});
+app.use((req, res, next) => {
+    if (isStripeWebhookRequest(req)) return next();
+    return bodyParser.urlencoded({ limit: '10mb', extended: true })(req, res, next);
+});
+app.use((req, res, next) => {
+    if (isStripeWebhookRequest(req)) return next();
+    return express.json({ limit: '10mb' })(req, res, next);
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET;

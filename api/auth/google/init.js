@@ -10,7 +10,11 @@ module.exports = function initGoogleAuth(app, passport) {
     const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
     const { obterUsuario, salvarUsuario, formatarEmail, montarDashboard, gerarRelatorioBancario } = require('../lib/auth-storage.js');
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+        console.log('JWT_SECRET not configured - skipping Google auth routes');
+        return;
+    }
 
     passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
