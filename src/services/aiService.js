@@ -124,11 +124,16 @@ async function analisarComGroq(tipoDoc, textoDoc, contexto = '') {
 }
 
 function analisarLocalmente(tipoDoc, texto) {
-    const numeros = (texto.match(/[\d.]+,\d{2}/g) || [])
-        .map(n => parseFloat(n.replace(/\./g, '').replace(',', '.')))
-        .filter(n => !isNaN(n) && n > 0);
+    const numeros = (texto.match(/-?\(?\d{1,3}(?:\.\d{3})+(?:,\d{2})?\)?|-?\(?\d+,\d{2}\)?/g) || [])
+        .map((raw) => {
+            const negativo = raw.includes('(') || raw.trim().startsWith('-');
+            const limpo = raw.replace(/[().-]/g, '').replace(',', '.');
+            const valor = parseFloat(limpo);
+            return negativo ? -valor : valor;
+        })
+        .filter(n => !isNaN(n) && Math.abs(n) > 100);
     const soma = numeros.reduce((a, b) => a + b, 0);
-    const max = numeros.length ? Math.max(...numeros) : 0;
+    const max = numeros.length ? Math.max(...numeros.map(Math.abs)) : 0;
 
     if (tipoDoc === 'extrato') {
         const entradas = numeros.filter((_, i) => i % 2 === 0).reduce((a, b) => a + b, 0);
@@ -147,13 +152,64 @@ function analisarLocalmente(tipoDoc, texto) {
             fonte: 'local'
         };
     }
+
+    const normalizar = (valor) => String(valor || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    const parseValoresLinha = (linha) => (linha.match(/-?\(?\d{1,3}(?:\.\d{3})+(?:,\d{2})?\)?|-?\(?\d+,\d{2}\)?/g) || [])
+        .map((raw) => {
+            const negativo = raw.includes('(') || raw.trim().startsWith('-');
+            const limpo = raw.replace(/[().-]/g, '').replace(',', '.');
+            const valor = parseFloat(limpo);
+            return negativo ? -valor : valor;
+        })
+        .filter((valor) => Number.isFinite(valor));
+    const valorPorRotulo = (rotulo) => {
+        const alvo = normalizar(rotulo);
+        const linhas = String(texto || '').split(/\r?\n/);
+        let linha = '';
+        for (let i = 0; i < linhas.length; i += 1) {
+            const atual = normalizar(linhas[i]).trim();
+            const janela = normalizar([linhas[i], linhas[i + 1] || ''].join(' ')).trim();
+            if (atual === alvo || atual.startsWith(`${alvo} `) || janela === alvo || janela.startsWith(`${alvo} `)) {
+                linha = linhas[i];
+                if (!parseValoresLinha(linha).length) {
+                    linha = [linhas[i], linhas[i + 1] || '', linhas[i + 2] || ''].join(' ');
+                }
+                break;
+            }
+        }
+        const valores = parseValoresLinha(linha);
+        if (!valores.length) return 0;
+        return valores.length >= 3 ? valores[2] : valores[0];
+    };
+
+    const receitaOperacional = valorPorRotulo('Receitas Operacionais');
+    const custoServicos = Math.abs(valorPorRotulo('Custos dos Serviços Prestados'));
+    const resultadoBruto = valorPorRotulo('Resultado Bruto');
+    const resultadoOperacional = valorPorRotulo('Resultado Antes das Receitas e Despesas Financeiras');
+    const lucroLiquido = valorPorRotulo('Lucro Líquido do Exercício');
+    const receitaBase = receitaOperacional || max;
+    const lucroBruto = resultadoBruto || receitaBase * 0.47;
+    const despesasOperacionais = resultadoOperacional
+        ? Math.max(0, lucroBruto - resultadoOperacional)
+        : receitaBase * 0.25;
+    const lucroFinal = lucroLiquido || receitaBase * 0.12;
+
     return {
         sucesso: true,
         dados: {
-            receita_bruta: max, deducoes: max * 0.08, receita_liquida: max * 0.92,
-            custos: max * 0.45, lucro_bruto: max * 0.47,
-            despesas_operacionais: max * 0.25, ebitda: max * 0.22, lucro_liquido: max * 0.12,
-            margem_bruta_pct: 47, margem_liquida_pct: 12,
+            receita_bruta: receitaBase,
+            deducoes: 0,
+            receita_liquida: receitaBase,
+            custos: custoServicos || receitaBase * 0.45,
+            lucro_bruto: lucroBruto,
+            despesas_operacionais: despesasOperacionais,
+            ebitda: resultadoOperacional || receitaBase * 0.22,
+            lucro_liquido: lucroFinal,
+            margem_bruta_pct: receitaBase ? Math.round((lucroBruto / receitaBase) * 100) : 0,
+            margem_liquida_pct: receitaBase ? Math.round((lucroFinal / receitaBase) * 100) : 0,
             alertas: ['Análise local aproximada com base nos valores identificados.'],
             recomendacoes: ['Envie demonstrativos completos para melhorar a precisão da análise.'],
             resumo: `Documento processado localmente. ${numeros.length} valores financeiros identificados.`

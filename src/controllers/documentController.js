@@ -29,10 +29,16 @@ function compactarResultadoAnalise(dados) {
         'itens_conciliacao',
         'receita_bruta',
         'receita_liquida',
+        'deducoes',
+        'custos',
+        'lucro_bruto',
+        'despesas_operacionais',
+        'ebitda',
         'total_entradas',
         'total_saidas',
         'saldo_final',
         'lucro_liquido',
+        'margem_bruta_pct',
         'margem_liquida_pct',
         'liquidez_corrente',
         'endividamento_pct'
@@ -52,12 +58,84 @@ function compactarResultadoAnalise(dados) {
 async function extrairTextoPDF(buffer) {
     try {
         const pdfParse = require('pdf-parse');
-        const data = await pdfParse(buffer);
-        return data.text || '';
+
+        if (typeof pdfParse === 'function') {
+            const data = await pdfParse(buffer);
+            return data.text || '';
+        }
+
+        if (pdfParse.PDFParse) {
+            const parser = new pdfParse.PDFParse({ data: buffer });
+            try {
+                const data = await parser.getText();
+                return data.text || '';
+            } finally {
+                if (typeof parser.destroy === 'function') {
+                    await parser.destroy();
+                }
+            }
+        }
+
+        if (typeof pdfParse.default === 'function') {
+            const data = await pdfParse.default(buffer);
+            return data.text || '';
+        }
+
+        throw new Error('Versão do pdf-parse sem extrator compatível.');
     } catch (e) {
         console.error('PDF parse error:', e.message);
         return '';
     }
+}
+
+function normalizarBusca(texto) {
+    return String(texto || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+}
+
+function encontrarTrechoContabil(texto, tipo, limite) {
+    if (!texto || texto.length <= limite) return texto;
+
+    const normalizado = normalizarBusca(texto);
+    const termosPorTipo = {
+        dre: [
+            'demonstracao do resultado',
+            'receitas operacionais',
+            'receita liquida',
+            'lucro liquido do exercicio'
+        ],
+        balanco: [
+            'balanco patrimonial',
+            'ativo circulante',
+            'passivo circulante',
+            'patrimonio liquido'
+        ],
+        extrato: [
+            'saldo anterior',
+            'saldo inicial',
+            'saldo final',
+            'historico'
+        ]
+    };
+
+    const termos = termosPorTipo[tipo] || termosPorTipo.dre;
+    const candidatos = [];
+    termos.forEach((termo) => {
+        let pos = -1;
+        while ((pos = normalizado.indexOf(termo, pos + 1)) !== -1) {
+            candidatos.push(pos);
+        }
+    });
+
+    const inicio = candidatos
+        .filter((pos) => pos > 4000)
+        .sort((a, b) => a - b)[0] ?? candidatos.sort((a, b) => a - b)[0] ?? 0;
+
+    const margemAnterior = 1200;
+    const start = Math.max(0, inicio - margemAnterior);
+    return texto.slice(start, start + limite);
 }
 
 function extrairTextoExcel(buffer) {
@@ -94,12 +172,10 @@ async function uploadDocumento(req, res) {
     }
 
     if (!texto.trim()) {
-        return res.status(422).json({ erro: 'Não foi possível extrair texto do documento. Tente um PDF com texto selecionável ou Excel.' });
+        return res.status(422).json({ erro: 'Não foi possível extrair texto do documento. Se for um PDF digitalizado como imagem, envie uma versão pesquisável ou Excel.' });
     }
 
-    if (texto.length > MAX_EXTRACTED_CHARS) {
-        texto = texto.slice(0, MAX_EXTRACTED_CHARS);
-    }
+    texto = encontrarTrechoContabil(texto, tipo, MAX_EXTRACTED_CHARS);
 
     const analise = await analisarComGroq(tipo, texto, contexto);
     const resultadoCompacto = compactarResultadoAnalise(analise.dados);
