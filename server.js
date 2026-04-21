@@ -54,10 +54,9 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/tax', express.static(path.join(__dirname, 'src', 'tax')));
 
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET;
-if (!SESSION_SECRET) {
-    console.error('SESSION_SECRET or JWT_SECRET environment variable is required');
-    process.exit(1);
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'finpj-dev-session-secret';
+if (!process.env.SESSION_SECRET && !process.env.JWT_SECRET) {
+    console.warn('SESSION_SECRET/JWT_SECRET nao definido. Usando segredo temporario apenas para desenvolvimento local.');
 }
 
 app.use(session({
