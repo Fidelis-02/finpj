@@ -75,8 +75,9 @@ function updateSessionUi() {
 function openModal(selector) {
   const modal = $(selector);
   if (!modal) return;
+  modal.classList.remove('is-hidden');
+  if (modal.open) return;
   if (typeof modal.showModal === 'function') modal.showModal();
-  else modal.classList.remove('is-hidden');
   trapFocus(modal);
 }
 
@@ -244,7 +245,7 @@ function inferActivityFromCnae(cnaeCode, cnaeDesc = '') {
   // Fallback to description analysis
   if (/comerc|varejo|atacad|loja|mercad|revenda|distribuica/.test(desc)) return 'comercio';
   if (/industr|fabric|manuf|producao|beneficiamento|montagem/.test(desc)) return 'industria';
-  if (/servic|consult|clinica|agencia|software|profissional|escritorio|assistencia|locacao|turismo|restaurante|alimentacao/.test(desc)) return 'servicos';
+  if (/servic|consult|clinica|agencia|software|profissional|escritorio|assistencia|locacao|turismo|restaurante|alimentacao|portal|internet|informacao|tecnolog|dados|sistema/.test(desc)) return 'servicos';
 
   return 'comercio'; // Default
 }
@@ -268,6 +269,20 @@ function formatAsPercent(value) {
   return String(pct);
 }
 
+function formatCnaeCode(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 7);
+  if (digits.length !== 7) return digits;
+  return digits.replace(/^(\d{4})(\d)(\d{2})$/, '$1-$2/$3');
+}
+
+function getActivityLabel(activity) {
+  return {
+    comercio: 'Comércio',
+    servicos: 'Serviços',
+    industria: 'Indústria'
+  }[activity] || activity || 'Comércio';
+}
+
 function formatCurrencyInput(value) {
   // Format input as user types: keep only digits and format with thousand separators
   const digits = String(value || '').replace(/\D/g, '');
@@ -288,38 +303,52 @@ function formatPercentInput(value) {
 
 async function lookupCnpjForSimulator(cnpj) {
   const cleanCnpj = onlyDigits(cnpj);
-  if (cleanCnpj.length !== 14) return;
+  const companyInfo = $('[data-company-info]');
+  const nomeEl = $('[data-company-nome]');
+  const cnaeEl = $('[data-company-cnae]');
+  const atividadeEl = $('[data-company-atividade]');
+  const atividadeInput = $('[data-atividade-input]');
+
+  if (cleanCnpj.length !== 14) {
+    if (nomeEl) nomeEl.textContent = '';
+    if (cnaeEl) cnaeEl.textContent = '';
+    if (atividadeEl) atividadeEl.textContent = '';
+    if (atividadeInput) atividadeInput.value = 'comercio';
+    if (companyInfo) companyInfo.style.display = 'none';
+    runPublicDiagnostic();
+    return;
+  }
+
+  if (companyInfo) companyInfo.style.display = 'grid';
+  if (nomeEl) nomeEl.textContent = 'Consultando dados publicos...';
+  if (cnaeEl) cnaeEl.textContent = '-';
+  if (atividadeEl) atividadeEl.textContent = '-';
 
   try {
-    const data = await apiRequest(`/api/cnpj?cnpj=${cleanCnpj}`);
+    const data = await apiRequest(`/api/cnpj?cnpj=${cleanCnpj}&context=simulator`);
     if (!data || data.erro) {
-      showToast(data?.erro || 'CNPJ não encontrado', 'error');
+      showToast(data?.erro || 'CNPJ nao encontrado', 'error');
       return;
     }
 
-    // Update company info display
-    const companyInfo = $('[data-company-info]');
-    const nomeEl = $('[data-company-nome]');
-    const cnaeEl = $('[data-company-cnae]');
-    const atividadeEl = $('[data-company-atividade]');
-    const atividadeInput = $('[data-atividade-input]');
+    const companyName = data.razao_social || data.nome || data.nomeEmpresa || '-';
+    const cnaeCode = formatCnaeCode(data.cnae_fiscal || data.cnae || '');
+    const cnaeDescription = data.cnae_descricao || data.cnae || data.atividade_principal || '-';
+    const activity = inferActivityFromCnae(data.cnae_fiscal, cnaeDescription);
+    const activityLabel = getActivityLabel(activity);
 
-    if (nomeEl) nomeEl.textContent = data.nome || '-';
-    if (cnaeEl) cnaeEl.textContent = data.cnae_descricao || data.cnae || '-';
-
-    // Infer activity from CNAE
-    const activity = inferActivityFromCnae(data.cnae_fiscal, data.cnae_descricao);
-    const activityLabel = { comercio: 'Comércio', servicos: 'Serviços', industria: 'Indústria' }[activity] || activity;
-
-    if (atividadeEl) atividadeEl.textContent = activityLabel;
+    if (nomeEl) nomeEl.textContent = companyName;
+    if (cnaeEl) cnaeEl.textContent = cnaeCode ? `${cnaeCode} - ${cnaeDescription}` : cnaeDescription;
+    if (atividadeEl) atividadeEl.textContent = `Atividade classificada: ${activityLabel}`;
     if (atividadeInput) atividadeInput.value = activity;
-
     if (companyInfo) companyInfo.style.display = 'grid';
 
-    // Auto-calculate based on new data
     runPublicDiagnostic();
   } catch (error) {
     showToast(error.message || 'Erro ao consultar CNPJ', 'error');
+    if (nomeEl) nomeEl.textContent = 'Nao foi possivel consultar este CNPJ.';
+    if (cnaeEl) cnaeEl.textContent = '-';
+    if (atividadeEl) atividadeEl.textContent = '-';
   }
 }
 

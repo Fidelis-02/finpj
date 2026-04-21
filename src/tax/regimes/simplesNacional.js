@@ -23,7 +23,7 @@
                 key: 'simples',
                 name: tables.regimes.simples,
                 eligible: false,
-                reason: 'Simples Nacional nesta versao cobre apenas comercio no Anexo I.'
+                reason: 'Atividade sem anexo configurado para o Simples Nacional.'
             });
         }
 
@@ -40,10 +40,12 @@
         const bracket = findBracket(input.annualRevenue, annex);
         const dasEffectiveRate = calculateEffectiveRate(input.annualRevenue, bracket);
         const das = input.annualRevenue * dasEffectiveRate;
-        const extraIcms = input.annualRevenue > tables.simplesNacional.icmsSublimit
-            ? utils.estimateIcms(input.annualRevenue, input.margin, tables)
+        const extraIndirectTax = input.annualRevenue > tables.simplesNacional.icmsSublimit
+            ? activity.indirectTax === 'iss'
+                ? utils.estimateIss(input.annualRevenue, tables)
+                : utils.estimateIcms(input.annualRevenue, input.margin, tables)
             : { total: 0 };
-        const annualTax = das + extraIcms.total;
+        const annualTax = das + extraIndirectTax.total;
 
         return utils.buildRegimeResult(input, {
             key: 'simples',
@@ -51,7 +53,7 @@
             annualTax,
             breakdown: {
                 das: utils.roundCurrency(das),
-                icmsOutsideSublimit: utils.roundCurrency(extraIcms.total)
+                indirectTaxOutsideSublimit: utils.roundCurrency(extraIndirectTax.total)
             },
             details: {
                 annex: annex.label,

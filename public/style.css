@@ -487,6 +487,33 @@ p {
   background: var(--surface-soft);
 }
 
+.company-lookup {
+  gap: 12px;
+}
+
+.lookup-field {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.lookup-field span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.lookup-field strong {
+  color: var(--ink);
+  font-size: 0.98rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 .company-info .info-row {
   display: flex;
   align-items: center;

@@ -20,12 +20,15 @@
     }
 
     function calculate(input) {
-        if (input.activity !== 'comercio') {
+        const activity = tables.activityTypes[input.activity];
+        const config = tables.lucroPresumido[activity?.presumidoProfile];
+
+        if (!activity || !config) {
             return utils.buildRegimeResult(input, {
                 key: 'presumido',
                 name: tables.regimes.presumido,
                 eligible: false,
-                reason: 'Lucro Presumido nesta versao cobre apenas comercio.'
+                reason: 'Atividade sem premissa configurada para Lucro Presumido.'
             });
         }
 
@@ -38,7 +41,6 @@
             });
         }
 
-        const config = tables.lucroPresumido.commerce;
         const calendarYear = input.calendarYear;
         const csllLimit = tables.lucroPresumido.presumptiveBaseIncrease.csllAnnualRevenueLimitByYear[calendarYear]
             || tables.lucroPresumido.presumptiveBaseIncrease.annualRevenueLimit;
@@ -48,8 +50,10 @@
         const csll = utils.calculateCsll(csllBase, tables);
         const pis = input.annualRevenue * tables.lucroPresumido.pisRate;
         const cofins = input.annualRevenue * tables.lucroPresumido.cofinsRate;
-        const icms = utils.estimateIcms(input.annualRevenue, input.margin, tables);
-        const annualTax = irpj.total + csll.total + pis + cofins + icms.total;
+        const indirectTax = activity.indirectTax === 'iss'
+            ? utils.estimateIss(input.annualRevenue, tables)
+            : utils.estimateIcms(input.annualRevenue, input.margin, tables);
+        const annualTax = irpj.total + csll.total + pis + cofins + indirectTax.total;
 
         return utils.buildRegimeResult(input, {
             key: 'presumido',
@@ -61,7 +65,7 @@
                 csll: csll.total,
                 pis: utils.roundCurrency(pis),
                 cofins: utils.roundCurrency(cofins),
-                icms: icms.total
+                indirectTax: indirectTax.total
             },
             details: {
                 irpjBase: irpj.base,
@@ -69,12 +73,12 @@
                 irpjPresumption: config.irpjPresumption,
                 csllPresumption: config.csllPresumption,
                 pisCofinsRate: tables.lucroPresumido.pisRate + tables.lucroPresumido.cofinsRate,
-                icms
+                indirectTax
             },
             notes: [
-                'IRPJ usa presuncao de 8% para comercio; CSLL usa presuncao de 12%.',
+                'IRPJ/CSLL usam percentuais presumidos por atividade.',
                 'PIS/COFINS no regime cumulativo: 0,65% + 3,00% sobre receita.',
-                'ICMS e estimado separadamente por nao integrar IRPJ/CSLL/PIS/COFINS federais.'
+                'ICMS ou ISS e estimado separadamente por nao integrar IRPJ/CSLL/PIS/COFINS federais.'
             ]
         });
     }

@@ -103,10 +103,19 @@
             <label>CNPJ
               <input name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00" maxlength="18" data-cnpj-input>
             </label>
-            <div class="company-info" data-company-info style="display:none;">
-              <div class="info-row"><span>Razão Social</span><strong data-company-nome></strong></div>
-              <div class="info-row"><span>CNAE Principal</span><strong data-company-cnae></strong></div>
-              <div class="info-row"><span>Atividade Detectada</span><strong data-company-atividade></strong></div>
+            <div class="company-info company-lookup" data-company-info style="display:none;">
+              <div class="lookup-field">
+                <span>Razão Social</span>
+                <strong data-company-nome></strong>
+              </div>
+              <div class="lookup-field">
+                <span>CNAE principal</span>
+                <strong data-company-cnae></strong>
+              </div>
+              <div class="lookup-field">
+                <span>Classificação do CNAE</span>
+                <strong data-company-atividade></strong>
+              </div>
             </div>
             <input type="hidden" name="atividade" data-atividade-input value="comercio">
 
@@ -317,8 +326,8 @@
                   <label>Atividade
                     <select name="atividade">
                       <option value="comercio">Comércio</option>
-                      <option value="servicos" disabled>Serviços (em breve)</option>
-                      <option value="industria" disabled>Indústria (em breve)</option>
+                      <option value="servicos">Serviços</option>
+                      <option value="industria">Indústria</option>
                     </select>
                   </label>
                   <label>Regime atual

@@ -10,13 +10,18 @@ async function consultarCnpj(req, res) {
         return res.status(400).json({ erro: 'CNPJ inválido.' });
     }
 
-    try {
-        const usuarioExistente = await obterUsuarioPorCnpj(cnpj);
-        if (usuarioExistente) {
-            return res.status(400).json({ erro: 'Este CNPJ já possui uma conta. Por favor, faça login.' });
+    const context = String(req.query.context || '').toLowerCase();
+    const skipDuplicateCheck = ['simulator', 'diagnostic', 'public'].includes(context);
+
+    if (!skipDuplicateCheck) {
+        try {
+            const usuarioExistente = await obterUsuarioPorCnpj(cnpj);
+            if (usuarioExistente) {
+                return res.status(400).json({ erro: 'Este CNPJ já possui uma conta. Por favor, faça login.' });
+            }
+        } catch (err) {
+            console.warn('Não foi possível verificar duplicidade do CNPJ antes da consulta pública:', err.message);
         }
-    } catch (err) {
-        console.warn('Não foi possível verificar duplicidade do CNPJ antes da consulta pública:', err.message);
     }
 
     if (cacheCNPJ[cnpj]) {

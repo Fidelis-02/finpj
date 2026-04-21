@@ -28,7 +28,7 @@
             errors.push('Informe uma margem entre 0% e 100%.');
         }
         if (!tables.activityTypes[activity]) {
-            errors.push('Esta versao do motor fiscal calcula apenas empresas de comercio.');
+            errors.push('Informe uma atividade suportada: comercio, servicos ou industria.');
         }
 
         return {
