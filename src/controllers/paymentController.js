@@ -1,4 +1,4 @@
-const { obterUsuarioPorCnpj, salvarUsuario } = require('../services/database');
+const { obterUsuarioPorCnpj, salvarUsuario, conectarDB, lerDados, salvarDados } = require('../services/database');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey ? require('stripe')(stripeSecretKey) : null;
@@ -106,14 +106,56 @@ async function webhookStripe(req, res) {
             return res.status(400).send('Metadata inválida');
         }
         const cnpj = String(cnpjRaw).replace(/\D/g, '');
+        // Idempotency: ensure we process each Stripe event only once
         try {
+            const db = await conectarDB();
+            if (db) {
+                const coll = db.collection('webhookEvents');
+                try {
+                    await coll.createIndex({ id: 1 }, { unique: true });
+                } catch (ie) { /* ignore index exists error */ }
+                try {
+                    await coll.insertOne({ id: event.id, type: event.type, receivedAt: new Date() });
+                } catch (dupErr) {
+                    // duplicate key means we've already processed this event
+                    if (dupErr && dupErr.code === 11000) {
+                        console.log('Webhook event already processed:', event.id);
+                        return res.json({ received: true });
+                    }
+                    throw dupErr;
+                }
+
+                // Update user plan atomically
+                const updateResult = await db.collection('usuarios').updateOne(
+                    { cnpj: cnpj },
+                    { $set: { plano: plano || undefined, updatedAt: new Date() } }
+                );
+                if (updateResult.matchedCount === 0) {
+                    console.error(`Usuário não encontrado para CNPJ ${cnpj} (webhook)`);
+                    return res.status(400).send('Usuário não encontrado');
+                }
+                return res.json({ received: true });
+            }
+
+            // Fallback when MongoDB unavailable: use dados.json deduplication
+            const dados = lerDados();
+            dados.webhookEvents = dados.webhookEvents || [];
+            if (dados.webhookEvents.find(w => w.id === event.id)) {
+                console.log('Webhook event already processed (fallback):', event.id);
+                return res.json({ received: true });
+            }
+            dados.webhookEvents.push({ id: event.id, type: event.type, receivedAt: new Date().toISOString() });
+
             const usuario = await obterUsuarioPorCnpj(cnpj);
             if (!usuario) {
-                console.error(`Usuário não encontrado para CNPJ ${cnpj} (webhook)`);
+                console.error(`Usuário não encontrado para CNPJ ${cnpj} (webhook fallback)`);
+                salvarDados(dados);
                 return res.status(400).send('Usuário não encontrado');
             }
             usuario.plano = plano || usuario.plano;
             await salvarUsuario(usuario);
+            salvarDados(dados);
+            return res.json({ received: true });
         } catch (e) {
             console.error('Erro ao atualizar usuário via webhook:', e.message || e);
             return res.status(500).send('Erro interno');
