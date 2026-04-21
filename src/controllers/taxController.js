@@ -80,7 +80,7 @@ function fiscalCalendar(req, res) {
 }
 
 async function postDiagnostico(req, res) {
-    const { nome, cnpj, setor, regime, faturamento, margem } = req.body;
+    const { nome, cnpj, setor, regime, faturamento, margem, ncm } = req.body;
 
     if (!nome || !cnpj) {
         return res.status(400).json({ erro: 'Nome e CNPJ são obrigatórios' });
@@ -108,6 +108,14 @@ async function postDiagnostico(req, res) {
 
     const best = simulation.bestRegime;
     const economia = simulation.savingsComparedToWorst?.annual || 0;
+    
+    // Cálculo PIS/COFINS Monofásico
+    let creditosIdentificados = 0;
+    if (ncm && ncm.trim() !== '') {
+        const parcelaMonofasica = fat * 0.3; // 30% presumido monofásico
+        creditosIdentificados = parcelaMonofasica * 0.0925; // 9,25% PIS/COFINS
+    }
+
     const impostos = simulation.regimes.reduce((acc, item) => {
         acc[item.key] = item.annualTax == null ? null : Math.round(item.annualTax);
         return acc;
@@ -120,6 +128,7 @@ async function postDiagnostico(req, res) {
         ownerEmail: req.userEmail || null,
         setor,
         regime,
+        ncm: ncm || '',
         faturamento: fat,
         margem: marg,
         data: new Date().toISOString(),
@@ -127,7 +136,7 @@ async function postDiagnostico(req, res) {
             regimeIdeal: best.name,
             impostoIdeal: Math.round(best.annualTax),
             economia: Math.round(economia),
-            creditosIdentificados: 0,
+            creditosIdentificados: Math.round(creditosIdentificados),
             anomaliaValor: 0,
             impostos,
             regimes: simulation.regimes,

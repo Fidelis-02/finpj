@@ -1,66 +1,78 @@
-// Google OAuth endpoints
-// These are optional - they only work if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const { obterUsuario, salvarUsuario } = require('../../../src/services/database');
+const jwt = require('jsonwebtoken');
+
+/**
+ * Dependências necessárias (Roteiro de Instalação):
+ * npm install passport passport-google-oauth20 express-session jsonwebtoken
+ * 
+ * Variáveis de ambiente necessárias (.env):
+ * GOOGLE_CLIENT_ID=seu_client_id
+ * GOOGLE_CLIENT_SECRET=seu_client_secret
+ * GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
+ * JWT_SECRET=seu_jwt_secret
+ * SESSION_SECRET=seu_session_secret
+ */
 
 module.exports = function initGoogleAuth(app, passport) {
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-        console.log('Google OAuth not configured - skipping Google auth routes');
-        return;
-    }
-
-    const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
-    const { obterUsuario, salvarUsuario, formatarEmail, montarDashboard, gerarRelatorioBancario } = require('../lib/auth-storage.js');
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-        console.log('JWT_SECRET not configured - skipping Google auth routes');
+        console.warn('SSO Google: GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET não definidos.');
         return;
     }
 
     passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: '/api/auth/google/callback'
-    }, async (accessToken, refreshToken, profile, done) => {
+        callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback',
+        passReqToCallback: true
+    },
+    async (req, accessToken, refreshToken, profile, done) => {
         try {
-            const email = formatarEmail(profile.emails[0].value);
-            let usuario = await obterUsuario(email);
-            if (!usuario) {
-                usuario = {
-                    email,
+            const email = profile.emails[0].value;
+            let user = await obterUsuario(email);
+
+            if (!user) {
+                // Registro inicial (SSO Just-in-Time Provisioning)
+                user = {
+                    email: email,
+                    nome: profile.displayName,
+                    provedor: 'google',
                     googleId: profile.id,
-                    name: profile.displayName,
-                    createdAt: new Date().toISOString(),
-                    bankReports: gerarRelatorioBancario(email)
+                    dataCriacao: new Date().toISOString()
                 };
-                await salvarUsuario(usuario);
-            } else {
-                usuario.lastLogin = new Date().toISOString();
-                await salvarUsuario(usuario);
+                await salvarUsuario(user);
+            } else if (!user.googleId) {
+                // Atualizar usuário existente com Google ID
+                user.googleId = profile.id;
+                user.provedor = 'google';
+                await salvarUsuario(user);
             }
-            return done(null, usuario);
-        } catch (err) {
-            return done(err);
+
+            return done(null, user);
+        } catch (error) {
+            return done(error, null);
         }
     }));
 
-    passport.serializeUser((usuario, done) => {
-        done(null, usuario.email);
-    });
+    // Iniciar fluxo de autenticação
+    app.get('/api/auth/google',
+        passport.authenticate('google', { scope: ['profile', 'email'] })
+    );
 
-    passport.deserializeUser(async (email, done) => {
-        try {
-            const usuario = await obterUsuario(email);
-            done(null, usuario);
-        } catch (err) {
-            done(err);
+    // Callback de retorno do Google
+    app.get('/api/auth/google/callback',
+        passport.authenticate('google', { failureRedirect: '/login?erro=sso_falhou' }),
+        (req, res) => {
+            // Sucesso na autenticação
+            const token = jwt.sign(
+                { email: req.user.email }, 
+                process.env.JWT_SECRET, 
+                { expiresIn: '24h' }
+            );
+
+            // Redirecionar para o frontend com o token (via URL ou cookie seguro)
+            // Aqui enviamos via Query Param para fins de demonstração e o frontend captura
+            res.redirect(`/#dashboard?token=${token}&email=${encodeURIComponent(req.user.email)}`);
         }
-    });
-
-    // Routes
-    app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-    app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/?login=failed' }), (req, res) => {
-        const token = jwt.sign({ email: req.user.email }, JWT_SECRET, { expiresIn: '7d' });
-        res.redirect(`/?token=${token}&login=success`);
-    });
+    );
 };

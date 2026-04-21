@@ -26,6 +26,7 @@
   --skeleton: linear-gradient(90deg, rgba(16, 24, 40, 0.06) 25%, rgba(16, 24, 40, 0.03) 50%, rgba(16, 24, 40, 0.06) 75%);
 }
 
+.dark-mode,
 [data-theme="dark"] {
   --bg: #0b111b;
   --bg-elevated: #111827;
@@ -80,6 +81,7 @@ body::before {
     repeating-linear-gradient(0deg, rgba(16, 24, 40, 0.026) 0, rgba(16, 24, 40, 0.026) 1px, transparent 1px, transparent 44px);
 }
 
+.dark-mode body::before,
 [data-theme="dark"] body::before {
   background:
     linear-gradient(180deg, rgba(30, 41, 59, 0.48), rgba(15, 23, 42, 0) 280px),
@@ -163,6 +165,7 @@ p {
   backdrop-filter: blur(18px);
 }
 
+.dark-mode .topbar,
 [data-theme="dark"] .topbar {
   background: rgba(11, 17, 27, 0.9);
 }
@@ -205,6 +208,7 @@ p {
   font-size: 0.92rem;
 }
 
+.dark-mode .nav,
 [data-theme="dark"] .nav {
   background: rgba(17, 24, 39, 0.66);
 }

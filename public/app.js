@@ -5,11 +5,21 @@ import { state, MAX_UPLOAD_BYTES } from './js/state.js';
 /* Theme */
 function initTheme() {
   const saved = localStorage.getItem('finpj_theme');
-  const isDark = saved ? saved === 'dark' : false;
+  const isDark = saved === 'dark';
+  if (isDark) {
+    document.documentElement.classList.add('dark-mode');
+  } else {
+    document.documentElement.classList.remove('dark-mode');
+  }
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
 }
 function toggleTheme() {
-  const isDark = document.documentElement.dataset.theme !== 'dark';
+  const isDark = !document.documentElement.classList.contains('dark-mode');
+  if (isDark) {
+    document.documentElement.classList.add('dark-mode');
+  } else {
+    document.documentElement.classList.remove('dark-mode');
+  }
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
   localStorage.setItem('finpj_theme', isDark ? 'dark' : 'light');
 }
@@ -1259,7 +1269,8 @@ async function submitDiagnostic(event) {
     setor: form.elements.setor.value.trim(),
     regime: form.elements.regime.value,
     faturamento,
-    margem
+    margem,
+    ncm: form.elements.ncm ? form.elements.ncm.value.trim() : ''
   };
   const button = $('button[type="submit"]', form);
   setLoading(button, true, 'Analisando...');
@@ -1517,7 +1528,7 @@ function bindEvents() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   bindEvents();
   runPublicDiagnostic();
   const handledRedirect = handleAuth0Redirect();
@@ -1528,4 +1539,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (/token|jwt|unauthorized|401/i.test(error.message)) clearSession();
     });
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
