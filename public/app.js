@@ -160,11 +160,41 @@ function renderTaxRows(selector, regimes) {
 function renderPublicDiagnostic(regimes, annualRevenue) {
   const best = regimes[0];
   const worst = regimes[regimes.length - 1];
-  const economy = Math.max(0, worst.tax - best.tax);
-  $('[data-public-best-regime]').textContent = best.name;
-  $('[data-public-diagnostic-copy]').textContent = annualRevenue
-    ? `Estimativa anual de impostos: ${formatCurrency(best.tax)}. Economia potencial frente ao pior cenário: ${formatCurrency(economy)}.`
-    : 'Preencha os dados para visualizar uma comparação tributária prévia.';
+  const form = $('[data-public-diagnostic-form]');
+  const regimeAtual = form?.elements?.regime_atual?.value;
+
+  // Calculate economy vs worst
+  const economyVsWorst = Math.max(0, worst.tax - best.tax);
+
+  // Calculate economy vs current regime if specified
+  let economyVsCurrent = 0;
+  let currentRegimeName = '';
+  if (regimeAtual) {
+    const currentRegime = regimes.find(r => r.key === regimeAtual);
+    if (currentRegime && currentRegime.eligible !== false) {
+      economyVsCurrent = Math.max(0, currentRegime.tax - best.tax);
+      currentRegimeName = currentRegime.name;
+    }
+  }
+
+  // Build message
+  let message = 'Preencha os dados para visualizar uma comparação tributária prévia.';
+  if (annualRevenue && best) {
+    const parts = [`Estimativa anual de impostos no melhor regime: ${formatCurrency(best.tax)}`];
+
+    if (economyVsWorst > 0) {
+      parts.push(`economia vs pior cenário: ${formatCurrency(economyVsWorst)}`);
+    }
+
+    if (economyVsCurrent > 0 && currentRegimeName) {
+      parts.push(`economia vs seu regime atual (${currentRegimeName}): ${formatCurrency(economyVsCurrent)}`);
+    }
+
+    message = parts.join('. ') + '.';
+  }
+
+  $('[data-public-best-regime]').textContent = best?.name || 'Simples Nacional';
+  $('[data-public-diagnostic-copy]').textContent = message;
   renderTaxRows('[data-regime-comparison]', regimes);
 }
 
@@ -1420,6 +1450,9 @@ function bindEvents() {
     }
     runPublicDiagnostic();
   });
+
+  // Regime atual change handler
+  $('[data-public-diagnostic-form] select[name="regime_atual"]')?.addEventListener('change', runPublicDiagnostic);
 
   const cnpjInputHandler = debounce((cnpj) => {
     if (cnpj.length !== 14) return;
