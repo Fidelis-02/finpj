@@ -564,13 +564,38 @@ let cnpjConsultaTimer = null;
                 const data = await safeJsonParse(res);
                 if (!res.ok || !data.sucesso) throw new Error(data.erro || 'Registro falhou.');
                 msgEl.style.color = '#34d399';
-                msgEl.textContent = '✅ ' + (data.mensagem || 'Conta criada! Faça login agora.');
+                msgEl.textContent = '✅ ' + (data.mensagem || 'Conta criada! Entrando...');
+                // Auto-login after successful registration to continue flow (e.g., pendingPlano)
+                try {
+                    const loginRes = await fetch('/api/auth/login-cnpj', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cnpj, password })
+                    });
+                    const loginData = await safeJsonParse(loginRes);
+                    if (loginRes.ok && loginData.sucesso) {
+                        localStorage.setItem('finpjToken', loginData.token);
+                        localStorage.setItem('finpjAuthEmail', loginData.email || '');
+                        updateAuthState();
+                        closeModal('register');
+                        if (pendingPlano) {
+                            iniciarCompra(pendingPlano);
+                            pendingPlano = null;
+                        } else {
+                            openDashboard();
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Auto-login após registro falhou:', e);
+                }
+                // Fallback: open login modal if auto-login fails
                 setTimeout(() => {
                     closeModal('register');
                     openModal('login');
                     setLoginTab('cnpj');
                     document.getElementById('login-cnpj').value = cnpjRaw;
-                }, 1800);
+                }, 800);
             } catch (erro) {
                 msgEl.style.color = '#ef4444';
                 msgEl.textContent = erro.message || 'Erro no registro.';
