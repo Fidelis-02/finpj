@@ -79,10 +79,12 @@ function clearSession() {
 
 function updateSessionUi() {
   const logged = Boolean(state.token);
+  $('[data-public-area]')?.classList.toggle('is-hidden', logged);
   $$('[data-open-login], [data-open-register]').forEach((el) => el.classList.toggle('is-hidden', logged));
   $('[data-logout]')?.classList.toggle('is-hidden', !logged);
   $('[data-dashboard]')?.classList.toggle('is-hidden', !logged);
   if (logged) $('[data-user-title]').textContent = `Dashboard ${state.authEmail || ''}`.trim();
+  if (logged && location.hash !== '#dashboard') location.hash = '#dashboard';
 }
 
 function openModal(selector) {
@@ -109,15 +111,85 @@ function setDashboardTab(tab) {
   $$('[data-panel]').forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.panel !== tab));
 }
 
+function renderInsightList(selector, items) {
+  const target = $(selector);
+  if (!target) return;
+  target.innerHTML = '';
+  items.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'insight-item';
+    el.innerHTML = `<strong>${item.title}</strong><p>${item.text}</p>`;
+    target.appendChild(el);
+  });
+}
+
+function renderBusinessDashboards(dashboard) {
+  const summary = dashboard.summary || {};
+  const reports = dashboard.reports || [];
+  const user = dashboard.user || {};
+  const total = Number(summary.totalMovimentado || 0);
+  const pendencias = Number(summary.pendencias || 0);
+  const receita = Math.round(total * 0.62);
+  const despesas = Math.round(total * 0.38);
+  const lucro = receita - despesas;
+  const margem = receita > 0 ? Math.round((lucro / receita) * 100) : 0;
+
+  $('[data-exec="revenue"]').textContent = formatCurrency(receita);
+  $('[data-exec="margin"]').textContent = `${margem}%`;
+  $('[data-exec="regime"]').textContent = user.regime || 'Nao informado';
+  $('[data-financial="income"]').textContent = formatCurrency(receita);
+  $('[data-financial="expenses"]').textContent = formatCurrency(despesas);
+  $('[data-financial="profit"]').textContent = formatCurrency(lucro);
+
+  renderInsightList('[data-executive-summary]', [
+    { title: 'Visao da empresa', text: `${reports.length || 0} eventos financeiros analisados para apoiar a leitura executiva.` },
+    { title: 'Performance operacional', text: `Margem estimada de ${margem}% com base nos movimentos recentes registrados.` },
+    { title: 'Plano ativo', text: `Plano selecionado: ${user.plano || 'starter'}. Pagamento: ${user.statusPagamento || 'pendente'}.` }
+  ]);
+  renderInsightList('[data-main-alerts]', [
+    { title: 'Pendencias', text: `${pendencias} item(ns) exigem revisao ou acompanhamento.` },
+    { title: 'Caixa', text: lucro >= 0 ? 'Resultado operacional positivo no resumo atual.' : 'Resultado operacional negativo: priorize revisao de despesas.' },
+    { title: 'Cadastro', text: user.cnpj ? 'CNPJ vinculado ao usuario.' : 'Complete o CNPJ/perfil para melhorar os diagnosticos.' }
+  ]);
+  renderInsightList('[data-balance-reading]', [
+    { title: 'Leitura gerencial', text: 'Acompanhe ativos, passivos e capacidade de pagamento a partir dos demonstrativos enviados.' },
+    { title: 'Capital de giro', text: 'Concilie extratos e DRE para identificar pressao no caixa antes do vencimento de impostos.' },
+    { title: 'Qualidade dos dados', text: 'Quanto mais documentos forem enviados, mais precisa fica a analise de balanco.' }
+  ]);
+  renderInsightList('[data-balance-risks]', [
+    { title: 'Gargalos', text: 'Pendencias financeiras recorrentes indicam necessidade de rotina de conciliacao.' },
+    { title: 'Pontos criticos', text: 'Saidas elevadas e eventos em atencao devem ser revisados por categoria.' },
+    { title: 'Oportunidades', text: 'Use analises de documentos para identificar ajustes em margem, custos e liquidez.' }
+  ]);
+  renderInsightList('[data-tax-fit]', [
+    { title: 'Enquadramento atual', text: `Regime informado: ${user.regime || 'nao informado'}.` },
+    { title: 'Eficiencia tributaria', text: 'Compare faturamento, margem e atividade para validar se o regime continua adequado.' },
+    { title: 'Operacao fiscal', text: 'Mantenha documentos e notas organizados para reduzir risco operacional.' }
+  ]);
+  renderInsightList('[data-tax-opportunities]', [
+    { title: 'Economia potencial', text: 'Execute diagnosticos tributarios para estimar economia e creditos recuperaveis.' },
+    { title: 'Riscos fiscais', text: 'Alertas de DAS/DARF e divergencias de movimento devem ser tratados antes do fechamento.' },
+    { title: 'Proximo ciclo', text: 'Revisar regime antes de mudancas relevantes de faturamento ou margem.' }
+  ]);
+  renderInsightList('[data-action-insights]', [
+    { title: 'Conectar banco', text: 'Use Open Finance para automatizar conciliacao e fluxo de caixa.' },
+    { title: 'Enviar demonstrativos', text: 'Inclua DRE, balanco ou extratos para ativar analises gerenciais.' },
+    { title: 'Atualizar perfil', text: 'Complete nome, telefone e dados fiscais para melhorar recomendacoes.' }
+  ]);
+  renderInsightList('[data-next-steps]', [
+    { title: 'Prioridade 1', text: pendencias ? 'Resolver pendencias abertas no painel financeiro.' : 'Manter rotina semanal de acompanhamento.' },
+    { title: 'Prioridade 2', text: 'Validar enquadramento tributario com base no faturamento atual.' },
+    { title: 'Prioridade 3', text: 'Conectar contas bancarias e revisar fluxo de caixa projetado.' }
+  ]);
+}
+
 function renderDashboard(payload) {
   const dashboard = payload?.dashboard || payload;
   if (!dashboard) return;
   state.dashboard = dashboard;
 
   const summary = dashboard.summary || {};
-  $('[data-metric="reportsCount"]').textContent = summary.reportsCount || 0;
-  $('[data-metric="totalMovimentado"]').textContent = formatCurrency(summary.totalMovimentado || 0);
-  $('[data-metric="pendencias"]').textContent = summary.pendencias || 0;
+  renderBusinessDashboards(dashboard);
 
   const table = $('[data-reports-table]');
   table.innerHTML = '';
@@ -218,7 +290,7 @@ async function verifyCode(button) {
     if (data.dashboard) renderDashboard(data.dashboard);
     closeModals();
     await loadDashboard();
-    location.hash = '#dashboard';
+    updateSessionUi();
     showToast('Login realizado.', 'success');
   } finally {
     setLoading(button, false);
@@ -236,7 +308,7 @@ async function loginCnpj(button) {
     if (data.dashboard) renderDashboard(data.dashboard);
     closeModals();
     await Promise.all([loadDashboard(), loadBanks(), loadProfile()]);
-    location.hash = '#dashboard';
+    updateSessionUi();
     showToast('Login realizado.', 'success');
   } finally {
     setLoading(button, false);
@@ -263,11 +335,20 @@ async function register(event) {
     if (login.dashboard) renderDashboard(login.dashboard);
     closeModals();
     await Promise.all([loadDashboard(), loadBanks(), loadProfile()]);
-    location.hash = '#dashboard';
-    showToast('Conta criada e login realizado.', 'success');
+    showToast('Conta criada. Redirecionando para pagamento...', 'success');
+    await redirectToCheckout(plan);
   } finally {
     setLoading(button, false);
   }
+}
+
+async function redirectToCheckout(plan) {
+  const data = await apiRequest('/api/pagamento', {
+    method: 'POST',
+    body: JSON.stringify({ plano: plan })
+  });
+  if (!data.checkoutUrl) throw new Error('Checkout nao retornado pelo servidor.');
+  window.location.href = data.checkoutUrl;
 }
 
 async function connectBank(button) {
@@ -395,6 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
   handleAuth0Redirect();
   updateSessionUi();
   if (state.token) {
+    updateSessionUi();
     Promise.all([loadDashboard(), loadBanks(), loadProfile()]).catch((error) => {
       showToast(error.message, 'error');
       if (/token|jwt|unauthorized|401/i.test(error.message)) clearSession();

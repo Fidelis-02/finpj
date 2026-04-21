@@ -129,10 +129,37 @@ p { color: var(--muted); line-height: 1.6; }
 .price-card.featured { background: #111114; color: #fff; }
 .price-card.featured p, .price-card.featured span { color: rgba(255,255,255,0.72); }
 
-.dashboard {
-  max-width: 1180px;
-  margin: 30px auto 80px;
+.dashboard { max-width: 1320px; margin: 30px auto 80px; }
+.app-shell { padding-top: 42px; }
+.app-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
 }
+.side-nav {
+  position: sticky;
+  top: 92px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: rgba(255,255,255,0.78);
+  box-shadow: 0 14px 48px rgba(0,0,0,0.08);
+  backdrop-filter: blur(18px);
+}
+.side-link {
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+}
+.side-link.is-active, .side-link:hover { background: var(--dark); color: #fff; }
+.app-content { min-width: 0; }
 .dashboard-header { justify-content: space-between; gap: 18px; margin-bottom: 22px; }
 .tabs { gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
 .tabs.compact { margin: 0 0 16px; }
@@ -146,6 +173,22 @@ p { color: var(--muted); line-height: 1.6; }
 .tab.is-active { background: var(--dark); color: #fff; border-color: var(--dark); }
 
 .table-card { overflow: hidden; margin-top: 18px; }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+.panel-card { min-height: 260px; }
+.insight-list { display: grid; gap: 12px; padding: 0 22px 22px; }
+.insight-item {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.72);
+}
+.insight-item strong { display: block; margin-bottom: 4px; }
+.insight-item p { margin: 0; }
 .table-header, .split-card { justify-content: space-between; gap: 18px; padding: 22px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.6); }
@@ -215,6 +258,8 @@ input:focus, select:focus { border-color: rgba(0, 113, 227, 0.55); box-shadow: 0
   .hero { grid-template-columns: 1fr; padding-top: 42px; }
   .hero-card { transform: none; }
   .feature-grid, .pricing-grid, .metric-grid { grid-template-columns: 1fr; }
+  .app-layout, .dashboard-grid { grid-template-columns: 1fr; }
+  .side-nav { position: static; }
   .dashboard-header, .split-card, .bank-item { align-items: stretch; flex-direction: column; }
   h1 { font-size: clamp(2.8rem, 15vw, 4.8rem); }
 }

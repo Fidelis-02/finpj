@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#f5f5f7">
   <title>FinPJ | Gestao financeira para empresas</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/logo.svg">
   <link rel="stylesheet" href="/style.css">
   <script src="https://cdn.pluggy.ai/pluggy-connect/v2.7.0/pluggy-connect.js" defer></script>
   <script src="/app.js" defer></script>
@@ -30,6 +31,7 @@
   </header>
 
   <main>
+    <div data-public-area>
     <section id="home" class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Open Finance, impostos e caixa em um so lugar</p>
@@ -74,26 +76,27 @@
       <div class="pricing-grid">
         <article class="price-card" data-plan-card="starter">
           <span>Starter</span>
-          <strong>R$ 49</strong>
+          <strong>R$ 490</strong>
           <p>Para organizar o basico com velocidade.</p>
           <button class="btn btn-light" type="button" data-select-plan="starter">Selecionar</button>
         </article>
         <article class="price-card featured" data-plan-card="growth">
           <span>Growth</span>
-          <strong>R$ 129</strong>
+          <strong>R$ 950</strong>
           <p>Para empresas que precisam de integracoes e previsao.</p>
           <button class="btn btn-dark" type="button" data-select-plan="growth">Selecionar</button>
         </article>
         <article class="price-card" data-plan-card="enterprise">
           <span>Enterprise</span>
-          <strong>R$ 299</strong>
+          <strong>R$ 1.850</strong>
           <p>Para operacoes maiores com controle avancado.</p>
           <button class="btn btn-light" type="button" data-select-plan="enterprise">Selecionar</button>
         </article>
       </div>
     </section>
+    </div>
 
-    <section id="dashboard" class="dashboard is-hidden" data-dashboard>
+    <section id="dashboard" class="dashboard app-shell is-hidden" data-dashboard>
       <div class="dashboard-header">
         <div>
           <p class="eyebrow">Area logada</p>
@@ -101,44 +104,93 @@
         </div>
         <button class="btn btn-dark" type="button" data-refresh-dashboard>Atualizar</button>
       </div>
-      <div class="tabs" role="tablist">
-        <button class="tab is-active" type="button" data-tab="overview">Visao geral</button>
-        <button class="tab" type="button" data-tab="openfinance">Open Finance</button>
-        <button class="tab" type="button" data-tab="profile">Perfil</button>
-      </div>
-      <div class="tab-panel" data-panel="overview">
-        <div class="metric-grid">
-          <div class="metric-card"><span>Relatorios</span><strong data-metric="reportsCount">0</strong></div>
-          <div class="metric-card"><span>Movimentado</span><strong data-metric="totalMovimentado">R$ 0</strong></div>
-          <div class="metric-card"><span>Pendencias</span><strong data-metric="pendencias">0</strong></div>
-        </div>
-        <div class="table-card">
-          <div class="table-header"><h3>Atividades recentes</h3></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Data</th><th>Evento</th><th>Status</th><th>Valor</th></tr></thead>
-              <tbody data-reports-table></tbody>
-            </table>
+      <div class="app-layout">
+        <aside class="side-nav" aria-label="Navegacao do aplicativo">
+          <button class="side-link is-active" type="button" data-tab="overview">Visao geral</button>
+          <button class="side-link" type="button" data-tab="financial">Analise financeira</button>
+          <button class="side-link" type="button" data-tab="statements">Balanco e demonstrativos</button>
+          <button class="side-link" type="button" data-tab="tax">Inteligencia tributaria</button>
+          <button class="side-link" type="button" data-tab="insights">Insights acionaveis</button>
+          <button class="side-link" type="button" data-tab="openfinance">Open Finance</button>
+          <button class="side-link" type="button" data-tab="profile">Perfil</button>
+        </aside>
+        <div class="app-content">
+        <div class="tab-panel" data-panel="overview">
+          <div class="metric-grid">
+            <div class="metric-card"><span>Faturamento estimado</span><strong data-exec="revenue">R$ 0</strong></div>
+            <div class="metric-card"><span>Margem operacional</span><strong data-exec="margin">0%</strong></div>
+            <div class="metric-card"><span>Regime tributario</span><strong data-exec="regime">Nao informado</strong></div>
+          </div>
+          <div class="dashboard-grid">
+            <article class="table-card panel-card">
+              <div class="table-header"><h3>Resumo executivo</h3></div>
+              <div class="insight-list" data-executive-summary></div>
+            </article>
+            <article class="table-card panel-card">
+              <div class="table-header"><h3>Alertas principais</h3></div>
+              <div class="insight-list" data-main-alerts></div>
+            </article>
           </div>
         </div>
-      </div>
-      <div class="tab-panel is-hidden" data-panel="openfinance">
-        <div class="split-card">
-          <div>
-            <h3>Conectar banco</h3>
-            <p>O token e gerado no servidor. Se a Pluggy estiver sem credenciais, a mensagem aponta o problema.</p>
+
+        <div class="tab-panel is-hidden" data-panel="financial">
+          <div class="metric-grid">
+            <div class="metric-card"><span>Receita</span><strong data-financial="income">R$ 0</strong></div>
+            <div class="metric-card"><span>Despesas</span><strong data-financial="expenses">R$ 0</strong></div>
+            <div class="metric-card"><span>Lucro</span><strong data-financial="profit">R$ 0</strong></div>
           </div>
-          <button class="btn btn-dark" type="button" data-connect-bank>Conectar banco</button>
+          <div class="table-card">
+            <div class="table-header"><h3>Fluxo de caixa e indicadores</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Data</th><th>Evento</th><th>Status</th><th>Valor</th></tr></thead>
+                <tbody data-reports-table></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="bank-list" data-bank-list></div>
-      </div>
-      <div class="tab-panel is-hidden" data-panel="profile">
-        <form class="profile-form" data-profile-form>
-          <label>Nome da empresa<input name="nome" autocomplete="organization"></label>
-          <label>Nome fantasia<input name="fantasia" autocomplete="organization-title"></label>
-          <label>Telefone<input name="telefone" autocomplete="tel"></label>
-          <button class="btn btn-dark" type="submit">Salvar perfil</button>
-        </form>
+
+        <div class="tab-panel is-hidden" data-panel="statements">
+          <div class="dashboard-grid">
+            <article class="table-card panel-card"><div class="table-header"><h3>Leitura gerencial</h3></div><div class="insight-list" data-balance-reading></div></article>
+            <article class="table-card panel-card"><div class="table-header"><h3>Pontos criticos e gargalos</h3></div><div class="insight-list" data-balance-risks></div></article>
+          </div>
+        </div>
+
+        <div class="tab-panel is-hidden" data-panel="tax">
+          <div class="dashboard-grid">
+            <article class="table-card panel-card"><div class="table-header"><h3>Enquadramento</h3></div><div class="insight-list" data-tax-fit></div></article>
+            <article class="table-card panel-card"><div class="table-header"><h3>Oportunidades e riscos fiscais</h3></div><div class="insight-list" data-tax-opportunities></div></article>
+          </div>
+        </div>
+
+        <div class="tab-panel is-hidden" data-panel="insights">
+          <div class="dashboard-grid">
+            <article class="table-card panel-card"><div class="table-header"><h3>Recomendacoes praticas</h3></div><div class="insight-list" data-action-insights></div></article>
+            <article class="table-card panel-card"><div class="table-header"><h3>Prioridades e proximos passos</h3></div><div class="insight-list" data-next-steps></div></article>
+          </div>
+        </div>
+
+        <div class="tab-panel is-hidden" data-panel="openfinance">
+          <div class="split-card">
+            <div>
+              <h3>Conectar banco</h3>
+              <p>O token e gerado no servidor. Se a Pluggy estiver sem credenciais, a mensagem aponta o problema.</p>
+            </div>
+            <button class="btn btn-dark" type="button" data-connect-bank>Conectar banco</button>
+          </div>
+          <div class="bank-list" data-bank-list></div>
+        </div>
+
+        <div class="tab-panel is-hidden" data-panel="profile">
+          <form class="profile-form" data-profile-form>
+            <label>Nome da empresa<input name="nome" autocomplete="organization"></label>
+            <label>Nome fantasia<input name="fantasia" autocomplete="organization-title"></label>
+            <label>Telefone<input name="telefone" autocomplete="tel"></label>
+            <button class="btn btn-dark" type="submit">Salvar perfil</button>
+          </form>
+        </div>
+        </div>
       </div>
     </section>
   </main>
