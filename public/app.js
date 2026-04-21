@@ -18,6 +18,49 @@ const MAX_UPLOAD_BYTES = 3.5 * 1024 * 1024;
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
+/* Theme */
+function initTheme() {
+  const saved = localStorage.getItem('finpj_theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = saved ? saved === 'dark' : prefersDark;
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+}
+function toggleTheme() {
+  const isDark = document.documentElement.dataset.theme !== 'dark';
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  localStorage.setItem('finpj_theme', isDark ? 'dark' : 'light');
+}
+initTheme();
+
+/* Service Worker */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+/* Debounce */
+function debounce(fn, wait = 300) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); };
+}
+
+/* Focus trap for modals */
+function trapFocus(modal) {
+  const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  first.focus();
+  modal._onKeydown = (e) => {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  modal.addEventListener('keydown', modal._onKeydown);
+}
+function untrapFocus(modal) {
+  if (modal._onKeydown) modal.removeEventListener('keydown', modal._onKeydown);
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
 }
@@ -108,11 +151,13 @@ function calculatePublicRegime(params) {
 function setLoading(element, isLoading, label = 'Processando...') {
   if (!element) return;
   if (isLoading) {
-    element.dataset.label = element.textContent;
-    element.textContent = label;
+    if (!element.dataset.label) element.dataset.label = element.textContent;
+    element.classList.add('is-loading');
+    element.innerHTML = '<span class="btn-spinner"></span>' + escapeHtml(label);
     element.disabled = true;
   } else {
     element.textContent = element.dataset.label || element.textContent;
+    element.classList.remove('is-loading');
     element.disabled = false;
   }
 }
@@ -127,20 +172,35 @@ function showToast(message, type = 'info') {
   setTimeout(() => toast.remove(), 4200);
 }
 
-async function apiRequest(path, options = {}) {
-  const headers = { ...(options.headers || {}) };
-  if (!(options.body instanceof FormData)) headers['Content-Type'] = headers['Content-Type'] || 'application/json';
-  if (state.token) headers.Authorization = `Bearer ${state.token}`;
+const HTTP_MESSAGES = {
+  400: 'Dados inválidos. Verifique as informações enviadas.',
+  401: 'Sessão expirada. Faça login novamente.',
+  403: 'Você não tem permissão para acessar este recurso.',
+  404: 'Recurso não encontrado.',
+  409: 'Conflito: recurso já existe ou está em uso.',
+  422: 'Dados incompletos ou fora do formato esperado.',
+  429: 'Muitas requisições. Aguarde um momento.',
+  500: 'Erro interno no servidor. Tente novamente mais tarde.',
+  502: 'Serviço temporariamente indisponível.',
+  503: 'Serviço em manutenção. Tente novamente em breve.'
+};
 
-  const response = await fetch(path, { ...options, headers });
+async function apiRequest(path, options = {}) {
+  let response;
+  try {
+    const headers = { ...(options.headers || {}) };
+    if (!(options.body instanceof FormData)) headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    if (state.token) headers.Authorization = `Bearer ${state.token}`;
+    response = await fetch(path, { ...options, headers });
+  } catch (networkError) {
+    throw new Error('Sem conexão com a internet. Verifique sua rede e tente novamente.');
+  }
   const contentType = response.headers.get('content-type') || '';
   const body = contentType.includes('application/json') ? await response.json() : await response.text();
   if (!response.ok) {
-    let message = typeof body === 'object' ? (body.erro || body.error || body.mensagem) : body;
-    if (typeof body === 'object' && body.sugestao) {
-      message = `${message}\n\nSugestão: ${body.sugestao}`;
-    }
-    throw new Error(message || `Erro HTTP ${response.status}`);
+    const raw = typeof body === 'object' ? (body.erro || body.error || body.mensagem || body.message) : body;
+    const friendly = HTTP_MESSAGES[response.status] || `Erro ${response.status}`;
+    throw new Error(raw || friendly);
   }
   return body;
 }
@@ -185,10 +245,12 @@ function openModal(selector) {
   if (!modal) return;
   if (typeof modal.showModal === 'function') modal.showModal();
   else modal.classList.remove('is-hidden');
+  trapFocus(modal);
 }
 
 function closeModals() {
   $$('.modal').forEach((modal) => {
+    untrapFocus(modal);
     if (typeof modal.close === 'function') modal.close();
     modal.classList.add('is-hidden');
   });
@@ -702,17 +764,28 @@ function renderTaxCalendar() {
   ]);
 }
 
+function removeSkeletons(container) {
+  if (!container) return;
+  container.querySelectorAll('.skeleton').forEach((el) => el.classList.remove('skeleton', 'skeleton-text', 'skeleton-title', 'skeleton-card'));
+}
+
 function renderBusinessDashboards(dashboard = state.dashboard) {
   if (!dashboard) return;
   const metrics = buildMetrics(dashboard);
   const user = metrics.user;
 
-  $('[data-exec="revenue"]').textContent = formatCurrency(metrics.annualRevenue);
-  $('[data-exec="margin"]').textContent = formatPercent(metrics.margin);
-  $('[data-exec="regime"]').textContent = formatRegime(user.regime || '');
-  $('[data-financial="income"]').textContent = formatCurrency(metrics.annualRevenue);
-  $('[data-financial="expenses"]').textContent = formatCurrency(metrics.expenses);
-  $('[data-financial="profit"]').textContent = formatCurrency(metrics.profit);
+  const revenueEl = $('[data-exec="revenue"]');
+  if (revenueEl) { revenueEl.textContent = formatCurrency(metrics.annualRevenue); removeSkeletons(revenueEl.parentElement); }
+  const marginEl = $('[data-exec="margin"]');
+  if (marginEl) { marginEl.textContent = formatPercent(metrics.margin); removeSkeletons(marginEl.parentElement); }
+  const regimeEl = $('[data-exec="regime"]');
+  if (regimeEl) { regimeEl.textContent = formatRegime(user.regime || ''); removeSkeletons(regimeEl.parentElement); }
+  const incomeEl = $('[data-financial="income"]');
+  if (incomeEl) { incomeEl.textContent = formatCurrency(metrics.annualRevenue); removeSkeletons(incomeEl.parentElement); }
+  const expensesEl = $('[data-financial="expenses"]');
+  if (expensesEl) { expensesEl.textContent = formatCurrency(metrics.expenses); removeSkeletons(expensesEl.parentElement); }
+  const profitEl = $('[data-financial="profit"]');
+  if (profitEl) { profitEl.textContent = formatCurrency(metrics.profit); removeSkeletons(profitEl.parentElement); }
 
   syncDashboardForms(user);
   renderDecisionCenter(metrics);
@@ -1340,6 +1413,7 @@ function bindEvents() {
   $('[data-profile-form]')?.addEventListener('submit', (event) => saveProfile(event).catch((error) => showToast(error.message, 'error')));
   $('[data-profile-form] input[name="cnpj"]')?.addEventListener('input', (event) => {
     event.target.value = formatCnpj(event.target.value);
+    event.target.setAttribute('maxlength', '18');
   });
   $('[data-diagnostic-form]')?.addEventListener('submit', (event) => submitDiagnostic(event).catch((error) => showToast(error.message, 'error')));
   $('[data-ai-upload-form]')?.addEventListener('submit', (event) => uploadAiDocument(event).catch((error) => showToast(error.message, 'error')));
@@ -1351,17 +1425,34 @@ function bindEvents() {
   $('[data-dashboard-tax-form]')?.addEventListener('input', () => runDashboardTaxSimulation());
   $('[data-copy-tax-to-diagnostic]')?.addEventListener('click', copyTaxToDiagnostic);
 
+  const cnpjInputHandler = debounce((cnpj) => {
+    if (cnpj.length !== 14) return;
+    lookupCnpj(cnpj).catch((error) => {
+      $('[data-cnpj-result]').textContent = error.message || 'Não foi possível consultar este CNPJ agora.';
+    });
+  }, 450);
+
   $('[data-register-cnpj]')?.addEventListener('input', (event) => {
     const cnpj = onlyDigits(event.target.value);
     event.target.value = formatCnpj(cnpj);
+    event.target.setAttribute('maxlength', '18');
     $('[data-company-preview]').textContent = cnpj.length === 14
       ? `Conta será criada para o CNPJ ${formatCnpj(cnpj)}.`
       : 'Informe o CNPJ para criar a conta.';
-    clearTimeout(state.cnpjTimer);
-    state.cnpjTimer = setTimeout(() => lookupCnpj(cnpj).catch((error) => {
-      $('[data-cnpj-result]').textContent = error.message || 'Não foi possível consultar este CNPJ agora.';
-    }), 450);
+    cnpjInputHandler(cnpj);
   });
+
+  $('[data-login-cnpj]')?.addEventListener('input', (event) => {
+    event.target.value = formatCnpj(event.target.value);
+    event.target.setAttribute('maxlength', '18');
+  });
+
+  $('[data-diag-cnpj]')?.addEventListener('input', (event) => {
+    event.target.value = formatCnpj(event.target.value);
+    event.target.setAttribute('maxlength', '18');
+  });
+
+  $('[data-theme-toggle]')?.addEventListener('click', toggleTheme);
 
   $$('[data-select-plan]').forEach((button) => button.addEventListener('click', () => {
     state.pendingPlan = button.dataset.selectPlan;

@@ -30,6 +30,9 @@
       <a href="#dashboard" data-auth-link>Dashboard</a>
     </nav>
     <div class="topbar-actions">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema" title="Alternar tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
       <button class="btn btn-ghost" type="button" data-open-login>Entrar</button>
       <button class="btn btn-dark" type="button" data-open-register>Começar agora</button>
       <button class="btn btn-ghost is-hidden" type="button" data-logout>Sair</button>
@@ -49,10 +52,21 @@
           </div>
         </div>
         <aside class="hero-card" aria-label="Resumo financeiro">
-          <div class="metric-card">
+          <div class="metric-card" style="padding:0; background:none; border:none; box-shadow:none; backdrop-filter:none;">
             <span>Saldo projetado</span>
             <strong data-hero-balance>R$ 42.800</strong>
             <small>+18% nos próximos 30 dias</small>
+          </div>
+          <div>
+            <span style="display:block;color:var(--muted);font-size:0.92rem;margin-bottom:10px;">Evolução mensal</span>
+            <div class="hero-chart" aria-hidden="true">
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+            </div>
           </div>
           <div class="glass-list">
             <div><span>Receitas</span><strong>R$ 128k</strong></div>
@@ -163,17 +177,17 @@
             <div class="metric-grid">
               <button class="metric-card metric-button" type="button" data-go-tab="profile">
                 <span>Faturamento estimado</span>
-                <strong data-exec="revenue">R$ 0</strong>
+                <strong data-exec="revenue" class="skeleton skeleton-text skeleton-card">R$ 0</strong>
                 <small>Atualizar perfil</small>
               </button>
               <button class="metric-card metric-button" type="button" data-go-tab="ai">
                 <span>Margem operacional</span>
-                <strong data-exec="margin">0%</strong>
+                <strong data-exec="margin" class="skeleton skeleton-text skeleton-card">0%</strong>
                 <small>Enviar DRE</small>
               </button>
               <button class="metric-card metric-button" type="button" data-go-tab="tax">
                 <span>Regime tributário</span>
-                <strong data-exec="regime">Não informado</strong>
+                <strong data-exec="regime" class="skeleton skeleton-text skeleton-card">Não informado</strong>
                 <small>Comparar regimes</small>
               </button>
             </div>
@@ -181,10 +195,14 @@
             <section class="decision-panel">
               <div>
                 <p class="eyebrow">CFO digital</p>
-                <h3 data-decision-title>Prioridade do mês</h3>
-                <p data-decision-summary>Carregando recomendações da empresa.</p>
+                <h3 data-decision-title class="skeleton skeleton-title">Prioridade do mês</h3>
+                <p data-decision-summary class="skeleton skeleton-text">Carregando recomendações da empresa.</p>
               </div>
-              <div class="decision-actions" data-decision-actions></div>
+              <div class="decision-actions" data-decision-actions>
+                <div class="action-card skeleton skeleton-card" style="min-height:100px"></div>
+                <div class="action-card skeleton skeleton-card" style="min-height:100px"></div>
+                <div class="action-card skeleton skeleton-card" style="min-height:100px"></div>
+              </div>
             </section>
 
             <section class="setup-progress">
@@ -192,26 +210,40 @@
                 <h3>Roteiro de implantação</h3>
                 <span class="score-pill" data-readiness-score>0%</span>
               </div>
-              <div class="setup-steps" data-setup-steps></div>
+              <div class="setup-steps" data-setup-steps>
+                <div class="setup-step skeleton skeleton-card"></div>
+                <div class="setup-step skeleton skeleton-card"></div>
+                <div class="setup-step skeleton skeleton-card"></div>
+                <div class="setup-step skeleton skeleton-card"></div>
+                <div class="setup-step skeleton skeleton-card"></div>
+              </div>
             </section>
 
             <div class="dashboard-grid">
               <article class="table-card panel-card">
                 <div class="table-header"><h3>Resumo executivo</h3></div>
-                <div class="insight-list" data-executive-summary></div>
+                <div class="insight-list" data-executive-summary>
+                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
+                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
+                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
+                </div>
               </article>
               <article class="table-card panel-card">
                 <div class="table-header"><h3>Alertas principais</h3></div>
-                <div class="insight-list" data-main-alerts></div>
+                <div class="insight-list" data-main-alerts>
+                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
+                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
+                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
+                </div>
               </article>
             </div>
           </div>
 
           <div class="tab-panel is-hidden" data-panel="financial">
             <div class="metric-grid">
-              <div class="metric-card"><span>Receita</span><strong data-financial="income">R$ 0</strong></div>
-              <div class="metric-card"><span>Despesas</span><strong data-financial="expenses">R$ 0</strong></div>
-              <div class="metric-card"><span>Lucro</span><strong data-financial="profit">R$ 0</strong></div>
+              <div class="metric-card"><span>Receita</span><strong data-financial="income" class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
+              <div class="metric-card"><span>Despesas</span><strong data-financial="expenses" class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
+              <div class="metric-card"><span>Lucro</span><strong data-financial="profit" class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
             </div>
             <div class="dashboard-grid">
               <article class="table-card panel-card">
