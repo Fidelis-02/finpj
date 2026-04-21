@@ -1268,6 +1268,35 @@
         let _regStep = 1;
         let _regCompanyData = null;
         let _regCnpjTimer = null;
+        let _regStep = 1;
+        let _regCompanyData = null;
+        let _selectedPlan = 'growth';
+
+        function selectPlan(planId) {
+            _selectedPlan = planId;
+            ['starter', 'growth', 'enterprise'].forEach(p => {
+                const card = document.getElementById('plan-card-' + p);
+                const radio = document.getElementById('plan-radio-' + p);
+                if (card) {
+                    card.style.borderColor = p === planId ? 'var(--color-primary)' : 'var(--border)';
+                    card.style.background = p === planId ? 'rgba(29,116,242,0.08)' : 'var(--bg-secondary)';
+                }
+                if (radio) {
+                    if (p === planId) {
+                        radio.style.borderColor = 'var(--color-primary)';
+                        radio.style.background = 'var(--color-primary)';
+                        radio.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#fff;"></div>';
+                    } else {
+                        radio.style.borderColor = 'var(--border)';
+                        radio.style.background = 'transparent';
+                        radio.innerHTML = '';
+                    }
+                }
+            });
+            const badge = document.getElementById('reg-step3-plan-badge');
+            const planNames = { starter: 'Starter • R$ 490/mês', growth: 'Growth • R$ 950/mês', enterprise: 'Enterprise • R$ 1.850/mês' };
+            if (badge) badge.textContent = planNames[planId] || 'Growth • R$ 950/mês';
+        }
 
         function regGoStep(n) {
             _regStep = n;
@@ -1281,19 +1310,23 @@
             const hdr   = document.getElementById('reg-header');
 
             if (n === 1) {
-                if (bar)   bar.style.width = '50%';
-                if (label) label.textContent = 'Etapa 1 de 2';
+                if (bar)   bar.style.width = '33%';
+                if (label) label.textContent = 'Etapa 1 de 3';
                 if (hdr)   hdr.style.display = 'block';
             } else if (n === 2) {
-                if (bar)   bar.style.width = '100%';
-                if (label) label.textContent = 'Etapa 2 de 2';
+                if (bar)   bar.style.width = '66%';
+                if (label) label.textContent = 'Etapa 2 de 3';
                 if (hdr)   hdr.style.display = 'block';
-                // Preenche o card de contexto no step 2
-                const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
-                document.getElementById('reg-step2-company').textContent = (_regCompanyData && _regCompanyData.nome) || 'Empresa';
-                document.getElementById('reg-step2-cnpj').textContent    = 'CNPJ: ' + cnpjRaw;
             } else if (n === 3) {
-                if (hdr) hdr.style.display = 'none';
+                if (bar)   bar.style.width = '100%';
+                if (label) label.textContent = 'Etapa 3 de 3';
+                if (hdr)   hdr.style.display = 'block';
+                const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
+                const step3Company = document.getElementById('reg-step3-company');
+                const step3Cnpj = document.getElementById('reg-step3-cnpj');
+                if (step3Company) step3Company.textContent = (_regCompanyData && _regCompanyData.nome) || 'Empresa';
+                if (step3Cnpj) step3Cnpj.textContent = 'CNPJ: ' + cnpjRaw;
+                selectPlan(_selectedPlan);
             }
         }
 
@@ -1410,7 +1443,7 @@
             const pwd  = (document.getElementById('reg-password') || {}).value || '';
             const conf = (document.getElementById('reg-confirm')  || {}).value || '';
             const icon = document.getElementById('reg-confirm-icon');
-            const btn  = document.getElementById('reg-btn-2');
+            const btn  = document.getElementById('reg-btn-3');
 
             const validPwd  = pwd.length >= 6;
             const validConf = conf.length > 0 && pwd === conf;
@@ -1422,7 +1455,7 @@
             }
 
             if (btn) btn.disabled = !(validPwd && validConf);
-            regSetMsg(2, (!validConf && conf.length > 0) ? 'As senhas não coincidem.' : '', '#ef4444');
+            regSetMsg(3, (!validConf && conf.length > 0) ? 'As senhas não coincidem.' : '', '#ef4444');
         }
 
         function regTogglePassword(id, btn) {
@@ -1508,11 +1541,13 @@
                 if (card) card.style.display = 'none';
                 const btn1 = document.getElementById('reg-btn-1');
                 if (btn1) btn1.disabled = true;
-                const btn2 = document.getElementById('reg-btn-2');
-                if (btn2) { btn2.disabled = true; btn2.textContent = 'Criar conta'; }
+                const btn3 = document.getElementById('reg-btn-3');
+                if (btn3) { btn3.disabled = true; btn3.textContent = 'Criar conta'; }
                 regSetMsg(1, '');
-                regSetMsg(2, '');
+                regSetMsg(3, '');
                 _regCompanyData = null;
+                _selectedPlan = 'growth';
+                selectPlan('growth');
                 regGoStep(1);
             }
             // Usa o openModal original (que adiciona a classe 'active')
