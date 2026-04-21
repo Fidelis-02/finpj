@@ -30,11 +30,12 @@ const upload = multer({
     fileFilter: (req, file, cb) => {
         const allowed = ['application/pdf', 'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'text/csv', 'text/plain'];
-        if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|xlsx|xls|csv|txt|ods)$/i)) {
+            'text/csv', 'text/plain',
+            'image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff'];
+        if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|xlsx|xls|csv|txt|ods|jpe?g|png|webp|bmp|tiff)$/i)) {
             cb(null, true);
         } else {
-            cb(new Error('Formato não suportado. Use PDF, Excel, CSV ou TXT.'));
+            cb(new Error('Formato nao suportado. Use PDF, Excel, CSV, TXT ou imagem (JPG/PNG).'));
         }
     }
 });

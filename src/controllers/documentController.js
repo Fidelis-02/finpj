@@ -4,6 +4,26 @@ const { analisarComGroq } = require('../services/aiService');
 const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 16000);
 const MAX_ANALYSES_RETURNED = Number(process.env.MAX_ANALYSES_RETURNED || 20);
 
+const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff'];
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff'];
+
+async function extrairTextoOCR(buffer) {
+    const { createWorker } = require('tesseract.js');
+    const worker = await createWorker('por');
+    try {
+        const ret = await worker.recognize(buffer);
+        return ret.data.text || '';
+    } finally {
+        await worker.terminate();
+    }
+}
+
+function isImageFile(mime, nome) {
+    if (IMAGE_MIME_TYPES.includes(mime)) return true;
+    if (IMAGE_EXTENSIONS.some(ext => nome.endsWith(ext))) return true;
+    return false;
+}
+
 function compactarArray(valor, limite = 8) {
     if (!Array.isArray(valor)) return valor;
     return valor.slice(0, limite).map((item) => {
@@ -205,7 +225,10 @@ async function uploadDocumento(req, res) {
     const mime = req.file.mimetype;
     const nome = req.file.originalname.toLowerCase();
 
-    if (mime === 'application/pdf' || nome.endsWith('.pdf')) {
+    if (isImageFile(mime, nome)) {
+        console.log(`[uploadDocumento] OCR em imagem: ${req.file.originalname}`);
+        texto = await extrairTextoOCR(req.file.buffer);
+    } else if (mime === 'application/pdf' || nome.endsWith('.pdf')) {
         texto = await extrairTextoPDF(req.file.buffer);
     } else if (nome.match(/\.(xlsx|xls|ods)$/)) {
         texto = extrairTextoExcel(req.file.buffer);
@@ -217,12 +240,20 @@ async function uploadDocumento(req, res) {
 
     const textoLimpo = texto.trim();
     if (!textoLimpo) {
-        return res.status(422).json({ erro: 'Nao foi possivel extrair texto do documento. Se for um PDF digitalizado como imagem (nao pesquisavel), envie uma versao pesquisavel, OCR ou Excel.' });
+        return res.status(422).json({
+            erro: 'Nao foi possivel extrair texto do documento.',
+            sugestao: 'Se for um PDF digitalizado (imagem), converta-o para PNG/JPG e envie, ou use um arquivo Excel/CSV.',
+            acoes: ['converter_pdf_para_imagem', 'enviar_excel']
+        });
     }
 
     // Heuristica: menos de 100 caracteres ou quase so numeros = provavel PDF digitalizado mal extraido
     if (textoLimpo.length < 100 || textoLimpo.replace(/[\d\s.,\-/]/g, '').length < 30) {
-        return res.status(422).json({ erro: 'Texto extraido muito curto ou sem conteudo semantico. Verifique se o PDF esta selecionavel ou use um arquivo Excel/CSV.' });
+        return res.status(422).json({
+            erro: 'Texto extraido muito curto ou sem conteudo semantico.',
+            sugestao: 'Verifique se o PDF esta selecionavel ou converta-o para imagem/Excel.',
+            acoes: ['converter_pdf_para_imagem', 'enviar_excel']
+        });
     }
 
     if (!possuiTermosContabeisMinimos(textoLimpo, tipo)) {

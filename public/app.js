@@ -136,7 +136,10 @@ async function apiRequest(path, options = {}) {
   const contentType = response.headers.get('content-type') || '';
   const body = contentType.includes('application/json') ? await response.json() : await response.text();
   if (!response.ok) {
-    const message = typeof body === 'object' ? (body.erro || body.error || body.mensagem) : body;
+    let message = typeof body === 'object' ? (body.erro || body.error || body.mensagem) : body;
+    if (typeof body === 'object' && body.sugestao) {
+      message = `${message}\n\nSugestão: ${body.sugestao}`;
+    }
     throw new Error(message || `Erro HTTP ${response.status}`);
   }
   return body;
