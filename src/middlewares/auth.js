@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+    console.error('JWT_SECRET environment variable is NOT set. Protected endpoints will return 500 until configured.');
 }
 
 function extrairToken(req) {
@@ -16,6 +16,7 @@ async function verificarToken(req) {
     const token = extrairToken(req);
     if (!token) return null;
     try {
+        if (!JWT_SECRET) return null;
         return jwt.verify(token, JWT_SECRET);
     } catch {
         return null;
@@ -23,6 +24,7 @@ async function verificarToken(req) {
 }
 
 function verificarTokenMiddleware(req, res, next) {
+    if (!JWT_SECRET) return res.status(500).json({ erro: 'Server misconfiguration: JWT_SECRET não configurado.' });
     const token = extrairToken(req);
     if (!token) return res.status(401).json({ erro: 'Token obrigatório.' });
     try {

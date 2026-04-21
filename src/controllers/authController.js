@@ -5,7 +5,7 @@ const { enviarEmailVerificacao } = require('../services/emailService');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+    console.error('JWT_SECRET environment variable is NOT set. Auth endpoints will return 500 until configured.');
 }
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
 
@@ -129,6 +129,7 @@ async function verifyCode(req, res) {
     delete usuario.lastCodeSentAt;
     await salvarUsuario(usuario);
 
+    if (!JWT_SECRET) return res.status(500).json({ erro: 'Server misconfiguration: JWT_SECRET não configurado.' });
     const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '7d' });
     const dashboard = montarDashboard(usuario);
 
@@ -154,6 +155,7 @@ async function loginCnpj(req, res) {
     usuario.lastLogin = new Date().toISOString();
     await salvarUsuario(usuario);
 
+    if (!JWT_SECRET) return res.status(500).json({ erro: 'Server misconfiguration: JWT_SECRET não configurado.' });
     const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '7d' });
     const dashboard = montarDashboard(usuario);
     res.json({ sucesso: true, token, email: usuario.email, dashboard });
