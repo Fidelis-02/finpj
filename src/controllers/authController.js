@@ -166,22 +166,29 @@ async function registerCnpj(req, res) {
         return res.status(400).json({ erro: 'CNPJ inválido. Informe os 14 dígitos.' });
     }
 
-    let usuario = await obterUsuarioPorCnpj(cnpjNorm);
-    if (usuario) {
-        return res.status(400).json({ erro: 'CNPJ já cadastrado. Faça login.' });
+    const emailSistema = `cnpj-${cnpjNorm}@finpj.local`;
+
+    // Busca por CNPJ ou pelo Email de Sistema para evitar qualquer brecha de duplicidade
+    const [existentePorCnpj, existentePorEmail] = await Promise.all([
+        obterUsuarioPorCnpj(cnpjNorm),
+        obterUsuario(emailSistema)
+    ]);
+
+    if (existentePorCnpj || existentePorEmail) {
+        return res.status(400).json({ erro: 'CNPJ já cadastrado no sistema. Por favor, faça login.' });
     }
 
-    usuario = {
+    const usuario = {
         cnpj: cnpjNorm,
         passwordHash: await bcrypt.hash(password, 10),
-        email: `cnpj-${cnpjNorm}@finpj.local`,
+        email: emailSistema,
         plano: plan || 'starter',
         createdAt: new Date().toISOString(),
-        bankReports: gerarRelatorioBancario(`cnpj-${cnpjNorm}`)
+        bankReports: gerarRelatorioBancario(emailSistema)
     };
 
     await salvarUsuario(usuario);
-    res.json({ sucesso: true, mensagem: 'Conta criada com sucesso. Agora faça login.' });
+    res.json({ sucesso: true, mensagem: 'Conta criada com sucesso. Agora faça login com seu CNPJ.' });
 }
 
 async function getDashboard(req, res) {

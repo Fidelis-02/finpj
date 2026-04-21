@@ -7,13 +7,30 @@ let mongoClient = null;
 let db = null;
 
 async function conectarDB() {
-    if (!uri) return null;
-    if (!mongoClient) {
-        mongoClient = new MongoClient(uri);
+    if (db) return db;
+    if (!uri) {
+        console.warn('⚠️ MONGO_URI não definida. Usando modo de fallback.');
+        return null;
+    }
+    
+    try {
+        if (!mongoClient) {
+            mongoClient = new MongoClient(uri);
+        }
         await mongoClient.connect();
         db = mongoClient.db('finpj');
+        console.log('✅ CONECTADO AO MONGODB ATLAS');
+        
+        // Criar índice único de CNPJ para evitar duplicidade no nível do banco
+        try {
+            await db.collection('usuarios').createIndex({ cnpj: 1 }, { unique: true, sparse: true });
+        } catch (e) { /* índice já existe */ }
+        
+        return db;
+    } catch (e) {
+        console.error('❌ ERRO AO CONECTAR NO MONGODB:', e.message);
+        return null;
     }
-    return db;
 }
 
 const isVercel = !!process.env.VERCEL;
@@ -68,11 +85,9 @@ function formatarEmail(email) {
 
 async function obterUsuario(email) {
     const emailNorm = formatarEmail(email);
-    if (!db && uri) {
-        await conectarDB();
-    }
-    if (db) {
-        const usuario = await db.collection('usuarios').findOne({ email: emailNorm });
+    const database = await conectarDB();
+    if (database) {
+        const usuario = await database.collection('usuarios').findOne({ email: emailNorm });
         if (usuario) return usuario;
     }
     const dados = lerDados();
@@ -81,26 +96,30 @@ async function obterUsuario(email) {
 
 async function obterUsuarioPorCnpj(cnpj) {
     const cnpjNorm = String(cnpj || '').replace(/\D/g, '');
-    if (!db && uri) {
-        await conectarDB();
-    }
-    if (db) {
-        const usuario = await db.collection('usuarios').findOne({ cnpj: cnpjNorm });
+    if (!cnpjNorm) return null;
+    
+    const database = await conectarDB();
+    if (database) {
+        const usuario = await database.collection('usuarios').findOne({ cnpj: cnpjNorm });
         if (usuario) return usuario;
     }
+    
     const dados = lerDados();
     return dados.usuarios.find(u => u.cnpj === cnpjNorm);
 }
 
 async function salvarUsuario(usuario) {
     usuario.email = formatarEmail(usuario.email);
-    if (!db && uri) {
-        await conectarDB();
-    }
-    if (db) {
-        await db.collection('usuarios').updateOne({ email: usuario.email }, { $set: usuario }, { upsert: true });
+    const database = await conectarDB();
+    if (database) {
+        await database.collection('usuarios').updateOne(
+            { email: usuario.email }, 
+            { $set: usuario }, 
+            { upsert: true }
+        );
         return usuario;
     }
+    
     const dados = lerDados();
     const index = dados.usuarios.findIndex(u => u.email === usuario.email);
     if (index >= 0) {
