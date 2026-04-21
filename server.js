@@ -37,7 +37,8 @@ app.use(cors({
         // Permitir qualquer subdomínio vercel.app
         if (origin.endsWith('.vercel.app')) return callback(null, true);
         
-        return callback(new Error('Not allowed by CORS'));
+        console.warn(`CORS rejeitado para a origem: ${origin}`);
+        return callback(null, false);
     },
     credentials: true
 }));
