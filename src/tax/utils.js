@@ -39,7 +39,7 @@
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase();
         if (/comerc|varejo|atacad|loja|e-?commerce|mercad/.test(normalized)) return 'comercio';
-        if (/servic|consult|clin|agenc|software|profission|portal|internet|informacao|tecnolog|dados|sistema/.test(normalized)) return 'servicos';
+        if (/servic|consult|clin|agenc|software|profission/.test(normalized)) return 'servicos';
         if (/industr|fabric|manuf/.test(normalized)) return 'industria';
         return normalized || 'comercio';
     }
@@ -96,15 +96,6 @@
         };
     }
 
-    function estimateIss(annualRevenue, tables) {
-        const rate = tables.municipalTaxes.defaultIssRate;
-        const total = annualRevenue * rate;
-        return {
-            rate,
-            total: roundCurrency(total)
-        };
-    }
-
     function buildRegimeResult(input, result) {
         const annualTax = result.eligible === false ? null : roundCurrency(result.annualTax);
         return {
@@ -133,7 +124,6 @@
         calculateCsll,
         estimatePurchaseBase,
         estimateIcms,
-        estimateIss,
         buildRegimeResult
     };
 });

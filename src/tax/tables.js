@@ -10,23 +10,7 @@
             comercio: {
                 key: 'comercio',
                 label: 'Comercio',
-                simplesAnnex: 'anexoI',
-                presumidoProfile: 'commerce',
-                indirectTax: 'icms'
-            },
-            servicos: {
-                key: 'servicos',
-                label: 'Servicos',
-                simplesAnnex: 'anexoIII',
-                presumidoProfile: 'services',
-                indirectTax: 'iss'
-            },
-            industria: {
-                key: 'industria',
-                label: 'Industria',
-                simplesAnnex: 'anexoII',
-                presumidoProfile: 'industry',
-                indirectTax: 'icms'
+                simplesAnnex: 'anexoI'
             }
         },
         regimes: {
@@ -49,30 +33,6 @@
                         { upTo: 3600000, nominalRate: 0.143, deduction: 87300 },
                         { upTo: 4800000, nominalRate: 0.19, deduction: 378000 }
                     ]
-                },
-                anexoII: {
-                    label: 'Anexo II - Industria',
-                    source: 'Resolucao CGSN 140/2018, Anexo II',
-                    brackets: [
-                        { upTo: 180000, nominalRate: 0.045, deduction: 0 },
-                        { upTo: 360000, nominalRate: 0.078, deduction: 5940 },
-                        { upTo: 720000, nominalRate: 0.10, deduction: 13860 },
-                        { upTo: 1800000, nominalRate: 0.112, deduction: 22500 },
-                        { upTo: 3600000, nominalRate: 0.147, deduction: 85500 },
-                        { upTo: 4800000, nominalRate: 0.30, deduction: 720000 }
-                    ]
-                },
-                anexoIII: {
-                    label: 'Anexo III - Servicos',
-                    source: 'Resolucao CGSN 140/2018, Anexo III',
-                    brackets: [
-                        { upTo: 180000, nominalRate: 0.06, deduction: 0 },
-                        { upTo: 360000, nominalRate: 0.112, deduction: 9360 },
-                        { upTo: 720000, nominalRate: 0.135, deduction: 17640 },
-                        { upTo: 1800000, nominalRate: 0.16, deduction: 35640 },
-                        { upTo: 3600000, nominalRate: 0.21, deduction: 125640 },
-                        { upTo: 4800000, nominalRate: 0.33, deduction: 648000 }
-                    ]
                 }
             }
         },
@@ -89,14 +49,6 @@
             commerce: {
                 irpjPresumption: 0.08,
                 csllPresumption: 0.12
-            },
-            industry: {
-                irpjPresumption: 0.08,
-                csllPresumption: 0.12
-            },
-            services: {
-                irpjPresumption: 0.32,
-                csllPresumption: 0.32
             },
             presumptiveBaseIncrease: {
                 effectiveFromYear: 2026,
@@ -117,19 +69,13 @@
             defaultUf: 'SP',
             source: 'RICMS/SP, art. 52, I'
         },
-        municipalTaxes: {
-            defaultIssRate: 0.05,
-            source: 'LC 116/2003, limite usual de ISS ate 5%'
-        },
         assumptions: [
             'RBT12 foi aproximada pelo faturamento anual informado.',
-            'Servicos no Simples usam Anexo III como estimativa preliminar; o fator R pode mover parte das atividades para outro anexo.',
-            'Lucro Presumido e Lucro Real incluem ICMS estimado para comercio/industria ou ISS estimado para servicos.',
+            'Lucro Presumido e Lucro Real incluem ICMS estimado fora do Simples, usando aliquota interna padrao de 18% e credito sobre compras inferidas pela margem.',
             'Nao inclui substituicao tributaria, DIFAL, IPI, beneficios fiscais, retencoes, folha/pro-labore ou particularidades por UF, NCM e CNAE.'
         ],
         sources: [
             'Resolucao CGSN 140/2018, art. 21 e Anexo I',
-            'Resolucao CGSN 140/2018, Anexos II e III',
             'Lei 9.249/1995 e Lei 9.430/1996 para IRPJ/CSLL',
             'Leis 9.718/1998, 10.637/2002 e 10.833/2003 para PIS/COFINS',
             'LC 224/2025 para acrescimo de 10% na presuncao sobre excedente anual',

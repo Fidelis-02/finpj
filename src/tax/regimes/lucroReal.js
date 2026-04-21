@@ -9,32 +9,27 @@
     root.FinPJTaxRegimes.lucroReal = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function buildLucroReal(tables, utils) {
     function calculate(input) {
-        const activity = tables.activityTypes[input.activity];
-        if (!activity) {
+        if (input.activity !== 'comercio') {
             return utils.buildRegimeResult(input, {
                 key: 'real',
                 name: tables.regimes.real,
                 eligible: false,
-                reason: 'Atividade sem premissa configurada para Lucro Real.'
+                reason: 'Lucro Real nesta versao cobre apenas comercio.'
             });
         }
 
         const taxableProfit = Math.max(0, input.annualRevenue * input.margin);
         const irpj = utils.calculateIrpj(taxableProfit, tables);
         const csll = utils.calculateCsll(taxableProfit, tables);
-        const purchaseBase = activity.indirectTax === 'iss'
-            ? 0
-            : utils.estimatePurchaseBase(input.annualRevenue, input.margin);
+        const purchaseBase = utils.estimatePurchaseBase(input.annualRevenue, input.margin);
         const pisDebit = input.annualRevenue * tables.lucroReal.pisRate;
         const pisCredit = purchaseBase * tables.lucroReal.pisRate;
         const cofinsDebit = input.annualRevenue * tables.lucroReal.cofinsRate;
         const cofinsCredit = purchaseBase * tables.lucroReal.cofinsRate;
         const pis = Math.max(0, pisDebit - pisCredit);
         const cofins = Math.max(0, cofinsDebit - cofinsCredit);
-        const indirectTax = activity.indirectTax === 'iss'
-            ? utils.estimateIss(input.annualRevenue, tables)
-            : utils.estimateIcms(input.annualRevenue, input.margin, tables);
-        const annualTax = irpj.total + csll.total + pis + cofins + indirectTax.total;
+        const icms = utils.estimateIcms(input.annualRevenue, input.margin, tables);
+        const annualTax = irpj.total + csll.total + pis + cofins + icms.total;
 
         return utils.buildRegimeResult(input, {
             key: 'real',
@@ -46,7 +41,7 @@
                 csll: csll.total,
                 pis: utils.roundCurrency(pis),
                 cofins: utils.roundCurrency(cofins),
-                indirectTax: indirectTax.total
+                icms: icms.total
             },
             details: {
                 taxableProfit: utils.roundCurrency(taxableProfit),
@@ -55,11 +50,11 @@
                 pisCredit: utils.roundCurrency(pisCredit),
                 cofinsDebit: utils.roundCurrency(cofinsDebit),
                 cofinsCredit: utils.roundCurrency(cofinsCredit),
-                indirectTax
+                icms
             },
             notes: [
                 'Lucro Real simplificado: IRPJ/CSLL sobre lucro estimado pela margem informada.',
-                'PIS/COFINS nao cumulativo: 1,65% + 7,60%, com credito estimado quando aplicavel.'
+                'PIS/COFINS nao cumulativo: 1,65% + 7,60%, com credito estimado sobre compras para revenda.'
             ]
         });
     }
