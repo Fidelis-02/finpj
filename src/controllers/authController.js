@@ -3,7 +3,10 @@ const jwt = require('jsonwebtoken');
 const { obterUsuario, obterUsuarioPorCnpj, salvarUsuario, formatarEmail } = require('../services/database');
 const { enviarEmailVerificacao } = require('../services/emailService');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required');
+}
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
 
 function validarEmail(email) {

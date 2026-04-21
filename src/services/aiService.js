@@ -2,6 +2,15 @@ function fmtReais(valor) {
     return 'R$ ' + Math.round(Number(valor) || 0).toLocaleString('pt-BR');
 }
 
+function sanitizeText(input, maxLen = 12000) {
+    if (!input) return '';
+    let s = String(input);
+    // Remove control characters and collapse whitespace
+    s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ');
+    s = s.replace(/\s+/g, ' ');
+    return s.slice(0, maxLen).trim();
+}
+
 function gerarAnaliseInterna(diagnostico) {
     const { faturamento, margem, regime, setor, resultados } = diagnostico;
     const economia = resultados.economia || 0;
@@ -37,7 +46,8 @@ async function gerarAnaliseFinanceira(diagnostico) {
 
     try {
         const prompt = `Você é um analista financeiro para PMEs no Brasil. Com base nos dados abaixo, gere um resumo conciso e três recomendações práticas de melhoria financeira e tributária.`;
-        const mensagem = `Dados do diagnóstico:\nNome: ${diagnostico.nome}\nCNPJ: ${diagnostico.cnpj}\nSetor: ${diagnostico.setor}\nRegime atual: ${diagnostico.regime}\nFaturamento anual: R$ ${diagnostico.faturamento.toLocaleString('pt-BR')}\nMargem: ${diagnostico.margem}\nEconomia estimada: R$ ${diagnostico.resultados.economia}\nCréditos identificados: R$ ${diagnostico.resultados.creditosIdentificados}\nAnomalia identificada: R$ ${diagnostico.resultados.anomaliaValor}\nRegime ideal: ${diagnostico.resultados.regimeIdeal}`;
+        const rawMensagem = `Dados do diagnóstico:\nNome: ${diagnostico.nome}\nCNPJ: ${diagnostico.cnpj}\nSetor: ${diagnostico.setor}\nRegime atual: ${diagnostico.regime}\nFaturamento anual: R$ ${diagnostico.faturamento && diagnostico.faturamento.toLocaleString ? diagnostico.faturamento.toLocaleString('pt-BR') : diagnostico.faturamento}\nMargem: ${diagnostico.margem}\nEconomia estimada: R$ ${diagnostico.resultados.economia}\nCréditos identificados: R$ ${diagnostico.resultados.creditosIdentificados}\nAnomalia identificada: R$ ${diagnostico.resultados.anomaliaValor}\nRegime ideal: ${diagnostico.resultados.regimeIdeal}`;
+        const mensagem = sanitizeText(rawMensagem, 2000);
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -84,7 +94,7 @@ async function analisarComGroq(tipoDoc, textoDoc, contexto = '') {
     };
 
     const systemPrompt = prompts[tipoDoc] || prompts.dre;
-    const texto = textoDoc.slice(0, 12000); 
+    const texto = sanitizeText(textoDoc, 12000);
 
     try {
         const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -97,7 +107,7 @@ async function analisarComGroq(tipoDoc, textoDoc, contexto = '') {
                 model: 'llama-3.3-70b-versatile',
                 messages: [
                     { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `Documento:\n\n${texto}\n\nContexto adicional: ${contexto}\n\nRetorne SOMENTE o JSON, sem markdown, sem explicações.` }
+                    { role: 'user', content: `Documento:\n\n${texto}\n\nContexto adicional: ${sanitizeText(contexto, 1000)}\n\nRetorne SOMENTE o JSON, sem markdown, sem explicações.` }
                 ],
                 max_tokens: 2000,
                 temperature: 0.2

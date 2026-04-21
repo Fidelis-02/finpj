@@ -77,15 +77,46 @@ async function createCheckoutSession(req, res) {
 }
 
 async function webhookStripe(req, res) {
-    const event = req.body;
+    if (!stripe) {
+        return res.status(500).send('Stripe não está configurado.');
+    }
+
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!endpointSecret) {
+        console.error('STRIPE_WEBHOOK_SECRET não configurado.');
+        return res.status(500).send('Webhook secret não configurado.');
+    }
+
+    const sig = req.headers['stripe-signature'] || (req.get && req.get('stripe-signature'));
+    let event;
+    try {
+        // req.body must be raw body (route uses express.raw). Use constructEvent for verification.
+        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    } catch (err) {
+        console.error('Falha na verificação do webhook Stripe:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
     if (event && event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        const cnpj = session.metadata.cnpj;
-        const plano = session.metadata.plan;
-        const usuario = await obterUsuarioPorCnpj(cnpj);
-        if (usuario) {
-            usuario.plano = plano;
+        const cnpjRaw = session.metadata && session.metadata.cnpj;
+        const plano = session.metadata && session.metadata.plan;
+        if (!cnpjRaw) {
+            console.error('Webhook recebido sem metadata.cnpj', session.id);
+            return res.status(400).send('Metadata inválida');
+        }
+        const cnpj = String(cnpjRaw).replace(/\D/g, '');
+        try {
+            const usuario = await obterUsuarioPorCnpj(cnpj);
+            if (!usuario) {
+                console.error(`Usuário não encontrado para CNPJ ${cnpj} (webhook)`);
+                return res.status(400).send('Usuário não encontrado');
+            }
+            usuario.plano = plano || usuario.plano;
             await salvarUsuario(usuario);
+        } catch (e) {
+            console.error('Erro ao atualizar usuário via webhook:', e.message || e);
+            return res.status(500).send('Erro interno');
         }
     }
     res.json({ received: true });

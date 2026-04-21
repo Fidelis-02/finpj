@@ -18,14 +18,29 @@ const PORT = process.env.PORT || 3001;
 conectarDB().catch(console.error);
 
 // Middlewares
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:3001'];
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true); // allow non-browser or server-to-server requests
+        if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true
+};
+app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET;
+if (!SESSION_SECRET) {
+    console.error('SESSION_SECRET or JWT_SECRET environment variable is required');
+    process.exit(1);
+}
+
 app.use(session({
-    secret: process.env.JWT_SECRET || 'finpj-session-secret',
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {

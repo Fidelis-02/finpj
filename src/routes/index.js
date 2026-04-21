@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 
 // Middlewares
 const { verificarTokenMiddleware } = require('../middlewares/auth');
@@ -30,10 +31,19 @@ const upload = multer({
     }
 });
 
+// Rate limiter for sensitive endpoints (OTP/email)
+const otpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { erro: 'Muitas solicitações. Tente novamente mais tarde.' }
+});
+
 // ===============================
 // AUTH & CNPJ ROUTES
 // ===============================
-router.post('/auth/send-code', authController.sendCode);
+router.post('/auth/send-code', otpLimiter, authController.sendCode);
 router.post('/auth/verify-code', authController.verifyCode);
 router.post('/auth/login-cnpj', authController.loginCnpj);
 router.post('/auth/register-cnpj', authController.registerCnpj);
