@@ -1,4 +1,4 @@
-import { showToast } from './utils.js';
+import { state } from './state.js';
 
 const HTTP_MESSAGES = {
   400: 'Dados inválidos. Verifique as informações enviadas.',
@@ -13,7 +13,7 @@ const HTTP_MESSAGES = {
   503: 'Serviço em manutenção. Tente novamente em breve.'
 };
 
-export async function apiRequest(state, path, options = {}) {
+export async function apiRequest(path, options = {}) {
   let response;
   try {
     const headers = { ...(options.headers || {}) };

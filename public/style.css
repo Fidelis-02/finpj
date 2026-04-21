@@ -185,6 +185,30 @@ p { color: var(--muted); line-height: 1.6; }
 .glass-list div { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-radius: 18px; background: rgba(255,255,255,0.68); }
 .glass-list strong { font-size: 1.1rem; }
 
+.company-info {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.6);
+  display: grid;
+  gap: 10px;
+}
+.company-info .info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.company-info .info-row span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.company-info .info-row strong {
+  font-size: 0.95rem;
+  text-align: right;
+  word-break: break-word;
+  max-width: 60%;
+}
+
 .hero-chart { display: flex; align-items: flex-end; gap: 8px; height: 70px; margin-top: 4px; }
 .hero-chart .bar { flex: 1; border-radius: 8px; background: linear-gradient(180deg, var(--accent), rgba(0,113,227,0.25)); opacity: 0.9; }
 .hero-chart .bar:nth-child(1) { height: 45%; }

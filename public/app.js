@@ -1,22 +1,6 @@
-const state = {
-  token: localStorage.getItem('finpj_token') || '',
-  authEmail: localStorage.getItem('finpj_email') || '',
-  provider: localStorage.getItem('finpj_provider') || 'local',
-  pendingPlan: 'growth',
-  dashboard: null,
-  profile: null,
-  banks: [],
-  cnpjData: null,
-  cnpjTimer: null,
-  analyses: [],
-  diagnostics: [],
-  fiscalEvents: []
-};
-
-const MAX_UPLOAD_BYTES = 3.5 * 1024 * 1024;
-
-const $ = (selector, root = document) => root.querySelector(selector);
-const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+import { $, $$, formatCurrency, formatPercent, onlyDigits, escapeHtml, formatCnpj, parseMoneyLike, parsePercentLike, formatDate, formatRegime, inferActivity, debounce, removeSkeletons, setLoading, showToast, trapFocus, untrapFocus } from './js/utils.js';
+import { apiRequest } from './js/api.js';
+import { state, MAX_UPLOAD_BYTES } from './js/state.js';
 
 /* Theme */
 function initTheme() {
@@ -37,102 +21,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
-/* Debounce */
-function debounce(fn, wait = 300) {
-  let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); };
-}
-
-/* Focus trap for modals */
-function trapFocus(modal) {
-  const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-  if (!focusable.length) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  first.focus();
-  modal._onKeydown = (e) => {
-    if (e.key !== 'Tab') return;
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  };
-  modal.addEventListener('keydown', modal._onKeydown);
-}
-function untrapFocus(modal) {
-  if (modal._onKeydown) modal.removeEventListener('keydown', modal._onKeydown);
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
-}
-
-function formatPercent(value, digits = 2) {
-  const numeric = Number(value) || 0;
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'percent',
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits
-  }).format(numeric);
-}
-
-function onlyDigits(value) {
-  return String(value || '').replace(/\D/g, '');
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function formatCnpj(value) {
-  const digits = onlyDigits(value).slice(0, 14);
-  return digits
-    .replace(/^(\d{2})(\d)/, '$1.$2')
-    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/\.(\d{3})(\d)/, '.$1/$2')
-    .replace(/(\d{4})(\d)/, '$1-$2');
-}
-
-function parseMoneyLike(value) {
-  const normalized = String(value || '')
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
-  return Number(normalized) || 0;
-}
-
-function parsePercentLike(value, fallback = NaN) {
-  const parsed = Number(String(value || '').replace(',', '.'));
-  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
-  return parsed > 1 ? parsed / 100 : parsed;
-}
-
-function formatDate(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toLocaleDateString('pt-BR');
-}
-
-function formatRegime(value) {
-  const raw = String(value || '').toLowerCase();
-  if (raw.includes('simples')) return 'Simples Nacional';
-  if (raw.includes('presumido')) return 'Lucro Presumido';
-  if (raw.includes('real')) return 'Lucro Real';
-  return value || 'A definir';
-}
-
-function inferActivity(setor = '') {
-  const normalized = String(setor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  if (/comerc|varejo|atacad/.test(normalized)) return 'comercio';
-  if (/industr|fabric|manuf/.test(normalized)) return 'industria';
-  if (/servic|consult|clin|agenc|software|profission/.test(normalized)) return 'servicos';
-  return 'comercio';
-}
-
 function calculateTaxSimulation({ faturamento, margem, atividade }) {
   if (!window.FinPJTax?.simulateTaxes) {
     throw new Error('Motor tributario indisponivel. Recarregue a pagina.');
@@ -148,62 +36,7 @@ function calculatePublicRegime(params) {
   return calculateTaxSimulation(params).regimes;
 }
 
-function setLoading(element, isLoading, label = 'Processando...') {
-  if (!element) return;
-  if (isLoading) {
-    if (!element.dataset.label) element.dataset.label = element.textContent;
-    element.classList.add('is-loading');
-    element.innerHTML = '<span class="btn-spinner"></span>' + escapeHtml(label);
-    element.disabled = true;
-  } else {
-    element.textContent = element.dataset.label || element.textContent;
-    element.classList.remove('is-loading');
-    element.disabled = false;
-  }
-}
-
-function showToast(message, type = 'info') {
-  const stack = $('[data-toast-stack]');
-  if (!stack) return;
-  const toast = document.createElement('div');
-  toast.className = `toast ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`;
-  toast.textContent = message;
-  stack.appendChild(toast);
-  setTimeout(() => toast.remove(), 4200);
-}
-
-const HTTP_MESSAGES = {
-  400: 'Dados inválidos. Verifique as informações enviadas.',
-  401: 'Sessão expirada. Faça login novamente.',
-  403: 'Você não tem permissão para acessar este recurso.',
-  404: 'Recurso não encontrado.',
-  409: 'Conflito: recurso já existe ou está em uso.',
-  422: 'Dados incompletos ou fora do formato esperado.',
-  429: 'Muitas requisições. Aguarde um momento.',
-  500: 'Erro interno no servidor. Tente novamente mais tarde.',
-  502: 'Serviço temporariamente indisponível.',
-  503: 'Serviço em manutenção. Tente novamente em breve.'
-};
-
-async function apiRequest(path, options = {}) {
-  let response;
-  try {
-    const headers = { ...(options.headers || {}) };
-    if (!(options.body instanceof FormData)) headers['Content-Type'] = headers['Content-Type'] || 'application/json';
-    if (state.token) headers.Authorization = `Bearer ${state.token}`;
-    response = await fetch(path, { ...options, headers });
-  } catch (networkError) {
-    throw new Error('Sem conexão com a internet. Verifique sua rede e tente novamente.');
-  }
-  const contentType = response.headers.get('content-type') || '';
-  const body = contentType.includes('application/json') ? await response.json() : await response.text();
-  if (!response.ok) {
-    const raw = typeof body === 'object' ? (body.erro || body.error || body.mensagem || body.message) : body;
-    const friendly = HTTP_MESSAGES[response.status] || `Erro ${response.status}`;
-    throw new Error(raw || friendly);
-  }
-  return body;
-}
+/* apiRequest imported from ./js/api.js */
 
 function persistSession(token, email, provider = 'local') {
   state.token = token || '';
@@ -255,6 +88,8 @@ function closeModals() {
     modal.classList.add('is-hidden');
   });
 }
+
+export { openModal, closeModals, toggleTheme };
 
 function setAuthTab(tab) {
   $$('[data-auth-tab]').forEach((button) => button.classList.toggle('is-active', button.dataset.authTab === tab));
@@ -331,6 +166,132 @@ function renderPublicDiagnostic(regimes, annualRevenue) {
     ? `Estimativa anual de impostos: ${formatCurrency(best.tax)}. Economia potencial frente ao pior cenário: ${formatCurrency(economy)}.`
     : 'Preencha os dados para visualizar uma comparação tributária prévia.';
   renderTaxRows('[data-regime-comparison]', regimes);
+}
+
+function inferActivityFromCnae(cnaeCode, cnaeDesc = '') {
+  const code = String(cnaeCode || '').replace(/\D/g, '').slice(0, 7);
+  const desc = String(cnaeDesc || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  // CNAE ranges for different activities
+  const comercioRanges = [
+    [4700000, 4799999], // Comércio varejista
+    [4500000, 4599999], // Comércio de veículos
+    [4600000, 4699999], // Comércio atacadista (exceto veículos)
+    [4100000, 4399999], // Construção (some construction also has commerce aspects)
+    [4900000, 4999999], // Transporte (some logistics)
+  ];
+  const servicosRanges = [
+    [6200000, 6399999], // Tecnologia da informação
+    [6900000, 6999999], // Atividades jurídicas, contábeis
+    [7000000, 7499999], // Atividades profissionais, científicas e técnicas
+    [7500000, 7599999], // Veterinária
+    [7700000, 7999999], // Aluguel, viagens, turismo
+    [8000000, 8299999], // Educação
+    [8500000, 8599999], // Saúde humana
+    [8600000, 8699999], // Atividades de atenção à saúde humana
+    [9000000, 9399999], // Artes, cultura, esporte, recreação
+    [9400000, 9499999], // Associações
+    [9500000, 9599999], // Reparação de equipamentos
+    [9600000, 9699999], // Outras atividades de serviços pessoais
+  ];
+  const industriaRanges = [
+    [1000000, 3299999], // Indústrias de transformação
+    [5000000, 5199999], // Eletricidade e gás
+  ];
+
+  const codeNum = parseInt(code, 10);
+  if (!isNaN(codeNum)) {
+    for (const [start, end] of comercioRanges) {
+      if (codeNum >= start && codeNum <= end) return 'comercio';
+    }
+    for (const [start, end] of servicosRanges) {
+      if (codeNum >= start && codeNum <= end) return 'servicos';
+    }
+    for (const [start, end] of industriaRanges) {
+      if (codeNum >= start && codeNum <= end) return 'industria';
+    }
+  }
+
+  // Fallback to description analysis
+  if (/comerc|varejo|atacad|loja|mercad|revenda|distribuica/.test(desc)) return 'comercio';
+  if (/industr|fabric|manuf|producao|beneficiamento|montagem/.test(desc)) return 'industria';
+  if (/servic|consult|clinica|agencia|software|profissional|escritorio|assistencia|locacao|turismo|restaurante|alimentacao/.test(desc)) return 'servicos';
+
+  return 'comercio'; // Default
+}
+
+function formatContabil(value) {
+  // Format as contabil: 480000 -> 480.000,00
+  const num = typeof value === 'number' ? value : parseMoneyLike(value);
+  if (!Number.isFinite(num)) return '';
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num);
+}
+
+function formatAsPercent(value) {
+  // Format percentage for display: 0.12 -> 12, 12 -> 12
+  const num = typeof value === 'number' ? value : parsePercentLike(value);
+  if (!Number.isFinite(num)) return '';
+  // If already > 1, assume it's already a percentage number
+  const pct = num > 1 ? num : Math.round(num * 100);
+  return String(pct);
+}
+
+function formatCurrencyInput(value) {
+  // Format input as user types: keep only digits and format with thousand separators
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '';
+  const num = parseInt(digits, 10) / 100; // Convert to decimal (cents to units)
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num);
+}
+
+function formatPercentInput(value) {
+  // Format input as user types for percentage
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '';
+  return digits;
+}
+
+async function lookupCnpjForSimulator(cnpj) {
+  const cleanCnpj = onlyDigits(cnpj);
+  if (cleanCnpj.length !== 14) return;
+
+  try {
+    const data = await apiRequest(`/api/cnpj?cnpj=${cleanCnpj}`);
+    if (!data || data.erro) {
+      showToast(data?.erro || 'CNPJ não encontrado', 'error');
+      return;
+    }
+
+    // Update company info display
+    const companyInfo = $('[data-company-info]');
+    const nomeEl = $('[data-company-nome]');
+    const cnaeEl = $('[data-company-cnae]');
+    const atividadeEl = $('[data-company-atividade]');
+    const atividadeInput = $('[data-atividade-input]');
+
+    if (nomeEl) nomeEl.textContent = data.nome || '-';
+    if (cnaeEl) cnaeEl.textContent = data.cnae_descricao || data.cnae || '-';
+
+    // Infer activity from CNAE
+    const activity = inferActivityFromCnae(data.cnae_fiscal, data.cnae_descricao);
+    const activityLabel = { comercio: 'Comércio', servicos: 'Serviços', industria: 'Indústria' }[activity] || activity;
+
+    if (atividadeEl) atividadeEl.textContent = activityLabel;
+    if (atividadeInput) atividadeInput.value = activity;
+
+    if (companyInfo) companyInfo.style.display = 'grid';
+
+    // Auto-calculate based on new data
+    runPublicDiagnostic();
+  } catch (error) {
+    showToast(error.message || 'Erro ao consultar CNPJ', 'error');
+  }
 }
 
 function runPublicDiagnostic(event) {
@@ -764,10 +725,7 @@ function renderTaxCalendar() {
   ]);
 }
 
-function removeSkeletons(container) {
-  if (!container) return;
-  container.querySelectorAll('.skeleton').forEach((el) => el.classList.remove('skeleton', 'skeleton-text', 'skeleton-title', 'skeleton-card'));
-}
+/* removeSkeletons imported from ./js/utils.js */
 
 function renderBusinessDashboards(dashboard = state.dashboard) {
   if (!dashboard) return;
@@ -1420,10 +1378,48 @@ function bindEvents() {
   $('[data-refresh-analyses]')?.addEventListener('click', () => loadAnalyses().catch((error) => showToast(error.message, 'error')));
   $('[data-refresh-diagnostics]')?.addEventListener('click', () => loadDiagnostics().catch((error) => showToast(error.message, 'error')));
   $('[data-public-diagnostic-form]')?.addEventListener('submit', runPublicDiagnostic);
-  $('[data-public-diagnostic-form]')?.addEventListener('input', runPublicDiagnostic);
   $('[data-dashboard-tax-form]')?.addEventListener('submit', runDashboardTaxSimulation);
   $('[data-dashboard-tax-form]')?.addEventListener('input', () => runDashboardTaxSimulation());
   $('[data-copy-tax-to-diagnostic]')?.addEventListener('click', copyTaxToDiagnostic);
+
+  // Simulator form input handlers
+  const simulatorCnpjInput = $('[data-cnpj-input]');
+  const simulatorFaturamentoInput = $('[data-currency-input]');
+  const simulatorMargemInput = $('[data-percent-input]');
+
+  // CNPJ formatting and lookup
+  const simulatorCnpjHandler = debounce((cnpj) => {
+    if (cnpj.length === 14) {
+      lookupCnpjForSimulator(cnpj);
+    }
+  }, 500);
+
+  simulatorCnpjInput?.addEventListener('input', (event) => {
+    const cnpj = onlyDigits(event.target.value);
+    event.target.value = formatCnpj(cnpj);
+    event.target.setAttribute('maxlength', '18');
+    simulatorCnpjHandler(cnpj);
+  });
+
+  // Currency formatting for faturamento
+  simulatorFaturamentoInput?.addEventListener('input', (event) => {
+    const value = event.target.value;
+    const formatted = formatCurrencyInput(value);
+    if (formatted !== value) {
+      event.target.value = formatted;
+    }
+    runPublicDiagnostic();
+  });
+
+  // Percentage formatting for margem
+  simulatorMargemInput?.addEventListener('input', (event) => {
+    const value = event.target.value;
+    const formatted = formatPercentInput(value);
+    if (formatted !== value) {
+      event.target.value = formatted;
+    }
+    runPublicDiagnostic();
+  });
 
   const cnpjInputHandler = debounce((cnpj) => {
     if (cnpj.length !== 14) return;
