@@ -5,8 +5,7 @@ import { state, MAX_UPLOAD_BYTES } from './js/state.js';
 /* Theme */
 function initTheme() {
   const saved = localStorage.getItem('finpj_theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const isDark = saved ? saved === 'dark' : prefersDark;
+  const isDark = saved ? saved === 'dark' : false;
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
 }
 function toggleTheme() {
