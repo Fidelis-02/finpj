@@ -9,34 +9,6 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 const passport = require('passport');
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
-const pdfParse = require('pdf-parse');
-const xlsx = require('xlsx');
-
-async function extrairTextoPDF(buffer) {
-    try {
-        const data = await pdfParse(buffer);
-        return data.text;
-    } catch (e) {
-        console.error('Erro no PDF:', e);
-        return '';
-    }
-}
-
-function extrairTextoExcel(buffer) {
-    try {
-        const workbook = xlsx.read(buffer, { type: 'buffer' });
-        return workbook.SheetNames.map(name => {
-            const sheet = workbook.Sheets[name];
-            return xlsx.utils.sheet_to_csv(sheet);
-        }).join('\n');
-    } catch (e) {
-        console.error('Erro no Excel:', e);
-        return '';
-    }
-}
-
 const uri = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
