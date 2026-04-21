@@ -14,11 +14,11 @@ function obterValorPlano(plano) {
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ erro: 'Método não permitido' });
+        return res.status(405).json({ erro: 'Método não permitido.' });
     }
 
     if (!stripe) {
-        return res.status(500).json({ erro: 'Stripe não configurado. Defina STRIPE_SECRET_KEY.' });
+        return res.status(500).json({ erro: 'Checkout indisponível no momento. Tente novamente mais tarde.' });
     }
 
     try {
@@ -49,6 +49,6 @@ export default async function handler(req, res) {
         return res.status(200).json({ checkoutUrl: session.url });
     } catch (erro) {
         console.error(erro);
-        return res.status(500).json({ erro: 'Erro ao criar sessão de pagamento' });
+        return res.status(500).json({ erro: 'Erro ao criar sessão de pagamento.' });
     }
 }

@@ -67,18 +67,18 @@ async function criarCheckoutHospedado(req, { email, cnpj, plano }) {
 
 async function processarPagamento(req, res) {
     if (!stripe) {
-        return res.status(500).json({ erro: 'Stripe nao esta configurado. Defina STRIPE_SECRET_KEY.' });
+        return res.status(500).json({ erro: 'Checkout indisponível no momento. Tente novamente mais tarde.' });
     }
 
     const plano = normalizarPlano(req.body && req.body.plano);
     if (!plano || !['starter', 'growth', 'enterprise'].includes(plano)) {
-        return res.status(400).json({ erro: 'Plano invalido.' });
+        return res.status(400).json({ erro: 'Plano inválido.' });
     }
 
     try {
         const identidade = await resolverIdentidadePagamento(req, req.body?.email);
         if (!identidade.email && !identidade.cnpj) {
-            return res.status(400).json({ erro: 'Nao foi possivel identificar o usuario para iniciar o pagamento.' });
+            return res.status(400).json({ erro: 'Não foi possível identificar o usuário para iniciar o pagamento.' });
         }
 
         const session = await criarCheckoutHospedado(req, {
@@ -90,24 +90,24 @@ async function processarPagamento(req, res) {
         res.json({ sucesso: true, checkoutUrl: session.url });
     } catch (erro) {
         console.error('Stripe checkout error:', erro);
-        res.status(500).json({ erro: 'Erro ao criar sessao de pagamento. Tente novamente mais tarde.' });
+        res.status(500).json({ erro: 'Erro ao criar sessão de pagamento. Tente novamente mais tarde.' });
     }
 }
 
 async function createCheckoutSession(req, res) {
     if (!stripe) {
-        return res.status(500).json({ erro: 'Stripe nao esta configurado.' });
+        return res.status(500).json({ erro: 'Checkout indisponível no momento.' });
     }
 
     const plano = normalizarPlano(req.body && (req.body.planId || req.body.plano));
     if (!plano || !['starter', 'growth', 'enterprise'].includes(plano)) {
-        return res.status(400).json({ erro: 'Plano invalido.' });
+        return res.status(400).json({ erro: 'Plano inválido.' });
     }
 
     try {
         const identidade = await resolverIdentidadePagamento(req, req.body?.email);
         if (!identidade.email && !identidade.cnpj) {
-            return res.status(400).json({ erro: 'Nao foi possivel identificar o usuario para iniciar o pagamento.' });
+            return res.status(400).json({ erro: 'Não foi possível identificar o usuário para iniciar o pagamento.' });
         }
 
         const session = await criarCheckoutHospedado(req, {
@@ -124,13 +124,13 @@ async function createCheckoutSession(req, res) {
 
 async function webhookStripe(req, res) {
     if (!stripe) {
-        return res.status(500).send('Stripe nao esta configurado.');
+        return res.status(500).send('Checkout indisponível no momento.');
     }
 
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!endpointSecret) {
-        console.error('STRIPE_WEBHOOK_SECRET nao configurado.');
-        return res.status(500).send('Webhook secret nao configurado.');
+        console.error('STRIPE_WEBHOOK_SECRET não configurado.');
+        return res.status(500).send('Webhook secret não configurado.');
     }
 
     const sig = req.headers['stripe-signature'] || (req.get && req.get('stripe-signature'));
@@ -164,22 +164,22 @@ async function webhookStripe(req, res) {
                 usuario = await obterUsuarioPorCnpj(cnpjMetadata);
             }
             if (!usuario) {
-                console.error('Usuario nao encontrado para webhook', { emailMetadata, cnpjMetadata, sessionId: session.id });
-                return res.status(400).send('Usuario nao encontrado');
+                console.error('Usuário não encontrado para webhook', { emailMetadata, cnpjMetadata, sessionId: session.id });
+                return res.status(400).send('Usuário não encontrado.');
             }
 
             const webhookColl = db.collection('webhookEvents');
             try {
                 await webhookColl.createIndex({ id: 1 }, { unique: true });
             } catch (e) {
-                // indice ja existe
+                // Índice já existe.
             }
 
             try {
                 await webhookColl.insertOne({ id: event.id, type: event.type, receivedAt: new Date() });
             } catch (dupErr) {
                 if (dupErr && dupErr.code === 11000) {
-                    console.log('Webhook event ja processado:', event.id);
+                    console.log('Webhook event já processado:', event.id);
                     return res.json({ received: true });
                 }
                 throw dupErr;
@@ -205,8 +205,8 @@ async function webhookStripe(req, res) {
             );
 
             if (updateResult.matchedCount === 0) {
-                console.error('Usuario nao encontrado ao atualizar plano', { filtroUsuario, sessionId: session.id });
-                return res.status(400).send('Usuario nao encontrado');
+                console.error('Usuário não encontrado ao atualizar plano', { filtroUsuario, sessionId: session.id });
+                return res.status(400).send('Usuário não encontrado.');
             }
 
             console.log(`Webhook: Plano ${plano} ativado para ${usuario.email}`);

@@ -2,12 +2,12 @@ const { validateEmail, formatEmail, generateCode, hashCode, getUser, saveUser, g
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ erro: 'Método não permitido' });
+        return res.status(405).json({ erro: 'Método não permitido.' });
     }
 
     const { email } = req.body || {};
     if (!validateEmail(email)) {
-        return res.status(400).json({ erro: 'Email inválido' });
+        return res.status(400).json({ erro: 'E-mail inválido.' });
     }
 
     const normalizedEmail = formatEmail(email);
@@ -30,8 +30,8 @@ module.exports = async function handler(req, res) {
     try {
         await sendVerificationEmail(normalizedEmail, code);
     } catch (err) {
-        console.error('Falha ao enviar email de verificação:', err.message);
+        console.error('Falha ao enviar e-mail de verificação:', err.message);
     }
 
-    return res.status(200).json({ sucesso: true, mensagem: `Código enviado para ${normalizedEmail}` });
+    return res.status(200).json({ sucesso: true, mensagem: `Código enviado para ${normalizedEmail}.` });
 };

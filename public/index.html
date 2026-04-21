@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f5f7">
-  <title>FinPJ | Gestao financeira para empresas</title>
+  <title>FinPJ | Gestão financeira para empresas</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/logo.svg">
@@ -18,14 +18,14 @@
       <img src="/logo.svg" alt="" width="34" height="34">
       <span>FinPJ</span>
     </a>
-    <nav class="nav" aria-label="Navegacao principal">
+    <nav class="nav" aria-label="Navegação principal">
       <a href="#recursos">Recursos</a>
       <a href="#planos">Planos</a>
       <a href="#dashboard" data-auth-link>Dashboard</a>
     </nav>
     <div class="topbar-actions">
       <button class="btn btn-ghost" type="button" data-open-login>Entrar</button>
-      <button class="btn btn-dark" type="button" data-open-register>Comecar agora</button>
+      <button class="btn btn-dark" type="button" data-open-register>Começar agora</button>
       <button class="btn btn-ghost is-hidden" type="button" data-logout>Sair</button>
     </div>
   </header>
@@ -34,37 +34,37 @@
     <div data-public-area>
     <section id="home" class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Open Finance, impostos e caixa em um so lugar</p>
-        <h1>Controle financeiro PJ com menos ruido e mais previsibilidade.</h1>
-        <p class="hero-text">Conecte bancos, acompanhe movimentacoes e organize indicadores sem planilhas quebradas ou etapas desnecessarias.</p>
+        <p class="eyebrow">Open Finance, impostos e caixa em um só lugar</p>
+        <h1>Controle financeiro PJ com menos ruído e mais previsibilidade.</h1>
+        <p class="hero-text">Conecte bancos, acompanhe movimentações e organize indicadores sem planilhas quebradas ou etapas desnecessárias.</p>
         <div class="hero-actions">
           <button class="btn btn-dark btn-lg" type="button" data-open-register>Testar agora</button>
-          <button class="btn btn-light btn-lg" type="button" data-open-login>Ja tenho conta</button>
+          <button class="btn btn-light btn-lg" type="button" data-open-login>Já tenho conta</button>
         </div>
       </div>
       <aside class="hero-card" aria-label="Resumo financeiro">
         <div class="metric-card">
           <span>Saldo projetado</span>
           <strong data-hero-balance>R$ 42.800</strong>
-          <small>+18% nos proximos 30 dias</small>
+          <small>+18% nos próximos 30 dias</small>
         </div>
         <div class="glass-list">
           <div><span>Receitas</span><strong>R$ 128k</strong></div>
           <div><span>Impostos</span><strong>R$ 9,4k</strong></div>
-          <div><span>Pendencias</span><strong>3</strong></div>
+          <div><span>Pendências</span><strong>3</strong></div>
         </div>
       </aside>
     </section>
 
     <section id="recursos" class="section">
       <div class="section-heading">
-        <p class="eyebrow">Operacao limpa</p>
-        <h2>O essencial para decidir rapido.</h2>
+        <p class="eyebrow">Operação limpa</p>
+        <h2>O essencial para decidir rápido.</h2>
       </div>
       <div class="feature-grid">
-        <article class="card"><h3>Cadastro direto</h3><p>Fluxo de CNPJ com validacao, persistencia e login imediato apos criacao.</p></article>
-        <article class="card"><h3>Open Finance</h3><p>Token Pluggy gerado no backend e conexao bancaria com mensagens claras de erro.</p></article>
-        <article class="card"><h3>Dashboard protegido</h3><p>Indicadores e bancos carregam apenas com sessao valida.</p></article>
+        <article class="card"><h3>Cadastro direto</h3><p>Fluxo de CNPJ com validação, persistência e login imediato após a criação.</p></article>
+        <article class="card"><h3>Open Finance</h3><p>Conecte bancos com segurança e acompanhe movimentações em poucos cliques.</p></article>
+        <article class="card"><h3>Dashboard protegido</h3><p>Indicadores e bancos carregam apenas com sessão válida.</p></article>
       </div>
     </section>
 
@@ -77,19 +77,19 @@
         <article class="price-card" data-plan-card="starter">
           <span>Starter</span>
           <strong>R$ 490</strong>
-          <p>Para organizar o basico com velocidade.</p>
+          <p>Para organizar o básico com velocidade.</p>
           <button class="btn btn-light" type="button" data-select-plan="starter">Selecionar</button>
         </article>
         <article class="price-card featured" data-plan-card="growth">
           <span>Growth</span>
           <strong>R$ 950</strong>
-          <p>Para empresas que precisam de integracoes e previsao.</p>
+          <p>Para empresas que precisam de integrações e previsão.</p>
           <button class="btn btn-dark" type="button" data-select-plan="growth">Selecionar</button>
         </article>
         <article class="price-card" data-plan-card="enterprise">
           <span>Enterprise</span>
           <strong>R$ 1.850</strong>
-          <p>Para operacoes maiores com controle avancado.</p>
+          <p>Para operações maiores com controle avançado.</p>
           <button class="btn btn-light" type="button" data-select-plan="enterprise">Selecionar</button>
         </article>
       </div>
@@ -99,18 +99,20 @@
     <section id="dashboard" class="dashboard app-shell is-hidden" data-dashboard>
       <div class="dashboard-header">
         <div>
-          <p class="eyebrow">Area logada</p>
+          <p class="eyebrow">Área logada</p>
           <h2 data-user-title>Dashboard FinPJ</h2>
         </div>
         <button class="btn btn-dark" type="button" data-refresh-dashboard>Atualizar</button>
       </div>
       <div class="app-layout">
-        <aside class="side-nav" aria-label="Navegacao do aplicativo">
-          <button class="side-link is-active" type="button" data-tab="overview">Visao geral</button>
-          <button class="side-link" type="button" data-tab="financial">Analise financeira</button>
-          <button class="side-link" type="button" data-tab="statements">Balanco e demonstrativos</button>
-          <button class="side-link" type="button" data-tab="tax">Inteligencia tributaria</button>
-          <button class="side-link" type="button" data-tab="insights">Insights acionaveis</button>
+        <aside class="side-nav" aria-label="Navegação do aplicativo">
+          <button class="side-link is-active" type="button" data-tab="overview">Visão geral</button>
+          <button class="side-link" type="button" data-tab="financial">Análise financeira</button>
+          <button class="side-link" type="button" data-tab="statements">Balanço e demonstrativos</button>
+          <button class="side-link" type="button" data-tab="tax">Inteligência tributária</button>
+          <button class="side-link" type="button" data-tab="diagnostics">Diagnóstico fiscal</button>
+          <button class="side-link" type="button" data-tab="ai">Análise IA</button>
+          <button class="side-link" type="button" data-tab="insights">Insights acionáveis</button>
           <button class="side-link" type="button" data-tab="openfinance">Open Finance</button>
           <button class="side-link" type="button" data-tab="profile">Perfil</button>
         </aside>
@@ -119,7 +121,7 @@
           <div class="metric-grid">
             <div class="metric-card"><span>Faturamento estimado</span><strong data-exec="revenue">R$ 0</strong></div>
             <div class="metric-card"><span>Margem operacional</span><strong data-exec="margin">0%</strong></div>
-            <div class="metric-card"><span>Regime tributario</span><strong data-exec="regime">Nao informado</strong></div>
+            <div class="metric-card"><span>Regime tributário</span><strong data-exec="regime">Não informado</strong></div>
           </div>
           <div class="dashboard-grid">
             <article class="table-card panel-card">
@@ -153,7 +155,7 @@
         <div class="tab-panel is-hidden" data-panel="statements">
           <div class="dashboard-grid">
             <article class="table-card panel-card"><div class="table-header"><h3>Leitura gerencial</h3></div><div class="insight-list" data-balance-reading></div></article>
-            <article class="table-card panel-card"><div class="table-header"><h3>Pontos criticos e gargalos</h3></div><div class="insight-list" data-balance-risks></div></article>
+            <article class="table-card panel-card"><div class="table-header"><h3>Pontos críticos e gargalos</h3></div><div class="insight-list" data-balance-risks></div></article>
           </div>
         </div>
 
@@ -164,10 +166,53 @@
           </div>
         </div>
 
+        <div class="tab-panel is-hidden" data-panel="diagnostics">
+          <form class="profile-form diagnostic-form" data-diagnostic-form>
+            <div class="table-header"><h3>Diagnóstico tributário</h3></div>
+            <label>Nome da empresa<input name="nome" data-diag-nome autocomplete="organization" required></label>
+            <label>CNPJ<input name="cnpj" data-diag-cnpj inputmode="numeric" placeholder="00.000.000/0001-00" required></label>
+            <label>Setor<input name="setor" data-diag-setor placeholder="Comércio, serviços, indústria"></label>
+            <label>Regime atual
+              <select name="regime" data-diag-regime>
+                <option value="simples">Simples Nacional</option>
+                <option value="presumido">Lucro Presumido</option>
+                <option value="real">Lucro Real</option>
+              </select>
+            </label>
+            <label>Faturamento anual<input name="faturamento" data-diag-faturamento inputmode="decimal" placeholder="480000"></label>
+            <label>Margem estimada<input name="margem" data-diag-margem inputmode="decimal" placeholder="0.12"></label>
+            <button class="btn btn-dark" type="submit">Gerar diagnóstico</button>
+            <div class="company-preview" data-diagnostic-result>Preencha os dados para gerar a análise fiscal.</div>
+          </form>
+        </div>
+
+        <div class="tab-panel is-hidden" data-panel="ai">
+          <div class="dashboard-grid">
+            <form class="profile-form ai-upload-form" data-ai-upload-form>
+              <div class="table-header"><h3>Análise de documentos por IA</h3></div>
+              <label>Tipo de documento
+                <select name="tipo">
+                  <option value="dre">DRE</option>
+                  <option value="balanco">Balanço patrimonial</option>
+                  <option value="extrato">Extrato bancário</option>
+                </select>
+              </label>
+              <label>Contexto adicional<input name="contexto" placeholder="Ex.: empresa de serviços, regime Simples"></label>
+              <label>Arquivo PDF, Excel, CSV ou TXT<input name="arquivo" type="file" accept=".pdf,.xlsx,.xls,.ods,.csv,.txt" required></label>
+              <button class="btn btn-dark" type="submit">Analisar documento</button>
+              <div class="company-preview" data-ai-result>Envie um documento para exibir a análise.</div>
+            </form>
+            <article class="table-card panel-card">
+              <div class="table-header"><h3>Histórico de análises</h3><button class="btn btn-light" type="button" data-refresh-analyses>Atualizar</button></div>
+              <div class="insight-list" data-analyses-list></div>
+            </article>
+          </div>
+        </div>
+
         <div class="tab-panel is-hidden" data-panel="insights">
           <div class="dashboard-grid">
-            <article class="table-card panel-card"><div class="table-header"><h3>Recomendacoes praticas</h3></div><div class="insight-list" data-action-insights></div></article>
-            <article class="table-card panel-card"><div class="table-header"><h3>Prioridades e proximos passos</h3></div><div class="insight-list" data-next-steps></div></article>
+            <article class="table-card panel-card"><div class="table-header"><h3>Recomendações práticas</h3></div><div class="insight-list" data-action-insights></div></article>
+            <article class="table-card panel-card"><div class="table-header"><h3>Prioridades e próximos passos</h3></div><div class="insight-list" data-next-steps></div></article>
           </div>
         </div>
 
@@ -175,7 +220,7 @@
           <div class="split-card">
             <div>
               <h3>Conectar banco</h3>
-              <p>O token e gerado no servidor. Se a Pluggy estiver sem credenciais, a mensagem aponta o problema.</p>
+              <p>Conecte sua conta empresarial para importar movimentações e melhorar as análises financeiras.</p>
             </div>
             <button class="btn btn-dark" type="button" data-connect-bank>Conectar banco</button>
           </div>
@@ -203,14 +248,14 @@
         <h2>Acesse sua conta</h2>
       </div>
       <div class="tabs compact">
-        <button class="tab is-active" type="button" data-auth-tab="email">Email</button>
+        <button class="tab is-active" type="button" data-auth-tab="email">E-mail</button>
         <button class="tab" type="button" data-auth-tab="cnpj">CNPJ</button>
       </div>
       <div data-auth-panel="email">
-        <label>Email<input type="email" data-login-email placeholder="voce@empresa.com" autocomplete="email"></label>
-        <button class="btn btn-dark full" type="button" data-send-code>Enviar codigo</button>
-        <label>Codigo<input data-login-code inputmode="numeric" placeholder="000000" autocomplete="one-time-code"></label>
-        <button class="btn btn-light full" type="button" data-verify-code>Confirmar codigo</button>
+        <label>E-mail<input type="email" data-login-email placeholder="voce@empresa.com" autocomplete="email"></label>
+        <button class="btn btn-dark full" type="button" data-send-code>Enviar código</button>
+        <label>Código<input data-login-code inputmode="numeric" placeholder="000000" autocomplete="one-time-code"></label>
+        <button class="btn btn-light full" type="button" data-verify-code>Confirmar código</button>
       </div>
       <div class="is-hidden" data-auth-panel="cnpj">
         <label>CNPJ<input data-login-cnpj inputmode="numeric" placeholder="00.000.000/0001-00" autocomplete="username"></label>
@@ -233,6 +278,7 @@
         <h2>Crie sua conta PJ</h2>
       </div>
       <label>CNPJ<input data-register-cnpj name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00" required></label>
+      <div class="company-preview" data-cnpj-result>Digite o CNPJ para buscar os dados públicos da empresa.</div>
       <label>Senha<input data-register-password name="password" type="password" minlength="6" autocomplete="new-password" required></label>
       <label>Confirmar senha<input data-register-confirm type="password" minlength="6" autocomplete="new-password" required></label>
       <label>Plano

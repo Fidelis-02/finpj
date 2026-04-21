@@ -15,12 +15,12 @@ const CODE_EXPIRY_MS = 10 * 60 * 1000;
 function gerarRelatorioBancario(email) {
     const hoje = new Date();
     const tipos = [
-        'Conciliacao de extrato',
-        'Revisao de lancamentos',
-        'Atualizacao de saldo',
+        'Conciliação de extrato',
+        'Revisão de lançamentos',
+        'Atualização de saldo',
         'Alerta de fluxo de caixa',
-        'Analise de recebimentos',
-        'Detectamos uma diferenca bancaria'
+        'Análise de recebimentos',
+        'Detectamos uma diferença bancária'
     ];
     return Array.from({ length: 6 }, (_, i) => {
         const data = new Date(hoje);
@@ -30,9 +30,9 @@ function gerarRelatorioBancario(email) {
             id: `${email}-${data.toISOString().slice(0, 10)}-${i}`,
             date: data.toISOString().slice(0, 10),
             title: tipos[i % tipos.length],
-            detail: `Atualizacao diaria para a empresa ${email.split('@')[0]} com informacoes de extrato e movimentacoes bancarias.`,
+            detail: `Atualização diária para a empresa ${email.split('@')[0]} com informações de extrato e movimentações bancárias.`,
             amount: valor,
-            status: i % 2 === 0 ? 'Concluido' : 'Atencao'
+            status: i % 2 === 0 ? 'Concluído' : 'Atenção'
         };
     });
 }
@@ -52,7 +52,7 @@ function montarDashboard(usuario) {
         summary: {
             reportsCount: reports.length,
             totalMovimentado,
-            pendencias: reports.filter(r => r.status !== 'Concluido').length
+            pendencias: reports.filter(r => r.status !== 'Concluído').length
         },
         reports
     };
@@ -91,8 +91,8 @@ async function sendVerificationEmail(email, code) {
     const mailOptions = {
         from: MAIL_FROM,
         to: email,
-        subject: 'Seu codigo de acesso FinPJ',
-        text: `Seu codigo FinPJ e: ${code}\nUse-o em ate 10 minutos para continuar.`,
+        subject: 'Seu código de acesso FinPJ',
+        text: `Seu código FinPJ é: ${code}\nUse-o em até 10 minutos para continuar.`,
         html: `
             <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0D1117; border-radius: 16px; overflow: hidden;">
                 <div style="background: linear-gradient(135deg, #1a2744 0%, #0f3460 100%); padding: 32px; text-align: center;">
@@ -100,15 +100,15 @@ async function sendVerificationEmail(email, code) {
                     <p style="color: #94a3b8; margin: 8px 0 0; font-size: 13px;">CFO Digital para PMEs</p>
                 </div>
                 <div style="padding: 32px; background: #0D1117;">
-                    <h2 style="color: #f1f5f9; margin-bottom: 16px; font-size: 20px;">Seu codigo de acesso</h2>
+                    <h2 style="color: #f1f5f9; margin-bottom: 16px; font-size: 20px;">Seu código de acesso</h2>
                     <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
-                        Use o codigo abaixo para acessar sua conta FinPJ. Ele expira em <strong style="color: #f1f5f9;">10 minutos</strong>.
+                        Use o código abaixo para acessar sua conta FinPJ. Ele expira em <strong style="color: #f1f5f9;">10 minutos</strong>.
                     </p>
                     <div style="background: #1e2d4a; border: 2px solid #3b82f6; border-radius: 12px; padding: 28px; text-align: center; margin-bottom: 24px;">
                         <p style="font-size: 42px; font-weight: 700; letter-spacing: 8px; color: #60a5fa; margin: 0; font-family: monospace;">${code}</p>
                     </div>
                     <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">
-                        Se voce nao solicitou este codigo, ignore este e-mail com seguranca.
+                        Se você não solicitou este código, ignore este e-mail com segurança.
                     </p>
                 </div>
             </div>
@@ -117,11 +117,11 @@ async function sendVerificationEmail(email, code) {
 
     try {
         const result = await transport.sendMail(mailOptions);
-        console.log('Email enviado:', result.messageId || 'ok');
+        console.log('E-mail enviado:', result.messageId || 'ok');
         return result;
     } catch (error) {
-        console.error('Erro ao enviar email:', error.message);
-        console.log(`CODIGO PARA ${email}: ${code}`);
+        console.error('Erro ao enviar e-mail:', error.message);
+        console.log(`CÓDIGO PARA ${email}: ${code}`);
     }
 }
 

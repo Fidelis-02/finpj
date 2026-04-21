@@ -8,7 +8,7 @@ async function conectarDB() {
     if (db) return db;
 
     if (!uri) {
-        throw new Error('MONGO_URI environment variable is required. Configure it in Vercel settings.');
+        throw new Error('A variável de ambiente MONGO_URI é obrigatória. Configure-a na Vercel.');
     }
 
     try {
@@ -28,7 +28,7 @@ async function conectarDB() {
             await db.collection('diagnosticos').createIndex({ ownerEmail: 1, createdAt: -1 });
             await db.collection('analises').createIndex({ email: 1, createdAt: -1 });
         } catch (e) {
-            // indices ja existem
+            // Índices já existem.
         }
 
         return db;
@@ -58,7 +58,7 @@ async function obterUsuarioPorCnpj(cnpj) {
 
 async function salvarUsuario(usuario) {
     if (!usuario || !usuario.email) {
-        throw new Error('Usuario invalido: email e obrigatorio');
+        throw new Error('Usuário inválido: e-mail é obrigatório.');
     }
 
     usuario.email = formatarEmail(usuario.email);

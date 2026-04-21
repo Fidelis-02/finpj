@@ -36,7 +36,7 @@ module.exports = function initAuth0(app, passport) {
         const jwt = require('jsonwebtoken');
         const JWT_SECRET = process.env.JWT_SECRET;
         if (!JWT_SECRET) {
-            throw new Error('JWT_SECRET nao configurado.');
+            throw new Error('JWT_SECRET não configurado.');
         }
 
         const BASE_URL = process.env.BASE_URL || 'https://finpj.vercel.app';
@@ -93,7 +93,7 @@ module.exports = function initAuth0(app, passport) {
             failureRedirect: '/?login=failed',
             session: false
         }), (req, res) => {
-            // Generate JWT token (same as Google and email login flows)
+            // Gera JWT no mesmo padrão dos fluxos Google e e-mail.
             const token = jwt.sign({ email: req.user.email }, JWT_SECRET, { expiresIn: '7d' });
             res.redirect(`/?token=${token}&login=success`);
         });

@@ -46,7 +46,7 @@ async function uploadDocumento(req, res) {
     }
 
     if (!texto.trim()) {
-        return res.status(422).json({ erro: 'Nao foi possivel extrair texto do documento. Tente um PDF com texto selecionavel ou Excel.' });
+        return res.status(422).json({ erro: 'Não foi possível extrair texto do documento. Tente um PDF com texto selecionável ou Excel.' });
     }
 
     const analise = await analisarComGroq(tipo, texto, contexto);
@@ -68,8 +68,8 @@ async function getAnalises(req, res) {
         const analises = await obterAnalises(req.userEmail);
         res.json({ sucesso: true, analises });
     } catch (e) {
-        console.error('Erro ao obter analises:', e);
-        res.status(500).json({ erro: 'Nao foi possivel carregar as analises.' });
+        console.error('Erro ao obter análises:', e);
+        res.status(500).json({ erro: 'Não foi possível carregar as análises.' });
     }
 }
 
@@ -77,19 +77,19 @@ async function postChat(req, res) {
     const { message, context } = req.body;
     if (!message) return res.status(400).json({ erro: 'Mensagem obrigatoria.' });
     const GROQ_KEY = process.env.GROQ_API_KEY;
-    if (!GROQ_KEY) return res.json({ sucesso: true, resposta: 'Configure GROQ_API_KEY para usar o chat IA.', fonte: 'local' });
+    if (!GROQ_KEY) return res.json({ sucesso: true, resposta: 'A análise por IA está temporariamente indisponível.', fonte: 'local' });
     try {
         const usuario = await obterUsuario(req.userEmail);
         const banks = usuario?.connectedBanks || [];
         const txSummary = banks.flatMap(b => (b.transactions || []).slice(0, 5).map(t => `${t.data}: ${t.descricao} R$${t.valor}`)).join('\n');
-        const sysPrompt = `Voce e o assistente financeiro FinPJ para PMEs brasileiras. Responda de forma concisa e pratica em portugues. Dados do usuario:\n- Email: ${req.userEmail}\n- Bancos conectados: ${banks.length}\n- Ultimas transacoes:\n${txSummary || 'Nenhuma'}\n${context || ''}`;
+        const sysPrompt = `Você é o assistente financeiro FinPJ para PMEs brasileiras. Responda de forma concisa e prática em português. Dados do usuário:\n- E-mail: ${req.userEmail}\n- Bancos conectados: ${banks.length}\n- Últimas transações:\n${txSummary || 'Nenhuma'}\n${context || ''}`;
         const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
             body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: message }], max_tokens: 1000, temperature: 0.4 })
         });
         const payload = await resp.json();
-        const content = payload?.choices?.[0]?.message?.content || 'Nao consegui processar sua pergunta.';
+        const content = payload?.choices?.[0]?.message?.content || 'Não consegui processar sua pergunta.';
         res.json({ sucesso: true, resposta: content, fonte: 'groq-llama3' });
     } catch (e) {
         console.error('Chat error:', e);

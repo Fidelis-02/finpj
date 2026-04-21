@@ -4,7 +4,10 @@ const state = {
   provider: localStorage.getItem('finpj_provider') || 'local',
   pendingPlan: 'growth',
   dashboard: null,
-  banks: []
+  banks: [],
+  cnpjData: null,
+  cnpjTimer: null,
+  analyses: []
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -129,56 +132,57 @@ function renderBusinessDashboards(dashboard) {
   const user = dashboard.user || {};
   const total = Number(summary.totalMovimentado || 0);
   const pendencias = Number(summary.pendencias || 0);
-  const receita = Math.round(total * 0.62);
-  const despesas = Math.round(total * 0.38);
-  const lucro = receita - despesas;
-  const margem = receita > 0 ? Math.round((lucro / receita) * 100) : 0;
+  const receita = Number(user.faturamento || user.faturamentoAnual || 0) || Math.round(total * 0.62);
+  const margemInformada = Number(user.margem || user.margemEstimada || 0);
+  const margem = margemInformada > 0 ? Math.round(margemInformada * 100) : (receita > 0 ? 18 : 0);
+  const lucro = Math.round(receita * (margem / 100));
+  const despesas = Math.max(0, receita - lucro);
 
   $('[data-exec="revenue"]').textContent = formatCurrency(receita);
   $('[data-exec="margin"]').textContent = `${margem}%`;
-  $('[data-exec="regime"]').textContent = user.regime || 'Nao informado';
+  $('[data-exec="regime"]').textContent = user.regime || 'A definir';
   $('[data-financial="income"]').textContent = formatCurrency(receita);
   $('[data-financial="expenses"]').textContent = formatCurrency(despesas);
   $('[data-financial="profit"]').textContent = formatCurrency(lucro);
 
   renderInsightList('[data-executive-summary]', [
-    { title: 'Visao da empresa', text: `${reports.length || 0} eventos financeiros analisados para apoiar a leitura executiva.` },
-    { title: 'Performance operacional', text: `Margem estimada de ${margem}% com base nos movimentos recentes registrados.` },
+    { title: 'Visão da empresa', text: `${reports.length || 0} eventos financeiros analisados para apoiar a leitura executiva.` },
+    { title: 'Performance operacional', text: receita ? `Margem estimada de ${margem}% com base nos dados atuais.` : 'Complete o perfil, conecte bancos ou envie demonstrativos para calcular indicadores reais.' },
     { title: 'Plano ativo', text: `Plano selecionado: ${user.plano || 'starter'}. Pagamento: ${user.statusPagamento || 'pendente'}.` }
   ]);
   renderInsightList('[data-main-alerts]', [
-    { title: 'Pendencias', text: `${pendencias} item(ns) exigem revisao ou acompanhamento.` },
-    { title: 'Caixa', text: lucro >= 0 ? 'Resultado operacional positivo no resumo atual.' : 'Resultado operacional negativo: priorize revisao de despesas.' },
-    { title: 'Cadastro', text: user.cnpj ? 'CNPJ vinculado ao usuario.' : 'Complete o CNPJ/perfil para melhorar os diagnosticos.' }
+    { title: 'Pendências', text: `${pendencias} item(ns) exigem revisão ou acompanhamento.` },
+    { title: 'Caixa', text: lucro >= 0 ? 'Resultado operacional positivo no resumo atual.' : 'Resultado operacional negativo: priorize a revisão de despesas.' },
+    { title: 'Cadastro', text: user.cnpj ? 'CNPJ vinculado ao usuário.' : 'Complete o CNPJ/perfil para melhorar os diagnósticos.' }
   ]);
   renderInsightList('[data-balance-reading]', [
     { title: 'Leitura gerencial', text: 'Acompanhe ativos, passivos e capacidade de pagamento a partir dos demonstrativos enviados.' },
-    { title: 'Capital de giro', text: 'Concilie extratos e DRE para identificar pressao no caixa antes do vencimento de impostos.' },
-    { title: 'Qualidade dos dados', text: 'Quanto mais documentos forem enviados, mais precisa fica a analise de balanco.' }
+    { title: 'Capital de giro', text: 'Concilie extratos e DRE para identificar pressão no caixa antes do vencimento de impostos.' },
+    { title: 'Qualidade dos dados', text: 'Quanto mais documentos forem enviados, mais precisa fica a análise de balanço.' }
   ]);
   renderInsightList('[data-balance-risks]', [
-    { title: 'Gargalos', text: 'Pendencias financeiras recorrentes indicam necessidade de rotina de conciliacao.' },
-    { title: 'Pontos criticos', text: 'Saidas elevadas e eventos em atencao devem ser revisados por categoria.' },
-    { title: 'Oportunidades', text: 'Use analises de documentos para identificar ajustes em margem, custos e liquidez.' }
+    { title: 'Gargalos', text: 'Pendências financeiras recorrentes indicam necessidade de rotina de conciliação.' },
+    { title: 'Pontos críticos', text: 'Saídas elevadas e eventos em atenção devem ser revisados por categoria.' },
+    { title: 'Oportunidades', text: 'Use análises de documentos para identificar ajustes em margem, custos e liquidez.' }
   ]);
   renderInsightList('[data-tax-fit]', [
-    { title: 'Enquadramento atual', text: `Regime informado: ${user.regime || 'nao informado'}.` },
-    { title: 'Eficiencia tributaria', text: 'Compare faturamento, margem e atividade para validar se o regime continua adequado.' },
-    { title: 'Operacao fiscal', text: 'Mantenha documentos e notas organizados para reduzir risco operacional.' }
+    { title: 'Enquadramento atual', text: `Regime informado: ${user.regime || 'não informado'}.` },
+    { title: 'Eficiência tributária', text: 'Compare faturamento, margem e atividade para validar se o regime continua adequado.' },
+    { title: 'Operação fiscal', text: 'Mantenha documentos e notas organizados para reduzir risco operacional.' }
   ]);
   renderInsightList('[data-tax-opportunities]', [
-    { title: 'Economia potencial', text: 'Execute diagnosticos tributarios para estimar economia e creditos recuperaveis.' },
-    { title: 'Riscos fiscais', text: 'Alertas de DAS/DARF e divergencias de movimento devem ser tratados antes do fechamento.' },
-    { title: 'Proximo ciclo', text: 'Revisar regime antes de mudancas relevantes de faturamento ou margem.' }
+    { title: 'Economia potencial', text: 'Execute diagnósticos tributários para estimar economia e créditos recuperáveis.' },
+    { title: 'Riscos fiscais', text: 'Alertas de DAS/DARF e divergências de movimentação devem ser tratados antes do fechamento.' },
+    { title: 'Próximo ciclo', text: 'Revisar regime antes de mudanças relevantes de faturamento ou margem.' }
   ]);
   renderInsightList('[data-action-insights]', [
-    { title: 'Conectar banco', text: 'Use Open Finance para automatizar conciliacao e fluxo de caixa.' },
-    { title: 'Enviar demonstrativos', text: 'Inclua DRE, balanco ou extratos para ativar analises gerenciais.' },
-    { title: 'Atualizar perfil', text: 'Complete nome, telefone e dados fiscais para melhorar recomendacoes.' }
+    { title: 'Conectar banco', text: 'Use Open Finance para automatizar conciliação e fluxo de caixa.' },
+    { title: 'Enviar demonstrativos', text: 'Inclua DRE, balanço ou extratos para ativar análises gerenciais.' },
+    { title: 'Atualizar perfil', text: 'Complete nome, telefone e dados fiscais para melhorar recomendações.' }
   ]);
   renderInsightList('[data-next-steps]', [
     { title: 'Prioridade 1', text: pendencias ? 'Resolver pendencias abertas no painel financeiro.' : 'Manter rotina semanal de acompanhamento.' },
-    { title: 'Prioridade 2', text: 'Validar enquadramento tributario com base no faturamento atual.' },
+    { title: 'Prioridade 2', text: 'Validar enquadramento tributário com base no faturamento atual.' },
     { title: 'Prioridade 3', text: 'Conectar contas bancarias e revisar fluxo de caixa projetado.' }
   ]);
 }
@@ -225,9 +229,83 @@ async function loadProfile() {
     ['nome', 'fantasia', 'telefone'].forEach((field) => {
       if (form.elements[field]) form.elements[field].value = profile[field] || '';
     });
+    $('[data-diag-nome]') && ($('[data-diag-nome]').value = profile.nome || profile.fantasia || profile.nomeEmpresa || '');
+    $('[data-diag-cnpj]') && ($('[data-diag-cnpj]').value = profile.cnpj || '');
+    $('[data-diag-setor]') && ($('[data-diag-setor]').value = profile.setor || '');
+    $('[data-diag-regime]') && ($('[data-diag-regime]').value = profile.regime || 'simples');
+    $('[data-diag-faturamento]') && ($('[data-diag-faturamento]').value = profile.faturamento || profile.faturamentoAnual || '');
+    $('[data-diag-margem]') && ($('[data-diag-margem]').value = profile.margem || profile.margemEstimada || '');
   } catch (error) {
     showToast(error.message, 'error');
   }
+}
+
+function fillCompanyFields(data) {
+  if (!data) return;
+  state.cnpjData = data;
+  const nome = data.razao_social || data.nome || data.nomeEmpresa || '';
+  const fantasia = data.nome_fantasia || data.fantasia || '';
+  $('[data-cnpj-result]').textContent = nome
+    ? `${nome}${fantasia ? ` (${fantasia})` : ''}`
+    : 'CNPJ localizado nas bases públicas.';
+  $('[data-company-preview]').textContent = nome
+    ? `Conta sera criada para ${nome}.`
+    : 'Dados públicos encontrados para este CNPJ.';
+  $('[data-diag-nome]') && ($('[data-diag-nome]').value = nome || fantasia);
+  $('[data-diag-cnpj]') && ($('[data-diag-cnpj]').value = data.cnpj || onlyDigits($('[data-register-cnpj]').value));
+  $('[data-diag-setor]') && ($('[data-diag-setor]').value = data.cnae_fiscal_descricao || data.atividade_principal || data.setor || '');
+}
+
+async function lookupCnpj(cnpj) {
+  const clean = onlyDigits(cnpj);
+  if (clean.length !== 14) {
+    $('[data-cnpj-result]').textContent = 'Digite o CNPJ para buscar os dados públicos da empresa.';
+    return;
+  }
+  $('[data-cnpj-result]').textContent = 'Buscando dados públicos do CNPJ...';
+  const data = await apiRequest(`/api/cnpj?cnpj=${encodeURIComponent(clean)}`);
+  fillCompanyFields(data);
+}
+
+function renderAnalysisResult(targetSelector, payload) {
+  const target = $(targetSelector);
+  if (!target) return;
+  const dados = payload?.dados || payload?.resultados || payload || {};
+  const resumo = dados.resumo || payload.resumo || 'Análise concluída.';
+  const alertas = dados.alertas || dados.anomalias || [];
+  const recomendacoes = dados.recomendacoes || payload.recomendacoes || [];
+  target.innerHTML = `
+    <strong>${resumo}</strong>
+    ${alertas.length ? `<p>Alertas: ${alertas.join(' | ')}</p>` : ''}
+    ${recomendacoes.length ? `<p>Recomendações: ${recomendacoes.join(' | ')}</p>` : ''}
+  `;
+}
+
+function renderAnalysesList() {
+  const list = $('[data-analyses-list]');
+  if (!list) return;
+  if (!state.analyses.length) {
+    list.innerHTML = '<div class="insight-item"><strong>Nenhuma análise ainda</strong><p>Envie um DRE, balanço ou extrato para iniciar.</p></div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.analyses.slice(0, 8).forEach((analise) => {
+    const dados = analise.resultado || {};
+    const item = document.createElement('div');
+    item.className = 'insight-item';
+    item.innerHTML = `
+      <strong>${analise.nomeArquivo || analise.tipo || 'Análise'}</strong>
+      <p>${dados.resumo || `Tipo: ${analise.tipo || '-'}. Fonte: ${analise.fonte || '-'}`}</p>
+    `;
+    list.appendChild(item);
+  });
+}
+
+async function loadAnalyses() {
+  if (!state.token) return;
+  const data = await apiRequest('/api/analises');
+  state.analyses = data.analises || [];
+  renderAnalysesList();
 }
 
 async function loadBanks() {
@@ -255,7 +333,7 @@ function renderBanks() {
     item.innerHTML = `
       <div>
         <strong>${bank.bankName || 'Banco conectado'}</strong>
-        <p>Ultima sincronizacao: ${bank.lastSync ? new Date(bank.lastSync).toLocaleString('pt-BR') : '-'}</p>
+        <p>Última sincronização: ${bank.lastSync ? new Date(bank.lastSync).toLocaleString('pt-BR') : '-'}</p>
       </div>
       <div>
         <button class="btn btn-light" type="button" data-sync-bank="${bank.bankId}">Sincronizar</button>
@@ -272,7 +350,7 @@ async function sendCode(button) {
   setLoading(button, true, 'Enviando...');
   try {
     const data = await apiRequest('/api/auth/send-code', { method: 'POST', body: JSON.stringify({ email }) });
-    $('[data-login-note]').textContent = data.mensagem || 'Codigo enviado. Verifique seu email.';
+    $('[data-login-note]').textContent = data.mensagem || 'Código enviado. Verifique seu e-mail.';
     if (data._devCode) $('[data-login-code]').value = data._devCode;
   } finally {
     setLoading(button, false);
@@ -282,7 +360,7 @@ async function sendCode(button) {
 async function verifyCode(button) {
   const email = $('[data-login-email]').value.trim();
   const code = $('[data-login-code]').value.trim();
-  if (!email || !code) throw new Error('Informe email e codigo.');
+  if (!email || !code) throw new Error('Informe e-mail e código.');
   setLoading(button, true, 'Validando...');
   try {
     const data = await apiRequest('/api/auth/verify-code', { method: 'POST', body: JSON.stringify({ email, code }) });
@@ -322,14 +400,17 @@ async function register(event) {
   const password = $('[data-register-password]').value;
   const confirm = $('[data-register-confirm]').value;
   const plan = $('[data-register-plan]').value;
-  if (cnpj.length !== 14) throw new Error('Informe um CNPJ com 14 digitos.');
+  if (cnpj.length !== 14) throw new Error('Informe um CNPJ com 14 dígitos.');
   if (password.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
-  if (password !== confirm) throw new Error('As senhas nao conferem.');
+  if (password !== confirm) throw new Error('As senhas não conferem.');
 
   const button = $('button[type="submit"]', form);
   setLoading(button, true, 'Criando...');
   try {
-    await apiRequest('/api/auth/register-cnpj', { method: 'POST', body: JSON.stringify({ cnpj, password, plan }) });
+    await apiRequest('/api/auth/register-cnpj', {
+      method: 'POST',
+      body: JSON.stringify({ cnpj, password, plan, empresa: state.cnpjData })
+    });
     const login = await apiRequest('/api/auth/login-cnpj', { method: 'POST', body: JSON.stringify({ cnpj, password }) });
     persistSession(login.token, login.email, 'cnpj');
     if (login.dashboard) renderDashboard(login.dashboard);
@@ -347,7 +428,7 @@ async function redirectToCheckout(plan) {
     method: 'POST',
     body: JSON.stringify({ plano: plan })
   });
-  if (!data.checkoutUrl) throw new Error('Checkout nao retornado pelo servidor.');
+  if (!data.checkoutUrl) throw new Error('Checkout indisponível no momento.');
   window.location.href = data.checkoutUrl;
 }
 
@@ -356,11 +437,11 @@ async function connectBank(button) {
     openModal('[data-login-modal]');
     return;
   }
-  setLoading(button, true, 'Gerando token...');
+  setLoading(button, true, 'Abrindo conexão...');
   try {
     const data = await apiRequest('/api/openfinance/token');
-    if (!data.token) throw new Error('Token Pluggy nao retornado pelo servidor.');
-    if (!window.PluggyConnect) throw new Error('Pluggy Connect nao carregou. Verifique bloqueadores ou conexao.');
+    if (!data.token) throw new Error('Não foi possível iniciar a conexão bancária.');
+    if (!window.PluggyConnect) throw new Error('Não foi possível carregar a conexão bancária. Verifique sua internet e tente novamente.');
 
     const pluggy = new window.PluggyConnect({
       connectToken: data.token,
@@ -368,7 +449,7 @@ async function connectBank(button) {
       onSuccess: async (itemData) => {
         const itemId = itemData.item?.id || itemData.itemId || itemData.id;
         if (!itemId) {
-          showToast('Banco conectado, mas a Pluggy nao retornou itemId.', 'error');
+          showToast('Banco conectado, mas a Pluggy não retornou itemId.', 'error');
           return;
         }
         await apiRequest('/api/openfinance/connect', { method: 'POST', body: JSON.stringify({ itemId }) });
@@ -378,6 +459,49 @@ async function connectBank(button) {
       onError: (error) => showToast(error?.message || 'Falha ao conectar banco.', 'error')
     });
     pluggy.init();
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function submitDiagnostic(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    nome: form.elements.nome.value.trim(),
+    cnpj: onlyDigits(form.elements.cnpj.value),
+    setor: form.elements.setor.value.trim(),
+    regime: form.elements.regime.value,
+    faturamento: Number(String(form.elements.faturamento.value || '').replace(/\./g, '').replace(',', '.')) || 480000,
+    margem: Number(String(form.elements.margem.value || '').replace(',', '.')) || 0.12
+  };
+  const button = $('button[type="submit"]', form);
+  setLoading(button, true, 'Analisando...');
+  try {
+    const data = await apiRequest('/api/diagnosticos', { method: 'POST', body: JSON.stringify(payload) });
+    renderAnalysisResult('[data-diagnostic-result]', data.resultados || data);
+    showToast('Diagnóstico gerado.', 'success');
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function uploadAiDocument(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const file = form.elements.arquivo.files[0];
+  if (!file) throw new Error('Selecione um arquivo.');
+  const body = new FormData();
+  body.append('tipo', form.elements.tipo.value);
+  body.append('contexto', form.elements.contexto.value || '');
+  body.append('arquivo', file);
+  const button = $('button[type="submit"]', form);
+  setLoading(button, true, 'Analisando...');
+  try {
+    const data = await apiRequest('/api/upload-documento', { method: 'POST', body });
+    renderAnalysisResult('[data-ai-result]', data);
+    await loadAnalyses();
+    showToast('Análise concluída.', 'success');
   } finally {
     setLoading(button, false);
   }
@@ -426,6 +550,7 @@ function bindEvents() {
     setDashboardTab(button.dataset.tab);
     if (button.dataset.tab === 'openfinance') loadBanks();
     if (button.dataset.tab === 'profile') loadProfile();
+    if (button.dataset.tab === 'ai') loadAnalyses();
   }));
 
   $('[data-send-code]')?.addEventListener('click', (event) => sendCode(event.currentTarget).catch((error) => showToast(error.message, 'error')));
@@ -435,12 +560,19 @@ function bindEvents() {
   $('[data-refresh-dashboard]')?.addEventListener('click', () => loadDashboard().catch((error) => showToast(error.message, 'error')));
   $('[data-connect-bank]')?.addEventListener('click', (event) => connectBank(event.currentTarget).catch((error) => showToast(error.message, 'error')));
   $('[data-profile-form]')?.addEventListener('submit', (event) => saveProfile(event).catch((error) => showToast(error.message, 'error')));
+  $('[data-diagnostic-form]')?.addEventListener('submit', (event) => submitDiagnostic(event).catch((error) => showToast(error.message, 'error')));
+  $('[data-ai-upload-form]')?.addEventListener('submit', (event) => uploadAiDocument(event).catch((error) => showToast(error.message, 'error')));
+  $('[data-refresh-analyses]')?.addEventListener('click', () => loadAnalyses().catch((error) => showToast(error.message, 'error')));
 
   $('[data-register-cnpj]')?.addEventListener('input', (event) => {
     const cnpj = onlyDigits(event.target.value);
     $('[data-company-preview]').textContent = cnpj.length === 14
       ? `Conta sera criada para o CNPJ ${cnpj}.`
       : 'Informe o CNPJ para criar a conta.';
+    clearTimeout(state.cnpjTimer);
+    state.cnpjTimer = setTimeout(() => lookupCnpj(cnpj).catch((error) => {
+      $('[data-cnpj-result]').textContent = error.message || 'Não foi possível consultar este CNPJ agora.';
+    }), 450);
   });
 
   $$('[data-select-plan]').forEach((button) => button.addEventListener('click', () => {
@@ -460,7 +592,7 @@ function bindEvents() {
     const provider = state.provider;
     clearSession();
     if (provider === 'auth0') window.location.href = '/api/auth/auth0/logout';
-    else showToast('Sessao encerrada.', 'success');
+    else showToast('Sessão encerrada.', 'success');
   });
 
   $('[data-auth-link]')?.addEventListener('click', (event) => {

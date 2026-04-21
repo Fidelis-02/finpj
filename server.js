@@ -113,14 +113,14 @@ app.use('/api', apiRoutes);
 
 app.use((err, req, res, next) => {
     if (err.type === 'entity.too.large' || err.status === 413) {
-        return res.status(413).json({ erro: 'Payload muito grande. Limite maximo: 10MB.' });
+        return res.status(413).json({ erro: 'Payload muito grande. Limite máximo: 10 MB.' });
     }
 
     if (err.type === 'entity.parse.failed') {
-        return res.status(400).json({ erro: 'JSON invalido na requisicao.' });
+        return res.status(400).json({ erro: 'JSON inválido na requisição.' });
     }
 
-    console.error('Erro nao tratado:', err.message || err);
+    console.error('Erro não tratado:', err.message || err);
     return res.status(err.status || 500).json({ erro: err.message || 'Erro interno do servidor.' });
 });
 

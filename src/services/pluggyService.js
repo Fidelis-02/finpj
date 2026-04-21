@@ -30,7 +30,7 @@ function mapRequestError(error) {
     const detail = error?.response?.body?.message || error?.message || 'Erro desconhecido';
     return {
         detail,
-        userMessage: 'Nao foi possivel comunicar com a Pluggy no momento.',
+        userMessage: 'Não foi possível comunicar com a Pluggy no momento.',
         statusCode: error?.response?.statusCode || 502
     };
 }
@@ -42,7 +42,7 @@ async function createConnectToken(clientUserId) {
             ok: false,
             statusCode: 503,
             detail: 'PLUGGY_CLIENT_ID/PLUGGY_CLIENT_SECRET ausentes.',
-            userMessage: 'Pluggy nao configurado no ambiente.'
+            userMessage: 'Pluggy não configurado no ambiente.'
         };
     }
 

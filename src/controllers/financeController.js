@@ -4,15 +4,15 @@ const pluggyService = require('../services/pluggyService');
 function gerarTransacoesMock(bankName) {
     const tipos = [
         { desc: 'PIX Recebido', tipo: 'entrada', cat: 'Receita' },
-        { desc: 'PIX Enviado', tipo: 'saida', cat: 'Transferencia' },
+        { desc: 'PIX Enviado', tipo: 'saida', cat: 'Transferência' },
         { desc: 'Boleto Pago', tipo: 'saida', cat: 'Fornecedor' },
         { desc: 'TED Recebida', tipo: 'entrada', cat: 'Receita' },
-        { desc: 'Tarifa Bancaria', tipo: 'saida', cat: 'Taxa' },
+        { desc: 'Tarifa Bancária', tipo: 'saida', cat: 'Taxa' },
         { desc: 'Pagamento Fornecedor', tipo: 'saida', cat: 'Fornecedor' },
         { desc: 'Recebimento Cliente', tipo: 'entrada', cat: 'Receita' },
         { desc: 'DAS Simples Nacional', tipo: 'saida', cat: 'Imposto' },
         { desc: 'Folha de Pagamento', tipo: 'saida', cat: 'RH' },
-        { desc: 'Venda Cartao', tipo: 'entrada', cat: 'Receita' }
+        { desc: 'Venda Cartão', tipo: 'entrada', cat: 'Receita' }
     ];
 
     const hoje = new Date();
@@ -60,37 +60,37 @@ async function getPluggyToken(req, res) {
     }
 
     return res.status(result.statusCode || 500).json({
-        erro: result.userMessage || 'Nao foi possivel gerar token da Pluggy.',
+        erro: result.userMessage || 'Não foi possível gerar token da Pluggy.',
         detalhe: result.detail || null
     });
 }
 
 async function getBanks(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
     return res.json({ sucesso: true, banks: usuario.connectedBanks || [] });
 }
 
 async function connectBank(req, res) {
     const { itemId } = req.body || {};
     if (!itemId) {
-        return res.status(400).json({ erro: 'itemId obrigatorio para concluir a conexao.' });
+        return res.status(400).json({ erro: 'itemId obrigatório para concluir a conexão.' });
     }
 
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
 
     usuario.connectedBanks = usuario.connectedBanks || [];
     if (usuario.connectedBanks.find((bank) => bank.bankId === itemId)) {
-        return res.status(400).json({ erro: 'Banco ja conectado.' });
+        return res.status(400).json({ erro: 'Banco já conectado.' });
     }
 
     const item = await pluggyService.getItemDetails(itemId);
     if (!item) {
-        return res.status(502).json({ erro: 'Falha ao recuperar dados da instituicao financeira na Pluggy.' });
+        return res.status(502).json({ erro: 'Falha ao recuperar dados da instituição financeira na Pluggy.' });
     }
 
-    const bankName = item.connector?.name || 'Instituicao financeira';
+    const bankName = item.connector?.name || 'Instituição financeira';
     const transactions = await carregarTransacoesPluggy(itemId, bankName);
 
     const bank = {
@@ -110,10 +110,10 @@ async function connectBank(req, res) {
 
 async function syncBank(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
 
     const bank = (usuario.connectedBanks || []).find((item) => item.bankId === req.params.bankId);
-    if (!bank) return res.status(404).json({ erro: 'Banco nao conectado.' });
+    if (!bank) return res.status(404).json({ erro: 'Banco não conectado.' });
 
     bank.lastSync = new Date().toISOString();
     bank.transactions = await carregarTransacoesPluggy(bank.bankId, bank.bankName);
@@ -123,7 +123,7 @@ async function syncBank(req, res) {
 
 async function removeBank(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
 
     usuario.connectedBanks = (usuario.connectedBanks || []).filter((bank) => bank.bankId !== req.params.bankId);
     await salvarUsuario(usuario);
@@ -132,7 +132,7 @@ async function removeBank(req, res) {
 
 async function tagTransaction(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
 
     const { tag, nota } = req.body || {};
     const banks = usuario.connectedBanks || [];
@@ -168,7 +168,7 @@ async function conciliar(req, res) {
             usados.add(index);
             conciliados.push({ extrato: transacao, sistema: match, status: 'conciliado' });
         } else {
-            pendentes.push({ extrato: transacao, status: 'pendente', motivo: 'Nao encontrado' });
+            pendentes.push({ extrato: transacao, status: 'pendente', motivo: 'Não encontrado' });
         }
     });
 

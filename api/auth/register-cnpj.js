@@ -2,12 +2,12 @@ const { getUserByCnpj, saveUser, hashCode, generateBankReports } = require('../l
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ erro: 'Método não permitido' });
+        return res.status(405).json({ erro: 'Método não permitido.' });
     }
 
     const { cnpj, password } = req.body || {};
     if (!cnpj || !password || password.length < 6) {
-        return res.status(400).json({ erro: 'CNPJ e senha (mínimo 6 caracteres) são obrigatórios' });
+        return res.status(400).json({ erro: 'CNPJ e senha de no mínimo 6 caracteres são obrigatórios.' });
     }
 
     let user = await getUserByCnpj(cnpj);

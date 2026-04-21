@@ -17,14 +17,14 @@ function gerarAnaliseInterna(resultados, dados) {
     ];
 
     return {
-        resumo: `Com base no faturamento de ${fmtReais(dados.faturamento)} e na margem informada, o diagnóstico sugere ${resultados.regimeIdeal} como o regime mais vantajoso com uma economia potencial de ${fmtReais(economia)} ao ano.`,
+        resumo: `Com base no faturamento de ${fmtReais(dados.faturamento)} e na margem informada, o diagnóstico sugere ${resultados.regimeIdeal} como o regime mais vantajoso, com economia potencial de ${fmtReais(economia)} ao ano.`,
         recomendacoes
     };
 }
 
 export default function handler(req, res) {
     if (req.method === 'POST') {
-        const { nome, cnpj, faturamento, margem, setor, regime } = req.body;
+        const { faturamento, margem, setor, regime } = req.body;
 
         const fat = parseInt(faturamento) || 4800000;
         const marg = parseFloat(margem) || 0.12;
@@ -65,5 +65,5 @@ export default function handler(req, res) {
         });
     }
 
-    return res.status(405).json({ erro: 'Método não permitido' });
+    return res.status(405).json({ erro: 'Método não permitido.' });
 }

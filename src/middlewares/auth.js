@@ -24,7 +24,7 @@ async function verificarToken(req) {
 }
 
 function verificarTokenMiddleware(req, res, next) {
-    if (!JWT_SECRET) return res.status(500).json({ erro: 'Server misconfiguration: JWT_SECRET não configurado.' });
+    if (!JWT_SECRET) return res.status(500).json({ erro: 'Configuração do servidor incompleta: JWT_SECRET não configurado.' });
     const token = extrairToken(req);
     if (!token) return res.status(401).json({ erro: 'Token obrigatório.' });
     try {

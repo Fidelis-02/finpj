@@ -21,7 +21,7 @@ const documentController = require('../controllers/documentController');
 const userController = require('../controllers/userController');
 const paymentController = require('../controllers/paymentController');
 
-// Configuracao do multer para upload
+// Configuração do multer para upload
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 15 * 1024 * 1024 },
@@ -32,7 +32,7 @@ const upload = multer({
         if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|xlsx|xls|csv|txt|ods)$/i)) {
             cb(null, true);
         } else {
-            cb(new Error('Formato nao suportado. Use PDF, Excel, CSV ou TXT.'));
+            cb(new Error('Formato não suportado. Use PDF, Excel, CSV ou TXT.'));
         }
     }
 });
@@ -43,7 +43,7 @@ const otpLimiter = rateLimit({
     max: 5,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { erro: 'Muitas solicitacoes. Tente novamente mais tarde.' }
+    message: { erro: 'Muitas solicitações. Tente novamente mais tarde.' }
 });
 
 // ===============================
@@ -81,30 +81,30 @@ router.get('/diagnosticos', verificarTokenMiddleware, wrap(async (req, res) => {
         const diagnosticos = await obterDiagnosticos(req.userEmail);
         res.json(diagnosticos);
     } catch (erro) {
-        console.error('Erro ao obter diagnosticos:', erro);
-        res.status(500).json({ erro: 'Erro ao obter diagnosticos' });
+        console.error('Erro ao obter diagnósticos:', erro);
+        res.status(500).json({ erro: 'Erro ao obter diagnósticos.' });
     }
 }));
 router.get('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, res) => {
     try {
         const { obterDiagnostico } = require('../services/database');
         const diag = await obterDiagnostico(req.params.id, req.userEmail);
-        if (!diag) return res.status(404).json({ erro: 'Nao encontrado' });
+        if (!diag) return res.status(404).json({ erro: 'Não encontrado.' });
         res.json(diag);
     } catch (erro) {
-        console.error('Erro ao obter diagnostico:', erro);
-        res.status(500).json({ erro: 'Erro ao obter diagnostico' });
+        console.error('Erro ao obter diagnóstico:', erro);
+        res.status(500).json({ erro: 'Erro ao obter diagnóstico.' });
     }
 }));
 router.delete('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, res) => {
     try {
         const { deletarDiagnostico } = require('../services/database');
         const deletado = await deletarDiagnostico(req.params.id, req.userEmail);
-        if (!deletado) return res.status(404).json({ erro: 'Nao encontrado' });
+        if (!deletado) return res.status(404).json({ erro: 'Não encontrado.' });
         res.json({ sucesso: true });
     } catch (erro) {
-        console.error('Erro ao deletar diagnostico:', erro);
-        res.status(500).json({ erro: 'Erro ao deletar diagnostico' });
+        console.error('Erro ao excluir diagnóstico:', erro);
+        res.status(500).json({ erro: 'Erro ao excluir diagnóstico.' });
     }
 }));
 

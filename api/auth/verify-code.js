@@ -3,12 +3,12 @@ const { compareCode, formatEmail, getUser, saveUser, validateEmail, mountDashboa
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ erro: 'Método não permitido' });
+        return res.status(405).json({ erro: 'Método não permitido.' });
     }
 
     const { email, code } = req.body || {};
     if (!validateEmail(email) || !code || String(code).trim().length === 0) {
-        return res.status(400).json({ erro: 'Email e código são obrigatórios' });
+        return res.status(400).json({ erro: 'E-mail e código são obrigatórios.' });
     }
 
     const normalizedEmail = formatEmail(email);

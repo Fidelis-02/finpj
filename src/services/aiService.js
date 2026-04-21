@@ -141,7 +141,7 @@ function analisarLocalmente(tipoDoc, texto) {
                 num_transacoes: numeros.length,
                 categorias: [{ nome: 'Outros', valor: soma }],
                 anomalias: soma > 100000 ? ['Movimentação elevada detectada'] : [],
-                recomendacoes: ['Configure a integração Groq para análise detalhada por IA'],
+                recomendacoes: ['Envie documentos mais completos para obter uma análise mais detalhada.'],
                 resumo: `Extrato processado com ${numeros.length} valores identificados. Saldo líquido estimado: R$ ${(entradas - saidas).toLocaleString('pt-BR')}.`
             },
             fonte: 'local'
@@ -154,8 +154,8 @@ function analisarLocalmente(tipoDoc, texto) {
             custos: max * 0.45, lucro_bruto: max * 0.47,
             despesas_operacionais: max * 0.25, ebitda: max * 0.22, lucro_liquido: max * 0.12,
             margem_bruta_pct: 47, margem_liquida_pct: 12,
-            alertas: ['Análise local aproximada — configure GROQ_API_KEY para análise por IA'],
-            recomendacoes: ['Obtenha chave gratuita em console.groq.com para análise completa'],
+            alertas: ['Análise local aproximada com base nos valores identificados.'],
+            recomendacoes: ['Envie demonstrativos completos para melhorar a precisão da análise.'],
             resumo: `Documento processado localmente. ${numeros.length} valores financeiros identificados.`
         },
         fonte: 'local'
