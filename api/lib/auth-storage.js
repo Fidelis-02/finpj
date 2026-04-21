@@ -123,40 +123,15 @@ async function compareCode(code, hash) {
 }
 
 function criarTransportadorEmail() {
-    if (process.env.MAIL_HOST && process.env.MAIL_USER && process.env.MAIL_PASS) {
-        return nodemailer.createTransport({
-            host: process.env.MAIL_HOST,
-            port: Number(process.env.MAIL_PORT) || 587,
-            secure: process.env.MAIL_SECURE === 'true',
-            auth: {
-                user: process.env.MAIL_USER,
-                pass: process.env.MAIL_PASS
-            }
-        });
-    }
-
-    // Gmail with App Password fallback (set GMAIL_USER and GMAIL_APP_PASS env vars)
-    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASS) {
-        return nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.GMAIL_USER,
-                pass: process.env.GMAIL_APP_PASS
-            }
-        });
-    }
-
-    // Dev fallback: log to console
-    return {
-        sendMail: async (options) => {
-            console.log('\n📧 [DEV] EMAIL NÃO ENVIADO — configure MAIL_HOST/USER/PASS ou GMAIL_USER/APP_PASS');
-            console.log(`   Para: ${options.to}`);
-            console.log(`   Assunto: ${options.subject}`);
-            console.log(`   Código: ${options.text}`);
-            console.log('---');
-            return { messageId: 'dev-' + Date.now() };
+    return nodemailer.createTransport({
+        host: process.env.MAIL_HOST,
+        port: Number(process.env.MAIL_PORT) || 587,
+        secure: process.env.MAIL_SECURE === 'true',
+        auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS || process.env.BREVO_API_KEY
         }
-    };
+    });
 }
 
 async function sendVerificationEmail(email, code) {

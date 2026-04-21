@@ -245,7 +245,7 @@
             background-repeat: no-repeat;
             background-position: right 12px center;
             padding-right: 32px !important;
-            background-color: #0d1a30;
+            background-color: var(--bg-secondary);
             color: var(--text-primary);
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -263,7 +263,7 @@
         }
 
         select option {
-            background: #0d1a30;
+            background: var(--bg-secondary);
             color: var(--text-primary);
         }
 
@@ -389,7 +389,7 @@
             gap: 0;
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
-            background: #0d1526;
+            background: var(--bg-card);
         }
 
         .stat {
@@ -422,7 +422,7 @@
 
         .section-alt {
             padding: 60px 32px;
-            background: #0d1526;
+            background: var(--bg-card);
         }
 
         .section-label {
@@ -662,7 +662,7 @@
             border-radius: 12px;
             margin-bottom: 14px;
             font-size: 14px;
-            background: #0d1a30;
+            background: var(--bg-secondary);
             color: var(--text-primary);
             transition: border-color 0.2s, box-shadow 0.2s;
         }
@@ -736,7 +736,7 @@
         }
 
         .report-table th {
-            background: #0d1a30;
+            background: var(--bg-secondary);
             color: var(--text-primary);
             font-weight: 600;
         }
@@ -863,7 +863,7 @@
         /* FOOTER */
         .footer {
             padding: 36px;
-            background: #070c18;
+            background: var(--bg-secondary);
             border-top: 1px solid var(--border);
             text-align: center;
             font-size: 12px;
@@ -1596,7 +1596,7 @@
         </div>
 
         <!-- GRÁFICOS -->
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:32px;">
+        <div id="advanced-charts-grid" class="plan-advanced" style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:32px;">
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
                 <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📈 Fluxo de Caixa — Projeção 90 dias</div>
                 <canvas id="chart-cashflow" height="220"></canvas>
@@ -1608,7 +1608,7 @@
         </div>
 
         <!-- COMPARATIVO MoM -->
-        <div style="margin-top:24px;">
+        <div id="mom-container" class="plan-advanced" style="margin-top:24px;">
             <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📉 Comparativo Mensal (MoM)</div>
             <div id="mom-comparison" class="dashboard-grid"></div>
         </div>
@@ -1626,51 +1626,41 @@
         </div>
 
         <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">Selecione um banco para conectar</div>
-        <div class="features" id="banks-grid">
-            <div class="feat-card bank-card" onclick="connectBank('bb','Banco do Brasil')">
-                <div class="feat-icon" style="background:#FFDE17;color:#003;">🏦</div>
-                <div class="feat-title">Banco do Brasil</div>
-                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;" id="banks-grid">
+            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('itau','Itaú Unibanco')">
+                <div style="width:48px;height:48px;border-radius:12px;background:#EC7000;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">it</div>
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Itaú Unibanco</div>
+                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
+                </div>
             </div>
-            <div class="feat-card bank-card" onclick="connectBank('itau','Itaú Unibanco')">
-                <div class="feat-icon" style="background:#003399;color:#FF6600;">🏦</div>
-                <div class="feat-title">Itaú Unibanco</div>
-                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('bb','Banco do Brasil')">
+                <div style="width:48px;height:48px;border-radius:12px;background:#F9D300;display:flex;align-items:center;justify-content:center;color:#0038A8;font-size:24px;font-weight:800;font-family:sans-serif;">bb</div>
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Banco do Brasil</div>
+                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
+                </div>
             </div>
-            <div class="feat-card bank-card" onclick="connectBank('bradesco','Bradesco')">
-                <div class="feat-icon" style="background:#CC092F;color:#fff;">🏦</div>
-                <div class="feat-title">Bradesco</div>
-                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('bradesco','Bradesco')">
+                <div style="width:48px;height:48px;border-radius:12px;background:#CC092F;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">br</div>
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Bradesco</div>
+                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
+                </div>
             </div>
-            <div class="feat-card bank-card" onclick="connectBank('santander','Santander')">
-                <div class="feat-icon" style="background:#EC0000;color:#fff;">🏦</div>
-                <div class="feat-title">Santander</div>
-                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
+            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('nubank','Nubank')">
+                <div style="width:48px;height:48px;border-radius:12px;background:#8A05BE;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">nu</div>
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Nubank</div>
+                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
+                </div>
             </div>
-            <div class="feat-card bank-card" onclick="connectBank('nubank','Nubank')">
-                <div class="feat-icon" style="background:#820AD1;color:#fff;">🏦</div>
-                <div class="feat-title">Nubank</div>
-                <div class="feat-desc">Conta PJ · Open Finance</div>
-            </div>
-            <div class="feat-card bank-card" onclick="connectBank('inter','Banco Inter')">
-                <div class="feat-icon" style="background:#FF7A00;color:#fff;">🏦</div>
-                <div class="feat-title">Banco Inter</div>
-                <div class="feat-desc">Conta digital PJ · Open Finance</div>
-            </div>
-            <div class="feat-card bank-card" onclick="connectBank('c6','C6 Bank')">
-                <div class="feat-icon" style="background:#1a1a2e;color:#fff;">🏦</div>
-                <div class="feat-title">C6 Bank</div>
-                <div class="feat-desc">Conta PJ · Open Finance</div>
-            </div>
-            <div class="feat-card bank-card" onclick="connectBank('caixa','Caixa Econômica')">
-                <div class="feat-icon" style="background:#005CA9;color:#fff;">🏦</div>
-                <div class="feat-title">Caixa Econômica</div>
-                <div class="feat-desc">Conta corrente PJ · Open Finance</div>
-            </div>
-            <div class="feat-card bank-card" onclick="connectBank('sicoob','Sicoob')">
-                <div class="feat-icon" style="background:#003641;color:#fff;">🏦</div>
-                <div class="feat-title">Sicoob</div>
-                <div class="feat-desc">Conta cooperativa · Open Finance</div>
+            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('inter','Banco Inter')">
+                <div style="width:48px;height:48px;border-radius:12px;background:#FF7A00;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">in</div>
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Banco Inter</div>
+                    <div style="font-size:12px;color:var(--text-secondary);">Conta Digital · Open Finance</div>
+                </div>
             </div>
         </div>
 
@@ -1832,8 +1822,21 @@
     <section id="view-calendario" class="section app-view" style="display:none;">
         <div class="section-label">Agenda Fiscal</div>
         <div class="section-title">Calendário de Obrigações</div>
-        <p class="section-sub">Visualize todas as obrigações fiscais do mês com datas de vencimento e status.</p>
-        <div id="fiscal-calendar-grid" style="display:grid;grid-template-columns:1fr;gap:8px;"></div>
+        <p class="section-sub">Visualize todas as obrigações fiscais com datas de vencimento e status.</p>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+            <select id="cal-year-select" onchange="loadFiscalCalendar()" style="padding:10px 16px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-weight:600;">
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+            </select>
+            <div style="display:flex; gap:8px; background:var(--bg-secondary); padding:4px; border-radius:8px; border:1px solid var(--border);">
+                <button id="cal-btn-all" onclick="setCalFilter('all')" style="padding:6px 12px; border:none; border-radius:6px; background:var(--bg-primary); color:var(--text-primary); font-weight:600; cursor:pointer;">Todos</button>
+                <button id="cal-btn-history" onclick="setCalFilter('history')" style="padding:6px 12px; border:none; border-radius:6px; background:transparent; color:var(--text-secondary); cursor:pointer;">Histórico</button>
+                <button id="cal-btn-proj" onclick="setCalFilter('projection')" style="padding:6px 12px; border:none; border-radius:6px; background:transparent; color:var(--text-secondary); cursor:pointer;">Projeção</button>
+            </div>
+        </div>
+
+        <div id="fiscal-calendar-grid" style="display:flex;flex-direction:column;gap:16px;"></div>
     </section>
 
     <!-- VIEW: PERFIL -->
@@ -2681,7 +2684,7 @@
                 const data = await safeJsonParse(res);
                 if (!res.ok || !data.sucesso) throw new Error(data.erro || 'Falha ao carregar.');
                 const db = data.dashboard;
-                const greeting = db.user.email.split('@')[0];
+                const greeting = db.user.fantasia || db.user.nome || db.user.email.split('@')[0];
                 document.getElementById('dashboard-welcome').textContent = `Olá, ${greeting}`;
                 document.getElementById('dashboard-report-count').textContent = `${db.summary.reportsCount} relatórios`;
                 document.getElementById('dashboard-pendings').textContent = `${db.summary.pendencias} alertas`;
@@ -2693,6 +2696,14 @@
                     row.innerHTML = `<td>${r.date}</td><td>${r.title}</td><td>R$ ${r.amount.toLocaleString('pt-BR')}</td><td><span class="report-status ${sc}">${r.status}</span></td>`;
                     body.appendChild(row);
                 });
+                
+                // Segregação de plano
+                const plano = localStorage.getItem('finpj_plano') || 'enterprise'; // Force enterprise para o dev
+                const advGrid = document.getElementById('advanced-charts-grid');
+                if (advGrid) advGrid.style.display = (plano === 'starter') ? 'none' : 'grid';
+                const advMom = document.getElementById('mom-container');
+                if (advMom) advMom.style.display = (plano === 'starter') ? 'none' : 'block';
+
                 await loadConnectedBanks();
             } catch (e) { console.error('Dashboard:', e); logoutCliente(); }
         }
@@ -3560,24 +3571,67 @@
         }
 
         // ===== CALENDÁRIO FISCAL =====
+        let _calFilter = 'all';
+        let _calEvents = [];
+        
+        function setCalFilter(f) {
+            _calFilter = f;
+            document.getElementById('cal-btn-all').style.background = f==='all' ? 'var(--bg-primary)' : 'transparent';
+            document.getElementById('cal-btn-all').style.color = f==='all' ? 'var(--text-primary)' : 'var(--text-secondary)';
+            document.getElementById('cal-btn-history').style.background = f==='history' ? 'var(--bg-primary)' : 'transparent';
+            document.getElementById('cal-btn-history').style.color = f==='history' ? 'var(--text-primary)' : 'var(--text-secondary)';
+            document.getElementById('cal-btn-proj').style.background = f==='projection' ? 'var(--bg-primary)' : 'transparent';
+            document.getElementById('cal-btn-proj').style.color = f==='projection' ? 'var(--text-primary)' : 'var(--text-secondary)';
+            renderFiscalCalendar();
+        }
+
         async function loadFiscalCalendar() {
             const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+            const ano = document.getElementById('cal-year-select').value;
             try {
-                const res = await fetch('/api/fiscal-calendar', { headers: { Authorization: 'Bearer ' + token } });
+                const res = await fetch(`/api/fiscal-calendar?ano=${ano}`, { headers: { Authorization: 'Bearer ' + token } });
                 const data = await res.json();
                 if (!data.sucesso) return;
-                const grid = document.getElementById('fiscal-calendar-grid');
-                const tipoColors = { imposto: '#ef4444', rh: '#60a5fa', contabil: '#34d399' };
-                const tipoLabels = { imposto: 'Imposto', rh: 'RH', contabil: 'Contábil' };
-                grid.innerHTML = data.eventos.sort((a, b) => a.dia - b.dia).map(e => `
-                    <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;border-left:4px solid ${tipoColors[e.tipo]};opacity:${e.passado?'0.5':'1'};">
-                        <div style="min-width:50px;text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--text-primary);">${String(e.dia).padStart(2,'0')}</div><div style="font-size:10px;color:var(--text-muted);">${data.mesAtual}</div></div>
-                        <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">${e.titulo}</div><div style="font-size:12px;color:var(--text-secondary);">${e.desc}</div></div>
-                        <span style="font-size:10px;padding:3px 10px;border-radius:999px;background:${tipoColors[e.tipo]}20;color:${tipoColors[e.tipo]};">${tipoLabels[e.tipo]}</span>
-                        <span style="font-size:11px;color:${e.passado?'#34d399':'#f59e0b'};">${e.passado?'✅ Pago':'⏳ Pendente'}</span>
-                    </div>
-                `).join('');
+                _calEvents = data.eventos;
+                renderFiscalCalendar();
             } catch (e) { console.error(e); }
+        }
+
+        function renderFiscalCalendar() {
+            const grid = document.getElementById('fiscal-calendar-grid');
+            const tipoColors = { imposto: '#ef4444', rh: '#60a5fa', contabil: '#34d399' };
+            const tipoLabels = { imposto: 'Imposto', rh: 'RH', contabil: 'Contábil' };
+            const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+            
+            let filtered = _calEvents;
+            if (_calFilter === 'history') filtered = _calEvents.filter(e => e.passado);
+            if (_calFilter === 'projection') filtered = _calEvents.filter(e => !e.passado);
+            
+            // Group by month
+            const grouped = {};
+            filtered.forEach(e => {
+                if(!grouped[e.mes]) grouped[e.mes] = [];
+                grouped[e.mes].push(e);
+            });
+            
+            grid.innerHTML = Object.keys(grouped).sort((a,b)=>a-b).map(m => {
+                const monthEvents = grouped[m].sort((a, b) => a.dia - b.dia);
+                if (!monthEvents.length) return '';
+                return `
+                <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+                    <div style="background:var(--bg-secondary); padding:12px 20px; font-weight:700; border-bottom:1px solid var(--border); color:var(--text-primary); font-size:14px;">${months[m]}</div>
+                    <div style="display:flex; flex-direction:column;">
+                        ${monthEvents.map(e => `
+                        <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);opacity:${e.passado?'0.5':'1'};">
+                            <div style="min-width:50px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text-primary);">${String(e.dia).padStart(2,'0')}</div></div>
+                            <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text-primary);">${e.titulo}</div><div style="font-size:12px;color:var(--text-secondary);">${e.desc}</div></div>
+                            <span style="font-size:10px;padding:3px 10px;border-radius:999px;background:${tipoColors[e.tipo]}20;color:${tipoColors[e.tipo]};">${tipoLabels[e.tipo]}</span>
+                            <span style="font-size:11px;color:${e.passado?'#34d399':'#f59e0b'};">${e.passado?'✅ Realizado':'⏳ A Pagar'}</span>
+                        </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }).join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhum evento encontrado.</div>';
         }
 
         // ===== PERFIL =====
@@ -3620,9 +3674,20 @@
                 list.innerHTML = notifs.length ? notifs.map(n => `<div style="padding:10px;background:${tipoBg[n.tipo]};border-radius:8px;margin-bottom:6px;font-size:12px;color:var(--text-secondary);">${tipoIcons[n.tipo]} ${n.msg}</div>`).join('') : '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px;">Nenhuma notificação</div>';
             } catch (e) { console.error(e); }
         }
-        function toggleNotifications() {
+        async function toggleNotifications() {
             const p = document.getElementById('notif-panel');
-            p.style.display = p.style.display === 'none' ? 'block' : 'none';
+            const isOpening = p.style.display === 'none' || p.style.display === '';
+            p.style.display = isOpening ? 'block' : 'none';
+            if (isOpening) {
+                const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+                if (token) {
+                    try {
+                        await fetch('/api/notifications/read', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+                        const badge = document.getElementById('notif-badge');
+                        if (badge) badge.style.display = 'none';
+                    } catch(e) {}
+                }
+            }
         }
 
         // ===== TEMA DARK/LIGHT =====

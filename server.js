@@ -9,6 +9,34 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 const passport = require('passport');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const pdfParse = require('pdf-parse');
+const xlsx = require('xlsx');
+
+async function extrairTextoPDF(buffer) {
+    try {
+        const data = await pdfParse(buffer);
+        return data.text;
+    } catch (e) {
+        console.error('Erro no PDF:', e);
+        return '';
+    }
+}
+
+function extrairTextoExcel(buffer) {
+    try {
+        const workbook = xlsx.read(buffer, { type: 'buffer' });
+        return workbook.SheetNames.map(name => {
+            const sheet = workbook.Sheets[name];
+            return xlsx.utils.sheet_to_csv(sheet);
+        }).join('\n');
+    } catch (e) {
+        console.error('Erro no Excel:', e);
+        return '';
+    }
+}
+
 const uri = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
@@ -286,39 +314,15 @@ function salvarDados(dados) {
 }
 
 function criarTransportadorEmail() {
-    // Try to use SMTP if configured
-    if (process.env.MAIL_HOST && process.env.MAIL_USER && process.env.MAIL_PASS) {
-        return nodemailer.createTransport({
-            host: process.env.MAIL_HOST,
-            port: Number(process.env.MAIL_PORT) || 587,
-            secure: process.env.MAIL_SECURE === 'true',
-            auth: {
-                user: process.env.MAIL_USER,
-                pass: process.env.MAIL_PASS
-            }
-        });
-    }
-    
-    // Fallback: Log to console in development, implement with a real service in production
-    return {
-        sendMail: async (mailOptions) => {
-            // Log email details for development
-            if (process.env.NODE_ENV !== 'production') {
-                console.log('📧 EMAIL SIMULADO (Desenvolvimento):');
-                console.log(`   Para: ${mailOptions.to}`);
-                console.log(`   Assunto: ${mailOptions.subject}`);
-                console.log(`   Corpo: ${mailOptions.text}`);
-                console.log('---');
-                return { messageId: 'dev-' + Date.now() };
-            }
-            
-            // In production, throw error to alert about missing SMTP config
-            throw new Error(
-                'Email service not configured. Set MAIL_HOST, MAIL_USER, and MAIL_PASS environment variables, ' +
-                'or use a service like SendGrid, Resend, or AWS SES.'
-            );
+    return nodemailer.createTransport({
+        host: process.env.MAIL_HOST,
+        port: Number(process.env.MAIL_PORT) || 587,
+        secure: process.env.MAIL_SECURE === 'true',
+        auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS || process.env.BREVO_API_KEY
         }
-    };
+    });
 }
 
 async function enviarEmailVerificacao(email, code) {
@@ -456,7 +460,9 @@ function montarDashboard(usuario) {
     const safeUser = {
         email: usuario.email,
         createdAt: usuario.createdAt,
-        lastLogin: usuario.lastLogin || usuario.createdAt
+        lastLogin: usuario.lastLogin || usuario.createdAt,
+        fantasia: usuario.fantasia || usuario.nome || '',
+        nome: usuario.nome || ''
     };
     const reports = usuario.bankReports && usuario.bankReports.length ? usuario.bankReports : gerarRelatorioBancario(usuario.email);
     usuario.bankReports = reports;
@@ -807,7 +813,7 @@ function gerarAnaliseInterna(diagnostico) {
 }
 
 async function gerarAnaliseFinanceira(diagnostico) {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
         return gerarAnaliseInterna(diagnostico);
     }
 
@@ -815,14 +821,14 @@ async function gerarAnaliseFinanceira(diagnostico) {
         const prompt = `Você é um analista financeiro para PMEs no Brasil. Com base nos dados abaixo, gere um resumo conciso e três recomendações práticas de melhoria financeira e tributária.`;
         const mensagem = `Dados do diagnóstico:\nNome: ${diagnostico.nome}\nCNPJ: ${diagnostico.cnpj}\nSetor: ${diagnostico.setor}\nRegime atual: ${diagnostico.regime}\nFaturamento anual: R$ ${diagnostico.faturamento.toLocaleString('pt-BR')}\nMargem: ${diagnostico.margem}\nEconomia estimada: R$ ${diagnostico.resultados.economia}\nCréditos identificados: R$ ${diagnostico.resultados.creditosIdentificados}\nAnomalia identificada: R$ ${diagnostico.resultados.anomaliaValor}\nRegime ideal: ${diagnostico.resultados.regimeIdeal}`;
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+                Authorization: `Bearer ${process.env.GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: 'llama-3.3-70b-versatile',
                 messages: [
                     { role: 'system', content: prompt },
                     { role: 'user', content: mensagem }
@@ -840,7 +846,7 @@ async function gerarAnaliseFinanceira(diagnostico) {
 
         return { resumo: String(content).trim(), recomendacoes: [] };
     } catch (error) {
-        console.error('OpenAI analysis error:', error);
+        console.error('Groq analysis error:', error);
         return gerarAnaliseInterna(diagnostico);
     }
 }
@@ -1145,14 +1151,20 @@ app.get('/api/notifications', verificarTokenMiddleware, async (req, res) => {
     res.json({ sucesso: true, notifications: notifs });
 });
 
+app.post('/api/notifications/read', verificarTokenMiddleware, async (req, res) => {
+    // Opcional: Persistir o status de lida no banco.
+    // Como a lista de notificações é gerada dinamicamente, podemos simplesmente retornar sucesso.
+    res.json({ sucesso: true });
+});
+
 // ===============================
 // CALENDÁRIO FISCAL
 // ===============================
 app.get('/api/fiscal-calendar', verificarTokenMiddleware, (req, res) => {
     const hoje = new Date();
-    const mes = hoje.getMonth();
-    const ano = hoje.getFullYear();
-    const eventos = [
+    const anoSelecionado = parseInt(req.query.ano) || hoje.getFullYear();
+    const eventos = [];
+    const templateEventos = [
         { dia: 7, titulo: 'FGTS', desc: 'Recolhimento do FGTS', tipo: 'imposto' },
         { dia: 10, titulo: 'GPS/INSS', desc: 'Guia da Previdência Social', tipo: 'imposto' },
         { dia: 15, titulo: 'ISS', desc: 'Imposto Sobre Serviços (municipal)', tipo: 'imposto' },
@@ -1164,8 +1176,19 @@ app.get('/api/fiscal-calendar', verificarTokenMiddleware, (req, res) => {
         { dia: 1, titulo: 'Folha', desc: 'Processamento da folha de pagamento', tipo: 'rh' },
         { dia: 5, titulo: 'Pro-labore', desc: 'Pagamento de pro-labore aos sócios', tipo: 'rh' },
         { dia: 30, titulo: 'Balanço', desc: 'Fechamento contábil mensal', tipo: 'contabil' },
-    ].map(e => ({ ...e, data: new Date(ano, mes, e.dia).toISOString().slice(0, 10), passado: e.dia < hoje.getDate() }));
-    res.json({ sucesso: true, eventos, mesAtual: `${ano}-${String(mes + 1).padStart(2, '0')}` });
+    ];
+    for (let m = 0; m < 12; m++) {
+        templateEventos.forEach(e => {
+            const dataEvento = new Date(anoSelecionado, m, e.dia);
+            eventos.push({
+                ...e,
+                mes: m,
+                data: dataEvento.toISOString().slice(0, 10),
+                passado: dataEvento < hoje
+            });
+        });
+    }
+    res.json({ sucesso: true, eventos, ano: anoSelecionado });
 });
 
 // ===============================
