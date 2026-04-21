@@ -59,10 +59,13 @@ async function getPluggyToken(req, res) {
         return res.json({ sucesso: true, token: result.token });
     }
 
-    return res.status(result.statusCode || 500).json({
-        erro: result.userMessage || 'Não foi possível gerar token da Pluggy.',
-        detalhe: result.detail || null
-    });
+    const body = {
+        erro: result.userMessage || 'A conexão bancária está temporariamente indisponível. Tente novamente mais tarde.'
+    };
+    if (process.env.NODE_ENV !== 'production' && result.detail) {
+        body.detalhe = result.detail;
+    }
+    return res.status(result.statusCode || 500).json(body);
 }
 
 async function getBanks(req, res) {

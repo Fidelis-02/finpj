@@ -21,10 +21,12 @@ const documentController = require('../controllers/documentController');
 const userController = require('../controllers/userController');
 const paymentController = require('../controllers/paymentController');
 
+const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || Math.floor(3.5 * 1024 * 1024));
+
 // Configuração do multer para upload
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 15 * 1024 * 1024 },
+    limits: { fileSize: MAX_UPLOAD_BYTES },
     fileFilter: (req, file, cb) => {
         const allowed = ['application/pdf', 'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

@@ -4,8 +4,8 @@ let pluggyClient = null;
 
 function getConfig() {
     return {
-        clientId: process.env.PLUGGY_CLIENT_ID,
-        clientSecret: process.env.PLUGGY_CLIENT_SECRET
+        clientId: process.env.PLUGGY_CLIENT_ID || process.env.PLUGGY_ID || process.env.PLUGGY_CLIENT_ID_PROD,
+        clientSecret: process.env.PLUGGY_CLIENT_SECRET || process.env.PLUGGY_SECRET || process.env.PLUGGY_CLIENT_SECRET_PROD
     };
 }
 
@@ -30,7 +30,7 @@ function mapRequestError(error) {
     const detail = error?.response?.body?.message || error?.message || 'Erro desconhecido';
     return {
         detail,
-        userMessage: 'Não foi possível comunicar com a Pluggy no momento.',
+        userMessage: 'A conexão bancária está temporariamente indisponível. Tente novamente mais tarde.',
         statusCode: error?.response?.statusCode || 502
     };
 }
@@ -42,7 +42,7 @@ async function createConnectToken(clientUserId) {
             ok: false,
             statusCode: 503,
             detail: 'PLUGGY_CLIENT_ID/PLUGGY_CLIENT_SECRET ausentes.',
-            userMessage: 'Pluggy não configurado no ambiente.'
+            userMessage: 'A conexão bancária está temporariamente indisponível. Tente novamente mais tarde.'
         };
     }
 

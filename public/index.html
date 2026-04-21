@@ -15,7 +15,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="#home" aria-label="FinPJ">
-      <img src="/logo.svg" alt="" width="34" height="34">
+      <img src="/favicon.svg" alt="" width="30" height="30">
       <span>FinPJ</span>
     </a>
     <nav class="nav" aria-label="Navegação principal">
@@ -65,6 +65,38 @@
         <article class="card"><h3>Cadastro direto</h3><p>Fluxo de CNPJ com validação, persistência e login imediato após a criação.</p></article>
         <article class="card"><h3>Open Finance</h3><p>Conecte bancos com segurança e acompanhe movimentações em poucos cliques.</p></article>
         <article class="card"><h3>Dashboard protegido</h3><p>Indicadores e bancos carregam apenas com sessão válida.</p></article>
+      </div>
+    </section>
+
+    <section id="simulador" class="section simulator-section">
+      <div class="section-heading">
+        <p class="eyebrow">Diagnóstico prévio</p>
+        <h2>Simule o regime mais eficiente antes de criar a conta.</h2>
+        <p>Informe faturamento, margem e atividade para comparar Simples Nacional, Lucro Presumido e Lucro Real em uma leitura gerencial inicial.</p>
+      </div>
+      <div class="simulator-grid">
+        <form class="simulator-card" data-public-diagnostic-form>
+          <label>Faturamento anual
+            <input name="faturamento" inputmode="decimal" value="480000" placeholder="Ex.: 480000">
+          </label>
+          <label>Margem estimada
+            <input name="margem" inputmode="decimal" value="0,12" placeholder="Ex.: 0,12">
+          </label>
+          <label>Atividade
+            <select name="atividade">
+              <option value="servicos">Serviços</option>
+              <option value="comercio">Comércio</option>
+              <option value="industria">Indústria</option>
+            </select>
+          </label>
+          <button class="btn btn-dark full" type="submit">Simular regime</button>
+        </form>
+        <article class="simulator-card simulator-result">
+          <span>Melhor opção estimada</span>
+          <strong data-public-best-regime>Simples Nacional</strong>
+          <p data-public-diagnostic-copy>Preencha os dados para visualizar uma comparação tributária prévia.</p>
+          <div class="regime-comparison" data-regime-comparison></div>
+        </article>
       </div>
     </section>
 
@@ -199,6 +231,7 @@
               </label>
               <label>Contexto adicional<input name="contexto" placeholder="Ex.: empresa de serviços, regime Simples"></label>
               <label>Arquivo PDF, Excel, CSV ou TXT<input name="arquivo" type="file" accept=".pdf,.xlsx,.xls,.ods,.csv,.txt" required></label>
+              <p class="form-note">Limite recomendado: até 3,5 MB por arquivo.</p>
               <button class="btn btn-dark" type="submit">Analisar documento</button>
               <div class="company-preview" data-ai-result>Envie um documento para exibir a análise.</div>
             </form>
@@ -229,9 +262,22 @@
 
         <div class="tab-panel is-hidden" data-panel="profile">
           <form class="profile-form" data-profile-form>
+            <div class="table-header"><h3>Dados da empresa</h3></div>
             <label>Nome da empresa<input name="nome" autocomplete="organization"></label>
             <label>Nome fantasia<input name="fantasia" autocomplete="organization-title"></label>
+            <label>CNPJ<input name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00"></label>
             <label>Telefone<input name="telefone" autocomplete="tel"></label>
+            <label>Regime tributário
+              <select name="regime">
+                <option value="">Selecione</option>
+                <option value="simples">Simples Nacional</option>
+                <option value="presumido">Lucro Presumido</option>
+                <option value="real">Lucro Real</option>
+              </select>
+            </label>
+            <label>Setor<input name="setor" placeholder="Serviços, comércio, indústria"></label>
+            <label>Faturamento anual<input name="faturamento" inputmode="decimal" placeholder="Ex.: 480000"></label>
+            <label>Margem estimada<input name="margem" inputmode="decimal" placeholder="Ex.: 0,12"></label>
             <button class="btn btn-dark" type="submit">Salvar perfil</button>
           </form>
         </div>
@@ -242,7 +288,7 @@
 
   <dialog class="modal" data-login-modal>
     <form method="dialog" class="modal-shell">
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">x</button>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
       <div class="modal-header">
         <p class="eyebrow">Entrar</p>
         <h2>Acesse sua conta</h2>
@@ -272,7 +318,7 @@
 
   <dialog class="modal" data-register-modal>
     <form class="modal-shell" data-register-form>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">x</button>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
       <div class="modal-header">
         <p class="eyebrow">Cadastro</p>
         <h2>Crie sua conta PJ</h2>

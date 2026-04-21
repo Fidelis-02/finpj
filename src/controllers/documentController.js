@@ -1,6 +1,54 @@
 const { salvarAnalise, obterAnalises, obterUsuario } = require('../services/database');
 const { analisarComGroq } = require('../services/aiService');
 
+const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 16000);
+const MAX_ANALYSES_RETURNED = Number(process.env.MAX_ANALYSES_RETURNED || 20);
+
+function compactarArray(valor, limite = 8) {
+    if (!Array.isArray(valor)) return valor;
+    return valor.slice(0, limite).map((item) => {
+        if (typeof item === 'string') return item.slice(0, 500);
+        if (!item || typeof item !== 'object') return item;
+        return Object.fromEntries(
+            Object.entries(item)
+                .slice(0, 12)
+                .map(([key, val]) => [key, typeof val === 'string' ? val.slice(0, 300) : val])
+        );
+    });
+}
+
+function compactarResultadoAnalise(dados) {
+    if (!dados || typeof dados !== 'object') return dados;
+
+    const chaves = [
+        'resumo',
+        'alertas',
+        'recomendacoes',
+        'anomalias',
+        'categorias',
+        'itens_conciliacao',
+        'receita_bruta',
+        'receita_liquida',
+        'total_entradas',
+        'total_saidas',
+        'saldo_final',
+        'lucro_liquido',
+        'margem_liquida_pct',
+        'liquidez_corrente',
+        'endividamento_pct'
+    ];
+
+    const compacto = {};
+    chaves.forEach((key) => {
+        if (dados[key] === undefined) return;
+        if (typeof dados[key] === 'string') compacto[key] = dados[key].slice(0, 1200);
+        else if (Array.isArray(dados[key])) compacto[key] = compactarArray(dados[key], key === 'itens_conciliacao' ? 20 : 8);
+        else compacto[key] = dados[key];
+    });
+
+    return Object.keys(compacto).length ? compacto : dados;
+}
+
 async function extrairTextoPDF(buffer) {
     try {
         const pdfParse = require('pdf-parse');
@@ -49,24 +97,38 @@ async function uploadDocumento(req, res) {
         return res.status(422).json({ erro: 'Não foi possível extrair texto do documento. Tente um PDF com texto selecionável ou Excel.' });
     }
 
+    if (texto.length > MAX_EXTRACTED_CHARS) {
+        texto = texto.slice(0, MAX_EXTRACTED_CHARS);
+    }
+
     const analise = await analisarComGroq(tipo, texto, contexto);
+    const resultadoCompacto = compactarResultadoAnalise(analise.dados);
     await salvarAnalise({
         email: req.userEmail,
         tipo,
         nomeArquivo: req.file.originalname,
         tamanho: req.file.size,
         data: new Date().toISOString(),
-        resultado: analise.dados,
+        resultado: resultadoCompacto,
         fonte: analise.fonte
     });
 
-    res.json({ sucesso: true, ...analise, nomeArquivo: req.file.originalname });
+    res.json({ sucesso: true, ...analise, dados: resultadoCompacto, nomeArquivo: req.file.originalname });
 }
 
 async function getAnalises(req, res) {
     try {
         const analises = await obterAnalises(req.userEmail);
-        res.json({ sucesso: true, analises });
+        const compactas = analises.slice(0, MAX_ANALYSES_RETURNED).map((analise) => ({
+            id: analise.id,
+            tipo: analise.tipo,
+            nomeArquivo: analise.nomeArquivo,
+            tamanho: analise.tamanho,
+            data: analise.data,
+            fonte: analise.fonte,
+            resultado: compactarResultadoAnalise(analise.resultado)
+        }));
+        res.json({ sucesso: true, analises: compactas });
     } catch (e) {
         console.error('Erro ao obter análises:', e);
         res.status(500).json({ erro: 'Não foi possível carregar as análises.' });

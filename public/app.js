@@ -10,6 +10,8 @@ const state = {
   analyses: []
 };
 
+const MAX_UPLOAD_BYTES = 3.5 * 1024 * 1024;
+
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
@@ -19,6 +21,43 @@ function formatCurrency(value) {
 
 function onlyDigits(value) {
   return String(value || '').replace(/\D/g, '');
+}
+
+function formatCnpj(value) {
+  const digits = onlyDigits(value).slice(0, 14);
+  return digits
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2');
+}
+
+function parseMoneyLike(value) {
+  const normalized = String(value || '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+  return Number(normalized) || 0;
+}
+
+function calculatePublicRegime({ faturamento, margem, atividade }) {
+  const annualRevenue = Number(faturamento) || 0;
+  const margin = Number(margem) || 0.12;
+  const presumidoBase = atividade === 'comercio' ? annualRevenue * 0.08 : annualRevenue * 0.32;
+  const simplesRate = annualRevenue <= 180000 ? 0.06
+    : annualRevenue <= 360000 ? 0.112
+    : annualRevenue <= 720000 ? 0.135
+    : annualRevenue <= 1800000 ? 0.16
+    : annualRevenue <= 3600000 ? 0.21
+    : 0.33;
+  const simplesAdjust = atividade === 'comercio' ? 0.85 : atividade === 'industria' ? 0.92 : 1;
+  const regimes = [
+    { name: 'Simples Nacional', tax: annualRevenue * simplesRate * simplesAdjust },
+    { name: 'Lucro Presumido', tax: presumidoBase * 0.15 + Math.max(0, presumidoBase - 240000) * 0.1 + presumidoBase * 0.09 + annualRevenue * 0.0925 },
+    { name: 'Lucro Real', tax: annualRevenue * margin * 0.34 + annualRevenue * 0.0925 }
+  ].map((item) => ({ ...item, monthly: item.tax / 12 }));
+  regimes.sort((a, b) => a.tax - b.tax);
+  return regimes;
 }
 
 function setLoading(element, isLoading, label = 'Processando...') {
@@ -112,6 +151,44 @@ function setAuthTab(tab) {
 function setDashboardTab(tab) {
   $$('[data-tab]').forEach((button) => button.classList.toggle('is-active', button.dataset.tab === tab));
   $$('[data-panel]').forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.panel !== tab));
+}
+
+function renderPublicDiagnostic(regimes, annualRevenue) {
+  const best = regimes[0];
+  const worst = regimes[regimes.length - 1];
+  const economy = Math.max(0, worst.tax - best.tax);
+  $('[data-public-best-regime]').textContent = best.name;
+  $('[data-public-diagnostic-copy]').textContent = annualRevenue
+    ? `Estimativa anual de impostos: ${formatCurrency(best.tax)}. Economia potencial frente ao pior cenário: ${formatCurrency(economy)}.`
+    : 'Preencha os dados para visualizar uma comparação tributária prévia.';
+
+  const target = $('[data-regime-comparison]');
+  if (!target) return;
+  target.innerHTML = '';
+  regimes.forEach((regime, index) => {
+    const row = document.createElement('div');
+    row.className = `regime-row ${index === 0 ? 'is-best' : ''}`;
+    row.innerHTML = `
+      <div>
+        <strong>${regime.name}</strong>
+        <small>${index === 0 ? 'Melhor estimativa' : 'Comparativo'}</small>
+      </div>
+      <span>${formatCurrency(regime.monthly)}/mês</span>
+    `;
+    target.appendChild(row);
+  });
+}
+
+function runPublicDiagnostic(event) {
+  event?.preventDefault();
+  const form = $('[data-public-diagnostic-form]');
+  if (!form) return;
+  const faturamento = parseMoneyLike(form.elements.faturamento.value);
+  const margemRaw = String(form.elements.margem.value || '').replace(',', '.');
+  const margem = Number(margemRaw) > 1 ? Number(margemRaw) / 100 : Number(margemRaw) || 0.12;
+  const atividade = form.elements.atividade.value;
+  const regimes = calculatePublicRegime({ faturamento, margem, atividade });
+  renderPublicDiagnostic(regimes, faturamento);
 }
 
 function renderInsightList(selector, items) {
@@ -226,9 +303,10 @@ async function loadProfile() {
     const profile = data.perfil || data.profile || data.usuario || {};
     const form = $('[data-profile-form]');
     if (!form) return;
-    ['nome', 'fantasia', 'telefone'].forEach((field) => {
+    ['nome', 'fantasia', 'telefone', 'regime', 'setor', 'faturamento', 'margem'].forEach((field) => {
       if (form.elements[field]) form.elements[field].value = profile[field] || '';
     });
+    if (form.elements.cnpj) form.elements.cnpj.value = formatCnpj(profile.cnpj || '');
     $('[data-diag-nome]') && ($('[data-diag-nome]').value = profile.nome || profile.fantasia || profile.nomeEmpresa || '');
     $('[data-diag-cnpj]') && ($('[data-diag-cnpj]').value = profile.cnpj || '');
     $('[data-diag-setor]') && ($('[data-diag-setor]').value = profile.setor || '');
@@ -249,8 +327,8 @@ function fillCompanyFields(data) {
     ? `${nome}${fantasia ? ` (${fantasia})` : ''}`
     : 'CNPJ localizado nas bases públicas.';
   $('[data-company-preview]').textContent = nome
-    ? `Conta sera criada para ${nome}.`
-    : 'Dados públicos encontrados para este CNPJ.';
+    ? `Conta será criada para ${nome}.`
+    : `Conta será criada para o CNPJ ${formatCnpj(data.cnpj || $('[data-register-cnpj]').value)}.`;
   $('[data-diag-nome]') && ($('[data-diag-nome]').value = nome || fantasia);
   $('[data-diag-cnpj]') && ($('[data-diag-cnpj]').value = data.cnpj || onlyDigits($('[data-register-cnpj]').value));
   $('[data-diag-setor]') && ($('[data-diag-setor]').value = data.cnae_fiscal_descricao || data.atividade_principal || data.setor || '');
@@ -491,6 +569,9 @@ async function uploadAiDocument(event) {
   const form = event.currentTarget;
   const file = form.elements.arquivo.files[0];
   if (!file) throw new Error('Selecione um arquivo.');
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(`Arquivo muito grande. Envie um arquivo de até ${(MAX_UPLOAD_BYTES / 1024 / 1024).toFixed(1).replace('.', ',')} MB.`);
+  }
   const body = new FormData();
   body.append('tipo', form.elements.tipo.value);
   body.append('contexto', form.elements.contexto.value || '');
@@ -525,7 +606,12 @@ async function saveProfile(event) {
   const payload = {
     nome: form.elements.nome.value.trim(),
     fantasia: form.elements.fantasia.value.trim(),
-    telefone: form.elements.telefone.value.trim()
+    cnpj: onlyDigits(form.elements.cnpj?.value || ''),
+    telefone: form.elements.telefone.value.trim(),
+    regime: form.elements.regime?.value || '',
+    setor: form.elements.setor?.value.trim() || '',
+    faturamento: parseMoneyLike(form.elements.faturamento?.value || ''),
+    margem: Number(String(form.elements.margem?.value || '').replace(',', '.')) || ''
   };
   await apiRequest('/api/profile', { method: 'PUT', body: JSON.stringify(payload) });
   await loadDashboard();
@@ -560,14 +646,19 @@ function bindEvents() {
   $('[data-refresh-dashboard]')?.addEventListener('click', () => loadDashboard().catch((error) => showToast(error.message, 'error')));
   $('[data-connect-bank]')?.addEventListener('click', (event) => connectBank(event.currentTarget).catch((error) => showToast(error.message, 'error')));
   $('[data-profile-form]')?.addEventListener('submit', (event) => saveProfile(event).catch((error) => showToast(error.message, 'error')));
+  $('[data-profile-form] input[name="cnpj"]')?.addEventListener('input', (event) => {
+    event.target.value = formatCnpj(event.target.value);
+  });
   $('[data-diagnostic-form]')?.addEventListener('submit', (event) => submitDiagnostic(event).catch((error) => showToast(error.message, 'error')));
   $('[data-ai-upload-form]')?.addEventListener('submit', (event) => uploadAiDocument(event).catch((error) => showToast(error.message, 'error')));
   $('[data-refresh-analyses]')?.addEventListener('click', () => loadAnalyses().catch((error) => showToast(error.message, 'error')));
+  $('[data-public-diagnostic-form]')?.addEventListener('submit', runPublicDiagnostic);
 
   $('[data-register-cnpj]')?.addEventListener('input', (event) => {
     const cnpj = onlyDigits(event.target.value);
+    event.target.value = formatCnpj(cnpj);
     $('[data-company-preview]').textContent = cnpj.length === 14
-      ? `Conta sera criada para o CNPJ ${cnpj}.`
+      ? `Conta será criada para o CNPJ ${formatCnpj(cnpj)}.`
       : 'Informe o CNPJ para criar a conta.';
     clearTimeout(state.cnpjTimer);
     state.cnpjTimer = setTimeout(() => lookupCnpj(cnpj).catch((error) => {
@@ -605,6 +696,7 @@ function bindEvents() {
 
 document.addEventListener('DOMContentLoaded', () => {
   bindEvents();
+  runPublicDiagnostic();
   handleAuth0Redirect();
   updateSessionUi();
   if (state.token) {

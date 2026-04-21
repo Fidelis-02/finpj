@@ -49,6 +49,7 @@ button { cursor: pointer; }
 }
 
 .brand { gap: 10px; font-weight: 760; letter-spacing: -0.03em; }
+.brand img { display: block; flex: 0 0 auto; }
 .nav { gap: 26px; color: var(--muted); font-size: 0.95rem; }
 .nav a:hover { color: var(--ink); }
 .topbar-actions { gap: 10px; }
@@ -101,7 +102,7 @@ p { color: var(--muted); line-height: 1.6; }
 .hero-text { max-width: 620px; font-size: 1.2rem; }
 .hero-actions { gap: 12px; flex-wrap: wrap; margin-top: 32px; }
 
-.hero-card, .card, .price-card, .metric-card, .table-card, .split-card, .profile-form {
+.hero-card, .card, .price-card, .metric-card, .table-card, .split-card, .profile-form, .simulator-card {
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: var(--radius);
@@ -125,9 +126,35 @@ p { color: var(--muted); line-height: 1.6; }
   gap: 18px;
 }
 .card, .price-card { padding: 28px; }
+.card { min-height: 144px; }
+.card p { max-width: 34rem; }
 .price-card strong { display: block; margin: 16px 0 8px; font-size: 2.5rem; letter-spacing: -0.05em; }
 .price-card.featured { background: #111114; color: #fff; }
 .price-card.featured p, .price-card.featured span { color: rgba(255,255,255,0.72); }
+
+.simulator-section { padding-top: 28px; }
+.simulator-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(320px, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+.simulator-card { display: grid; gap: 14px; padding: 28px; }
+.simulator-result span { color: var(--muted); font-size: 0.9rem; }
+.simulator-result strong { display: block; font-size: clamp(2rem, 4vw, 3.1rem); letter-spacing: -0.05em; }
+.regime-comparison { display: grid; gap: 10px; margin-top: 6px; }
+.regime-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.74);
+}
+.regime-row.is-best { border-color: rgba(0,113,227,0.45); background: rgba(0,113,227,0.08); }
+.regime-row small { color: var(--muted); }
 
 .dashboard { max-width: 1320px; margin: 30px auto 80px; }
 .app-shell { padding-top: 42px; }
@@ -257,7 +284,7 @@ input:focus, select:focus { border-color: rgba(0, 113, 227, 0.55); box-shadow: 0
   .nav { order: 3; width: 100%; justify-content: space-between; gap: 12px; }
   .hero { grid-template-columns: 1fr; padding-top: 42px; }
   .hero-card { transform: none; }
-  .feature-grid, .pricing-grid, .metric-grid { grid-template-columns: 1fr; }
+  .feature-grid, .pricing-grid, .metric-grid, .simulator-grid { grid-template-columns: 1fr; }
   .app-layout, .dashboard-grid { grid-template-columns: 1fr; }
   .side-nav { position: static; }
   .dashboard-header, .split-card, .bank-item { align-items: stretch; flex-direction: column; }

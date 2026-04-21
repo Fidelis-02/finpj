@@ -112,8 +112,12 @@ app.get('/logo.svg', (req, res) => {
 app.use('/api', apiRoutes);
 
 app.use((err, req, res, next) => {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ erro: 'Arquivo muito grande. Envie um arquivo de até 3,5 MB.' });
+    }
+
     if (err.type === 'entity.too.large' || err.status === 413) {
-        return res.status(413).json({ erro: 'Payload muito grande. Limite máximo: 10 MB.' });
+        return res.status(413).json({ erro: 'Arquivo ou requisição muito grande. Reduza o tamanho e tente novamente.' });
     }
 
     if (err.type === 'entity.parse.failed') {
