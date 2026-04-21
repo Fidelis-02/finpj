@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,6 +19,7 @@
   <script src="/tax/index.js" defer></script>
   <script src="/js/main.js" type="module"></script>
 </head>
+
 <body>
   <header class="topbar">
     <a class="brand" href="#home" aria-label="FinPJ">
@@ -31,7 +33,12 @@
     </nav>
     <div class="topbar-actions">
       <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema" title="Alternar tema">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5" />
+          <path
+            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+        </svg>
       </button>
       <button class="btn btn-ghost" type="button" data-open-login>Entrar</button>
       <button class="btn btn-dark" type="button" data-open-register>Começar agora</button>
@@ -45,7 +52,8 @@
         <div class="hero-copy">
           <p class="eyebrow">Open Finance, impostos e caixa em um só lugar</p>
           <h1>Controle financeiro PJ com menos ruído e mais previsibilidade.</h1>
-          <p class="hero-text">Conecte bancos, acompanhe movimentações e organize indicadores sem planilhas quebradas ou etapas desnecessárias.</p>
+          <p class="hero-text">Conecte bancos, acompanhe movimentações e organize indicadores sem planilhas quebradas ou
+            etapas desnecessárias.</p>
           <div class="hero-actions">
             <button class="btn btn-dark btn-lg" type="button" data-open-register>Testar agora</button>
             <button class="btn btn-light btn-lg" type="button" data-open-login>Já tenho conta</button>
@@ -86,17 +94,27 @@
           <h2>O essencial para decidir rápido.</h2>
         </div>
         <div class="feature-grid">
-          <article class="card"><h3>Cadastro direto</h3><p>Fluxo de CNPJ com validação, persistência e login imediato após a criação.</p></article>
-          <article class="card"><h3>Open Finance</h3><p>Conecte bancos com segurança e acompanhe movimentações em poucos cliques.</p></article>
-          <article class="card"><h3>Dashboard protegido</h3><p>Indicadores e bancos carregam apenas com sessão válida.</p></article>
+          <article class="card">
+            <h3>Cadastro direto</h3>
+            <p>Fluxo de CNPJ com validação, persistência e login imediato após a criação.</p>
+          </article>
+          <article class="card">
+            <h3>Open Finance</h3>
+            <p>Conecte bancos com segurança e acompanhe movimentações em poucos cliques.</p>
+          </article>
+          <article class="card">
+            <h3>Dashboard protegido</h3>
+            <p>Indicadores e bancos carregam apenas com sessão válida.</p>
+          </article>
         </div>
       </section>
 
       <section id="simulador" class="section simulator-section">
         <div class="section-heading">
           <p class="eyebrow">Diagnóstico prévio</p>
-          <h2>Simule o regime mais eficiente antes de criar a conta.</h2>
-          <p>Informe o CNPJ para buscar dados da empresa, depois adicione faturamento e margem para comparar Simples Nacional, Lucro Presumido e Lucro Real.</p>
+          <h2>Simule o regime mais eficiente antes de criar sua conta.</h2>
+          <p>Informe o CNPJ para buscar dados da empresa, depois adicione faturamento e margem para comparar Simples
+            Nacional, Lucro Presumido e Lucro Real.</p>
         </div>
         <div class="simulator-grid">
           <form class="simulator-card" data-public-diagnostic-form>
@@ -111,7 +129,8 @@
             <input type="hidden" name="atividade" data-atividade-input value="comercio">
 
             <label>Faturamento anual (R$)
-              <input name="faturamento" inputmode="decimal" value="480.000,00" placeholder="480.000,00" data-currency-input>
+              <input name="faturamento" inputmode="decimal" value="480.000,00" placeholder="480.000,00"
+                data-currency-input>
             </label>
 
             <label>Margem estimada (%)
@@ -239,7 +258,9 @@
 
             <div class="dashboard-grid">
               <article class="table-card panel-card">
-                <div class="table-header"><h3>Resumo executivo</h3></div>
+                <div class="table-header">
+                  <h3>Resumo executivo</h3>
+                </div>
                 <div class="insight-list" data-executive-summary>
                   <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
                   <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
@@ -247,7 +268,9 @@
                 </div>
               </article>
               <article class="table-card panel-card">
-                <div class="table-header"><h3>Alertas principais</h3></div>
+                <div class="table-header">
+                  <h3>Alertas principais</h3>
+                </div>
                 <div class="insight-list" data-main-alerts>
                   <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
                   <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
@@ -259,34 +282,59 @@
 
           <div class="tab-panel is-hidden" data-panel="financial">
             <div class="metric-grid">
-              <div class="metric-card"><span>Receita</span><strong data-financial="income" class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
-              <div class="metric-card"><span>Despesas</span><strong data-financial="expenses" class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
-              <div class="metric-card"><span>Lucro</span><strong data-financial="profit" class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
+              <div class="metric-card"><span>Receita</span><strong data-financial="income"
+                  class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
+              <div class="metric-card"><span>Despesas</span><strong data-financial="expenses"
+                  class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
+              <div class="metric-card"><span>Lucro</span><strong data-financial="profit"
+                  class="skeleton skeleton-text skeleton-card">R$ 0</strong></div>
             </div>
             <div class="dashboard-grid">
               <article class="table-card panel-card">
-                <div class="table-header"><h3>Fluxo de caixa projetado</h3></div>
+                <div class="table-header">
+                  <h3>Fluxo de caixa projetado</h3>
+                </div>
                 <div class="summary-list" data-cashflow-summary></div>
               </article>
               <article class="table-card panel-card">
-                <div class="table-header"><h3>Categorias em atenção</h3></div>
+                <div class="table-header">
+                  <h3>Categorias em atenção</h3>
+                </div>
                 <div class="summary-list" data-category-summary></div>
               </article>
             </div>
             <div class="table-card">
-              <div class="table-header"><h3>Movimentos gerenciais</h3></div>
+              <div class="table-header">
+                <h3>Movimentos gerenciais</h3>
+              </div>
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>Data</th><th>Evento</th><th>Status</th><th>Valor</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Evento</th>
+                      <th>Status</th>
+                      <th>Valor</th>
+                    </tr>
+                  </thead>
                   <tbody data-reports-table></tbody>
                 </table>
               </div>
             </div>
             <div class="table-card">
-              <div class="table-header"><h3>Últimas transações bancárias</h3></div>
+              <div class="table-header">
+                <h3>Últimas transações bancárias</h3>
+              </div>
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Descrição</th>
+                      <th>Categoria</th>
+                      <th>Valor</th>
+                    </tr>
+                  </thead>
                   <tbody data-transactions-table></tbody>
                 </table>
               </div>
@@ -297,22 +345,36 @@
             <div class="split-card">
               <div>
                 <h3>DRE e balanço patrimonial</h3>
-                <p data-statements-copy>Envie demonstrativos para ativar indicadores como EBITDA, margem de contribuição e liquidez.</p>
+                <p data-statements-copy>Envie demonstrativos para ativar indicadores como EBITDA, margem de contribuição
+                  e liquidez.</p>
               </div>
               <button class="btn btn-dark" type="button" data-go-tab="ai">Enviar documento</button>
             </div>
             <div class="dashboard-grid">
-              <article class="table-card panel-card"><div class="table-header"><h3>Leitura gerencial</h3></div><div class="insight-list" data-balance-reading></div></article>
-              <article class="table-card panel-card"><div class="table-header"><h3>Pontos críticos e gargalos</h3></div><div class="insight-list" data-balance-risks></div></article>
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Leitura gerencial</h3>
+                </div>
+                <div class="insight-list" data-balance-reading></div>
+              </article>
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Pontos críticos e gargalos</h3>
+                </div>
+                <div class="insight-list" data-balance-risks></div>
+              </article>
             </div>
           </div>
 
           <div class="tab-panel is-hidden" data-panel="tax">
             <div class="dashboard-grid">
               <form class="profile-form tax-simulator-form" data-dashboard-tax-form>
-                <div class="table-header"><h3>Comparador de regimes</h3></div>
+                <div class="table-header">
+                  <h3>Comparador de regimes</h3>
+                </div>
                 <div class="form-grid">
-                  <label>Faturamento anual<input name="faturamento" inputmode="decimal" placeholder="Ex.: 4800000"></label>
+                  <label>Faturamento anual<input name="faturamento" inputmode="decimal"
+                      placeholder="Ex.: 4800000"></label>
                   <label>Margem estimada<input name="margem" inputmode="decimal" placeholder="Ex.: 0,12"></label>
                   <label>Atividade
                     <select name="atividade">
@@ -331,26 +393,43 @@
                   </label>
                 </div>
                 <button class="btn btn-dark" type="submit">Comparar regimes</button>
-                <button class="btn btn-light" type="button" data-copy-tax-to-diagnostic>Gerar diagnóstico com estes dados</button>
+                <button class="btn btn-light" type="button" data-copy-tax-to-diagnostic>Gerar diagnóstico com estes
+                  dados</button>
               </form>
               <article class="table-card panel-card">
-                <div class="table-header"><h3>Resultado estimado</h3></div>
+                <div class="table-header">
+                  <h3>Resultado estimado</h3>
+                </div>
                 <div class="regime-comparison in-card" data-dashboard-tax-comparison></div>
-                <div class="company-preview in-card-note" data-dashboard-tax-summary>Informe faturamento e margem para comparar.</div>
+                <div class="company-preview in-card-note" data-dashboard-tax-summary>Informe faturamento e margem para
+                  comparar.</div>
               </article>
             </div>
             <div class="dashboard-grid">
-              <article class="table-card panel-card"><div class="table-header"><h3>Enquadramento</h3></div><div class="insight-list" data-tax-fit></div></article>
-              <article class="table-card panel-card"><div class="table-header"><h3>Calendário fiscal</h3></div><div class="insight-list" data-tax-calendar></div></article>
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Enquadramento</h3>
+                </div>
+                <div class="insight-list" data-tax-fit></div>
+              </article>
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Calendário fiscal</h3>
+                </div>
+                <div class="insight-list" data-tax-calendar></div>
+              </article>
             </div>
           </div>
 
           <div class="tab-panel is-hidden" data-panel="diagnostics">
             <div class="dashboard-grid">
               <form class="profile-form diagnostic-form" data-diagnostic-form>
-                <div class="table-header"><h3>Diagnóstico tributário</h3></div>
+                <div class="table-header">
+                  <h3>Diagnóstico tributário</h3>
+                </div>
                 <label>Nome da empresa<input name="nome" data-diag-nome autocomplete="organization" required></label>
-                <label>CNPJ<input name="cnpj" data-diag-cnpj inputmode="numeric" placeholder="00.000.000/0001-00" required></label>
+                <label>CNPJ<input name="cnpj" data-diag-cnpj inputmode="numeric" placeholder="00.000.000/0001-00"
+                    required></label>
                 <label>Setor<input name="setor" data-diag-setor placeholder="Comércio, serviços, indústria"></label>
                 <label>Regime atual
                   <select name="regime" data-diag-regime>
@@ -359,14 +438,18 @@
                     <option value="real">Lucro Real</option>
                   </select>
                 </label>
-                <label>Faturamento anual<input name="faturamento" data-diag-faturamento inputmode="decimal" placeholder="480000"></label>
-                <label>Margem estimada<input name="margem" data-diag-margem inputmode="decimal" placeholder="0.12"></label>
-                <label>NCM Principal<input name="ncm" data-diag-ncm placeholder="Ex: 3304.99.90"></label>
+                <label>Faturamento anual<input name="faturamento" data-diag-faturamento inputmode="decimal"
+                    placeholder="480000"></label>
+                <label>Margem estimada<input name="margem" data-diag-margem inputmode="decimal"
+                    placeholder="0.12"></label>
                 <button class="btn btn-dark" type="submit">Gerar diagnóstico</button>
                 <div class="company-preview" data-diagnostic-result>Preencha os dados para gerar a análise fiscal.</div>
               </form>
               <article class="table-card panel-card">
-                <div class="table-header"><h3>Histórico fiscal</h3><button class="btn btn-light" type="button" data-refresh-diagnostics>Atualizar</button></div>
+                <div class="table-header">
+                  <h3>Histórico fiscal</h3><button class="btn btn-light" type="button"
+                    data-refresh-diagnostics>Atualizar</button>
+                </div>
                 <div class="insight-list" data-diagnostics-list></div>
               </article>
             </div>
@@ -375,7 +458,9 @@
           <div class="tab-panel is-hidden" data-panel="ai">
             <div class="dashboard-grid">
               <form class="profile-form ai-upload-form" data-ai-upload-form>
-                <div class="table-header"><h3>Análise de documentos por IA</h3></div>
+                <div class="table-header">
+                  <h3>Análise de documentos por IA</h3>
+                </div>
                 <label>Tipo de documento
                   <select name="tipo">
                     <option value="dre">DRE</option>
@@ -383,14 +468,20 @@
                     <option value="extrato">Extrato bancário</option>
                   </select>
                 </label>
-                <label>Contexto adicional<input name="contexto" placeholder="Ex.: empresa de serviços, regime Simples"></label>
-                <label>Arquivo PDF, Excel, CSV, TXT ou imagem (JPG/PNG)<input name="arquivo" type="file" accept=".pdf,.xlsx,.xls,.ods,.csv,.txt,.jpg,.jpeg,.png,.webp,.bmp,.tiff" required></label>
-                <p class="form-note">Limite recomendado: até 3,5 MB por arquivo. Se o PDF for digitalizado (imagem), envie como JPG ou PNG para OCR automático.</p>
+                <label>Contexto adicional<input name="contexto"
+                    placeholder="Ex.: empresa de serviços, regime Simples"></label>
+                <label>Arquivo PDF, Excel, CSV, TXT ou imagem (JPG/PNG)<input name="arquivo" type="file"
+                    accept=".pdf,.xlsx,.xls,.ods,.csv,.txt,.jpg,.jpeg,.png,.webp,.bmp,.tiff" required></label>
+                <p class="form-note">Limite recomendado: até 3,5 MB por arquivo. Se o PDF for digitalizado (imagem),
+                  envie como JPG ou PNG para OCR automático.</p>
                 <button class="btn btn-dark" type="submit">Analisar documento</button>
                 <div class="company-preview" data-ai-result>Envie um documento para exibir a análise.</div>
               </form>
               <article class="table-card panel-card">
-                <div class="table-header"><h3>Histórico de análises</h3><button class="btn btn-light" type="button" data-refresh-analyses>Atualizar</button></div>
+                <div class="table-header">
+                  <h3>Histórico de análises</h3><button class="btn btn-light" type="button"
+                    data-refresh-analyses>Atualizar</button>
+                </div>
                 <div class="insight-list" data-analyses-list></div>
               </article>
             </div>
@@ -399,8 +490,18 @@
           <div class="tab-panel is-hidden" data-panel="insights">
             <div class="decision-actions insight-actions" data-action-board></div>
             <div class="dashboard-grid">
-              <article class="table-card panel-card"><div class="table-header"><h3>Recomendações práticas</h3></div><div class="insight-list" data-action-insights></div></article>
-              <article class="table-card panel-card"><div class="table-header"><h3>Prioridades e próximos passos</h3></div><div class="insight-list" data-next-steps></div></article>
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Recomendações práticas</h3>
+                </div>
+                <div class="insight-list" data-action-insights></div>
+              </article>
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Prioridades e próximos passos</h3>
+                </div>
+                <div class="insight-list" data-next-steps></div>
+              </article>
             </div>
           </div>
 
@@ -418,7 +519,9 @@
 
           <div class="tab-panel is-hidden" data-panel="profile">
             <form class="profile-form" data-profile-form>
-              <div class="table-header"><h3>Dados da empresa</h3></div>
+              <div class="table-header">
+                <h3>Dados da empresa</h3>
+              </div>
               <div class="form-grid">
                 <label>Nome da empresa<input name="nome" autocomplete="organization"></label>
                 <label>Nome fantasia<input name="fantasia" autocomplete="organization-title"></label>
@@ -458,11 +561,13 @@
       <div data-auth-panel="email">
         <label>E-mail<input type="email" data-login-email placeholder="voce@empresa.com" autocomplete="email"></label>
         <button class="btn btn-dark full" type="button" data-send-code>Enviar código</button>
-        <label>Código<input data-login-code inputmode="numeric" placeholder="000000" autocomplete="one-time-code"></label>
+        <label>Código<input data-login-code inputmode="numeric" placeholder="000000"
+            autocomplete="one-time-code"></label>
         <button class="btn btn-light full" type="button" data-verify-code>Confirmar código</button>
       </div>
       <div class="is-hidden" data-auth-panel="cnpj">
-        <label>CNPJ<input data-login-cnpj inputmode="numeric" placeholder="00.000.000/0001-00" autocomplete="username"></label>
+        <label>CNPJ<input data-login-cnpj inputmode="numeric" placeholder="00.000.000/0001-00"
+            autocomplete="username"></label>
         <label>Senha<input type="password" data-login-password autocomplete="current-password"></label>
         <button class="btn btn-dark full" type="button" data-login-cnpj-submit>Entrar com CNPJ</button>
       </div>
@@ -481,10 +586,13 @@
         <p class="eyebrow">Cadastro</p>
         <h2>Crie sua conta PJ</h2>
       </div>
-      <label>CNPJ<input data-register-cnpj name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00" required></label>
+      <label>CNPJ<input data-register-cnpj name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00"
+          required></label>
       <div class="company-preview" data-cnpj-result>Digite o CNPJ para buscar os dados públicos da empresa.</div>
-      <label>Senha<input data-register-password name="password" type="password" minlength="6" autocomplete="new-password" required></label>
-      <label>Confirmar senha<input data-register-confirm type="password" minlength="6" autocomplete="new-password" required></label>
+      <label>Senha<input data-register-password name="password" type="password" minlength="6"
+          autocomplete="new-password" required></label>
+      <label>Confirmar senha<input data-register-confirm type="password" minlength="6" autocomplete="new-password"
+          required></label>
       <label>Plano
         <select data-register-plan name="plan">
           <option value="starter">Starter</option>
@@ -500,4 +608,5 @@
 
   <div class="toast-stack" data-toast-stack aria-live="polite"></div>
 </body>
+
 </html>
