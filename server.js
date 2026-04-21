@@ -9,6 +9,7 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 const passport = require('passport');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_fake');
 const uri = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
@@ -204,6 +205,11 @@ app.get('/api/cnpj', async (req, res) => {
 
     if (cnpj.length !== 14) {
         return res.status(400).json({ erro: 'CNPJ inválido' });
+    }
+
+    const usuarioExistente = await obterUsuarioPorCnpj(cnpj);
+    if (usuarioExistente) {
+        return res.status(400).json({ erro: 'Este CNPJ já possui uma conta. Por favor, faça login.' });
     }
 
     if (cacheCNPJ[cnpj]) {
@@ -596,7 +602,7 @@ app.post('/api/auth/login-cnpj', async (req, res) => {
 });
 
 app.post('/api/auth/register-cnpj', async (req, res) => {
-    const { cnpj, password } = req.body || {};
+    const { cnpj, password, plan } = req.body || {};
     if (!cnpj || !password || password.length < 6) {
         return res.status(400).json({ erro: 'CNPJ e senha (mínimo 6 caracteres) são obrigatórios' });
     }
@@ -615,12 +621,55 @@ app.post('/api/auth/register-cnpj', async (req, res) => {
         cnpj: cnpjNorm,
         passwordHash: await bcrypt.hash(password, 10),
         email: `cnpj-${cnpjNorm}@finpj.local`,
+        plano: plan || 'starter',
         createdAt: new Date().toISOString(),
         bankReports: gerarRelatoriosBancarios(`cnpj-${cnpjNorm}`)
     };
 
     await salvarUsuario(usuario);
     res.json({ sucesso: true, mensagem: 'Conta criada com sucesso. Agora faça login.' });
+});
+
+// ===============================
+// STRIPE PAGAMENTOS E WEBHOOKS
+// ===============================
+app.post('/api/stripe/create-checkout-session', async (req, res) => {
+    const { planId, cnpj } = req.body;
+    try {
+        const session = await stripe.checkout.sessions.create({
+            ui_mode: 'embedded',
+            line_items: [{
+                price_data: {
+                    currency: 'brl',
+                    product_data: { name: `FinPJ - Plano ${planId.toUpperCase()}` },
+                    unit_amount: planId === 'starter' ? 49000 : planId === 'growth' ? 95000 : 185000,
+                    recurring: { interval: 'month' }
+                },
+                quantity: 1,
+            }],
+            mode: 'subscription',
+            return_url: `${req.headers.origin}/?session_id={CHECKOUT_SESSION_ID}`,
+            metadata: { cnpj, plan: planId }
+        });
+        res.send({ clientSecret: session.client_secret });
+    } catch (e) {
+        res.status(500).send({ error: e.message });
+    }
+});
+
+app.post('/api/webhooks/stripe', async (req, res) => {
+    const event = req.body;
+    if (event && event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const cnpj = session.metadata.cnpj;
+        const plano = session.metadata.plan;
+        const usuario = await obterUsuarioPorCnpj(cnpj);
+        if (usuario) {
+            usuario.plano = plano;
+            await salvarUsuario(usuario);
+        }
+    }
+    res.json({ received: true });
 });
 
 // ===============================
