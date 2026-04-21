@@ -824,19 +824,95 @@ function renderAnalysisResult(targetSelector, payload) {
   const resumo = dados.resumo || payload.resumo || 'Análise concluída.';
   const alertas = dados.alertas || dados.anomalias || [];
   const recomendacoes = dados.recomendacoes || payload.recomendacoes || [];
+  const fonte = payload.fonte || '-';
+  const confianca = payload.confianca || {};
+  const score = typeof confianca.score === 'number' ? confianca.score : null;
+  const flags = confianca.flags || [];
 
   target.innerHTML = '';
+
+  // Badge de fonte + confiança
+  const meta = document.createElement('div');
+  meta.className = 'ai-meta';
+  meta.style.cssText = 'margin-bottom:8px;font-size:12px;color:#555;';
+  const fonteLabel = fonte === 'groq-llama3' ? 'IA Groq' : fonte === 'local' ? 'Análise Local' : fonte;
+  let confBadge = '';
+  if (score !== null) {
+    const cor = score >= 0.7 ? '#2e7d32' : score >= 0.4 ? '#f9a825' : '#c62828';
+    const label = score >= 0.7 ? 'Alta confiança' : score >= 0.4 ? 'Confiança média' : 'Baixa confiança';
+    confBadge = ` <span style="background:${cor};color:#fff;padding:1px 6px;border-radius:4px;">${label} (${(score*100).toFixed(0)}%)</span>`;
+  }
+  meta.innerHTML = `<span style="background:#f0f0f0;padding:2px 8px;border-radius:4px;">${escapeHtml(fonteLabel)}</span>${confBadge}`;
+  if (flags.length && score < 0.7) {
+    meta.innerHTML += ` <span style="color:#c62828;">⚠ ${escapeHtml(flags.join('; '))}</span>`;
+  }
+  target.appendChild(meta);
+
   const title = document.createElement('strong');
   title.textContent = resumo;
   target.appendChild(title);
 
+  // Tabela de valores extraídos
+  const tabelaChaves = [];
+  if (dados.receita_bruta !== undefined || dados.lucro_bruto !== undefined) {
+    tabelaChaves.push(
+      ['Receita bruta', 'receita_bruta'],
+      ['Receita líquida', 'receita_liquida'],
+      ['Custos', 'custos'],
+      ['Lucro bruto', 'lucro_bruto'],
+      ['Despesas oper.', 'despesas_operacionais'],
+      ['EBITDA', 'ebitda'],
+      ['Lucro líquido', 'lucro_liquido'],
+      ['Margem bruta', 'margem_bruta_pct'],
+      ['Margem líq.', 'margem_liquida_pct']
+    );
+  } else if (dados.ativo_total !== undefined || dados.patrimonio_liquido !== undefined) {
+    tabelaChaves.push(
+      ['Ativo total', 'ativo_total'],
+      ['Ativo circulante', 'ativo_circulante'],
+      ['Passivo circulante', 'passivo_circulante'],
+      ['Patrimônio líq.', 'patrimonio_liquido'],
+      ['Liquidez corr.', 'liquidez_corrente'],
+      ['Endividamento', 'endividamento_pct']
+    );
+  } else if (dados.saldo_final !== undefined || dados.total_entradas !== undefined) {
+    tabelaChaves.push(
+      ['Saldo inicial', 'saldo_inicial'],
+      ['Total entradas', 'total_entradas'],
+      ['Total saídas', 'total_saidas'],
+      ['Saldo final', 'saldo_final'],
+      ['Transações', 'num_transacoes']
+    );
+  }
+  if (tabelaChaves.length) {
+    const table = document.createElement('table');
+    table.className = 'ai-values-table';
+    table.style.cssText = 'width:100%;margin-top:8px;border-collapse:collapse;font-size:13px;';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th style="text-align:left;padding:4px;border-bottom:1px solid #ddd;">Indicador</th><th style="text-align:right;padding:4px;border-bottom:1px solid #ddd;">Valor</th></tr>';
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    tabelaChaves.forEach(([label, key]) => {
+      const val = dados[key];
+      if (val === undefined || val === null) return;
+      const tr = document.createElement('tr');
+      const fmt = key.endsWith('_pct') ? formatPercent(val) : formatCurrency(val);
+      tr.innerHTML = `<td style="padding:4px;border-bottom:1px solid #eee;">${escapeHtml(label)}</td><td style="text-align:right;padding:4px;border-bottom:1px solid #eee;font-weight:600;">${escapeHtml(fmt)}</td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    target.appendChild(table);
+  }
+
   if (alertas.length) {
     const alertText = document.createElement('p');
+    alertText.style.color = '#c62828';
     alertText.textContent = `Alertas: ${alertas.join(' | ')}`;
     target.appendChild(alertText);
   }
   if (recomendacoes.length) {
     const recText = document.createElement('p');
+    recText.style.color = '#2e7d32';
     recText.textContent = `Recomendações: ${recomendacoes.join(' | ')}`;
     target.appendChild(recText);
   }
@@ -871,11 +947,21 @@ function renderAnalysesList() {
   list.innerHTML = '';
   state.analyses.slice(0, 8).forEach((analise) => {
     const dados = analise.resultado || {};
+    const fonte = analise.fonte || '-';
+    const confianca = analise.confianca || {};
+    const score = typeof confianca.score === 'number' ? confianca.score : null;
+    const fonteLabel = fonte === 'groq-llama3' ? 'IA' : fonte === 'local' ? 'Local' : fonte;
+    let badge = '';
+    if (score !== null) {
+      const cor = score >= 0.7 ? '#2e7d32' : score >= 0.4 ? '#f9a825' : '#c62828';
+      badge = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cor};margin-left:6px;"></span>`;
+    }
     const item = document.createElement('div');
     item.className = 'insight-item';
     item.innerHTML = `
       <strong>${escapeHtml(analise.nomeArquivo || analise.tipo || 'Análise')}</strong>
-      <p>${escapeHtml(dados.resumo || `Tipo: ${analise.tipo || '-'}. Fonte: ${analise.fonte || '-'}`)}</p>
+      <small style="color:#888;margin-left:6px;">${escapeHtml(fonteLabel)}${badge}</small>
+      <p>${escapeHtml(dados.resumo || `Tipo: ${analise.tipo || '-'}.`)}</p>
     `;
     list.appendChild(item);
   });

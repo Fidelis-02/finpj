@@ -102,13 +102,20 @@ function encontrarTrechoContabil(texto, tipo, limite) {
     const termosPorTipo = {
         dre: [
             'demonstracao do resultado',
+            'demonstracao dos resultados',
             'receitas operacionais',
             'receita liquida',
-            'lucro liquido do exercicio'
+            'lucro liquido do exercicio',
+            'lucro liquido',
+            'resultado do exercicio',
+            'ebitda',
+            'despesas operacionais'
         ],
         balanco: [
             'balanco patrimonial',
+            'ativo total',
             'ativo circulante',
+            'passivo total',
             'passivo circulante',
             'patrimonio liquido'
         ],
@@ -116,7 +123,10 @@ function encontrarTrechoContabil(texto, tipo, limite) {
             'saldo anterior',
             'saldo inicial',
             'saldo final',
-            'historico'
+            'saldo disponivel',
+            'historico',
+            'transacoes',
+            'lancamentos'
         ]
     };
 
@@ -129,13 +139,45 @@ function encontrarTrechoContabil(texto, tipo, limite) {
         }
     });
 
-    const inicio = candidatos
-        .filter((pos) => pos > 4000)
-        .sort((a, b) => a - b)[0] ?? candidatos.sort((a, b) => a - b)[0] ?? 0;
+    if (!candidatos.length) {
+        return texto.slice(0, limite);
+    }
 
-    const margemAnterior = 1200;
-    const start = Math.max(0, inicio - margemAnterior);
-    return texto.slice(start, start + limite);
+    // Escolher a primeira ocorrencia como inicio do trecho relevante
+    const inicioRaw = candidatos.sort((a, b) => a - b)[0];
+    const margemAnterior = 800;
+    const startRaw = Math.max(0, inicioRaw - margemAnterior);
+
+    // Expandir até o proximo termo relevante (ultima ocorrencia dentro do limite)
+    const fimRaw = candidatos.filter(p => p > startRaw && p < startRaw + limite).pop() || (startRaw + limite);
+    const endRaw = Math.min(texto.length, Math.max(startRaw + limite, fimRaw + 400));
+
+    // Alinhar a cortes com quebras de linha para nao cortar no meio de uma linha/tabela
+    let start = startRaw;
+    while (start > 0 && texto[start - 1] !== '\n') start -= 1;
+
+    let end = endRaw;
+    while (end < texto.length && texto[end] !== '\n') end += 1;
+    end = Math.min(texto.length, end);
+
+    // Se o trecho ainda excede o limite, faz o corte mais conservador
+    if (end - start > limite) {
+        end = start + limite;
+        while (end > start && texto[end - 1] !== '\n') end -= 1;
+    }
+
+    return texto.slice(start, end);
+}
+
+function possuiTermosContabeisMinimos(texto, tipo) {
+    const n = normalizarBusca(texto);
+    const mapa = {
+        dre: ['receita', 'lucro', 'custo', 'despesa', 'resultado'],
+        balanco: ['ativo', 'passivo', 'patrimonio', 'circulante'],
+        extrato: ['saldo', 'data', 'historico', 'transacao', 'lancamento']
+    };
+    const termos = mapa[tipo] || mapa.dre;
+    return termos.some(t => n.includes(t));
 }
 
 function extrairTextoExcel(buffer) {
@@ -171,11 +213,24 @@ async function uploadDocumento(req, res) {
         texto = req.file.buffer.toString('utf-8');
     }
 
-    if (!texto.trim()) {
-        return res.status(422).json({ erro: 'Não foi possível extrair texto do documento. Se for um PDF digitalizado como imagem, envie uma versão pesquisável ou Excel.' });
+    console.log(`[uploadDocumento] tipo=${tipo} arquivo=${req.file.originalname} tamanhoTextoExtraido=${texto.length}`);
+
+    const textoLimpo = texto.trim();
+    if (!textoLimpo) {
+        return res.status(422).json({ erro: 'Nao foi possivel extrair texto do documento. Se for um PDF digitalizado como imagem (nao pesquisavel), envie uma versao pesquisavel, OCR ou Excel.' });
     }
 
-    texto = encontrarTrechoContabil(texto, tipo, MAX_EXTRACTED_CHARS);
+    // Heuristica: menos de 100 caracteres ou quase so numeros = provavel PDF digitalizado mal extraido
+    if (textoLimpo.length < 100 || textoLimpo.replace(/[\d\s.,\-/]/g, '').length < 30) {
+        return res.status(422).json({ erro: 'Texto extraido muito curto ou sem conteudo semantico. Verifique se o PDF esta selecionavel ou use um arquivo Excel/CSV.' });
+    }
+
+    if (!possuiTermosContabeisMinimos(textoLimpo, tipo)) {
+        console.warn(`[uploadDocumento] Documento ${req.file.originalname} nao contem termos contabeis minimos esperados para tipo=${tipo}`);
+    }
+
+    texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
+    console.log(`[uploadDocumento] trechoEnviadoIA=${texto.length} caracteres`);
 
     const analise = await analisarComGroq(tipo, texto, contexto);
     const resultadoCompacto = compactarResultadoAnalise(analise.dados);
@@ -186,7 +241,8 @@ async function uploadDocumento(req, res) {
         tamanho: req.file.size,
         data: new Date().toISOString(),
         resultado: resultadoCompacto,
-        fonte: analise.fonte
+        fonte: analise.fonte,
+        confianca: analise.confianca
     });
 
     res.json({ sucesso: true, ...analise, dados: resultadoCompacto, nomeArquivo: req.file.originalname });
@@ -202,6 +258,7 @@ async function getAnalises(req, res) {
             tamanho: analise.tamanho,
             data: analise.data,
             fonte: analise.fonte,
+            confianca: analise.confianca,
             resultado: compactarResultadoAnalise(analise.resultado)
         }));
         res.json({ sucesso: true, analises: compactas });
