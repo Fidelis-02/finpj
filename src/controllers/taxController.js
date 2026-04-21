@@ -88,7 +88,7 @@ async function postDiagnostico(req, res) {
     const anomaliaValor = Math.random() > 0.5 ? fat * 0.01 : 0;
 
     const diagnostico = {
-        id: Date.now(),
+        id: `diag_${Date.now()}`,
         nome,
         cnpj,
         ownerEmail: req.userEmail || null,

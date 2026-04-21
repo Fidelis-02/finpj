@@ -98,14 +98,20 @@ async function obterDiagnosticos(ownerEmail) {
 
 async function obterDiagnostico(id, ownerEmail) {
     const database = await conectarDB();
-    const filtro = { id };
+    const ids = [id];
+    const numericId = Number(id);
+    if (Number.isFinite(numericId)) ids.push(numericId);
+    const filtro = { id: { $in: ids } };
     if (ownerEmail) filtro.ownerEmail = formatarEmail(ownerEmail);
     return database.collection('diagnosticos').findOne(filtro);
 }
 
 async function deletarDiagnostico(id, ownerEmail) {
     const database = await conectarDB();
-    const filtro = { id };
+    const ids = [id];
+    const numericId = Number(id);
+    if (Number.isFinite(numericId)) ids.push(numericId);
+    const filtro = { id: { $in: ids } };
     if (ownerEmail) filtro.ownerEmail = formatarEmail(ownerEmail);
     const result = await database.collection('diagnosticos').deleteOne(filtro);
     return result.deletedCount > 0;
