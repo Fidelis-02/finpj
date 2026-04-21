@@ -10,8 +10,11 @@ async function getProfile(req, res) {
 async function updateProfile(req, res) {
     const usuario = await obterUsuario(req.userEmail);
     if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
-    const { nomeEmpresa, cnpj, regime, setor } = req.body;
-    if (nomeEmpresa) usuario.nomeEmpresa = nomeEmpresa;
+    const { nome, fantasia, telefone, nomeEmpresa, cnpj, regime, setor } = req.body;
+    if (nome) usuario.nome = String(nome).trim();
+    if (fantasia) usuario.fantasia = String(fantasia).trim();
+    if (telefone) usuario.telefone = String(telefone).trim();
+    if (nomeEmpresa) usuario.nomeEmpresa = String(nomeEmpresa).trim();
     if (cnpj) usuario.cnpj = cnpj.replace(/\D/g, '');
     if (regime) usuario.regime = regime;
     if (setor) usuario.setor = setor;

@@ -1,1631 +1,201 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinPJ - CFO Digital para PMEs</title>
-    <meta name="description" content="CFO Digital para PMEs: análise tributária, Open Finance, IA e conciliação bancária.">
-    <meta name="theme-color" content="#0a0f1e">
-    <link rel="manifest" href="/manifest.json">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml"
-        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A2540'/%3E%3Ctext x='16' y='22' font-family='Montserrat, sans-serif' font-size='18' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E">
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="https://cdn.pluggy.ai/pluggy-connect/v1.0.0/pluggy-connect.js"></script>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5f7">
+  <title>FinPJ | Gestao financeira para empresas</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.pluggy.ai/pluggy-connect/v2.7.0/pluggy-connect.js" defer></script>
+  <script src="/app.js" defer></script>
 </head>
-
 <body>
-    <!-- NAVEGAÇÃO -->
-    <nav class="navbar">
-        <div class="logo">
-            <div class="logo-mark">FIN</div>
-            <span>FinPJ</span>
-        </div>
-        <!-- Desktop nav links (hidden on mobile) -->
-        <div class="nav-links" id="nav-landing-links">
-            <button type="button" class="nav-link" onclick="scrollTo('features')">Funcionalidades</button>
-            <button type="button" class="nav-link" onclick="scrollTo('howitworks')">Como funciona</button>
-            <button type="button" class="nav-link" onclick="scrollTo('planos')">Planos</button>
-        </div>
-        <div class="nav-links" id="nav-app-links" style="display:none;">
-            <button type="button" class="nav-link active" onclick="switchView('overview');closeMobileDrawer()">Dashboard</button>
-            <button type="button" class="nav-link" onclick="switchView('openfinance');closeMobileDrawer()">Open Finance</button>
-            <button type="button" class="nav-link" onclick="switchView('analise');closeMobileDrawer()">Análise IA</button>
-            <button type="button" class="nav-link" onclick="switchView('chat');closeMobileDrawer()">Chat IA</button>
-            <button type="button" class="nav-link" onclick="switchView('calculadora');closeMobileDrawer()">Calculadora</button>
-            <button type="button" class="nav-link" onclick="switchView('calendario');closeMobileDrawer()">Calendário</button>
-            <button type="button" class="nav-link" onclick="switchView('conciliacao');closeMobileDrawer()">Conciliação</button>
-        </div>
-        <!-- Desktop auth buttons (hidden on mobile) -->
-        <div class="nav-auth-group" id="nav-auth-group">
-            <button type="button" class="btn-nav-login" onclick="openModal('login')">Entrar</button>
-            <button type="button" class="btn-nav-signup" onclick="openModal('register')">Criar conta</button>
-        </div>
-        <div class="nav-auth-group" id="nav-user-group" style="display:none;">
-            <button onclick="toggleNotifications()" style="background:none;border:none;cursor:pointer;font-size:18px;position:relative;" title="Notificações">🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:#ef4444;color:#fff;font-size:9px;padding:1px 5px;border-radius:50%;font-weight:700;"></span></button>
-            <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;font-size:18px;" title="Alternar tema">🌙</button>
-            <button onclick="switchView('perfil')" style="background:none;border:none;cursor:pointer;font-size:18px;" title="Perfil">⚙️</button>
-            <span id="nav-user-email" style="font-size:13px;color:var(--text-secondary);"></span>
-            <button type="button" class="btn-nav-login" onclick="logoutCliente()" style="color:#ef4444;border-color:#ef4444;">Sair</button>
-        </div>
-        <!-- Hamburger (visible on mobile only) -->
-        <button class="hamburger" id="hamburger-btn" onclick="toggleMobileDrawer()" aria-label="Menu">
-            <span></span><span></span><span></span>
-        </button>
-        <div id="notif-panel" style="display:none;position:absolute;top:60px;right:20px;width:320px;max-width:calc(100vw - 32px);background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;z-index:1000;box-shadow:0 20px 40px rgba(0,0,0,0.4);">
-            <div style="font-weight:600;color:var(--text-primary);margin-bottom:12px;font-size:14px;">🔔 Notificações</div>
-            <div id="notif-list" style="max-height:300px;overflow-y:auto;"></div>
-        </div>
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="FinPJ">
+      <img src="/logo.svg" alt="" width="34" height="34">
+      <span>FinPJ</span>
+    </a>
+    <nav class="nav" aria-label="Navegacao principal">
+      <a href="#recursos">Recursos</a>
+      <a href="#planos">Planos</a>
+      <a href="#dashboard" data-auth-link>Dashboard</a>
     </nav>
-    <!-- Mobile Drawer -->
-    <div class="mobile-drawer" id="mobile-drawer">
-        <div id="mobile-landing-links">
-            <button type="button" class="nav-link" onclick="scrollTo('features');closeMobileDrawer()">Funcionalidades</button>
-            <button type="button" class="nav-link" onclick="scrollTo('howitworks');closeMobileDrawer()">Como funciona</button>
-            <button type="button" class="nav-link" onclick="scrollTo('planos');closeMobileDrawer()">Planos</button>
-        </div>
-        <div id="mobile-app-links" style="display:none;">
-            <button type="button" class="nav-link" onclick="switchView('overview');closeMobileDrawer()">📊 Dashboard</button>
-            <button type="button" class="nav-link" onclick="switchView('openfinance');closeMobileDrawer()">🏦 Open Finance</button>
-            <button type="button" class="nav-link" onclick="switchView('analise');closeMobileDrawer()">🤖 Análise IA</button>
-            <button type="button" class="nav-link" onclick="switchView('chat');closeMobileDrawer()">💬 Chat IA</button>
-            <button type="button" class="nav-link" onclick="switchView('calculadora');closeMobileDrawer()">🧾 Calculadora</button>
-            <button type="button" class="nav-link" onclick="switchView('calendario');closeMobileDrawer()">📅 Calendário</button>
-            <button type="button" class="nav-link" onclick="switchView('conciliacao');closeMobileDrawer()">🔄 Conciliação</button>
-        </div>
-        <div id="mobile-auth-group" class="nav-auth-group">
-            <button type="button" class="btn-nav-login" onclick="openModal('login');closeMobileDrawer()">Entrar</button>
-            <button type="button" class="btn-nav-signup" onclick="openModal('register');closeMobileDrawer()">Criar conta grátis</button>
-        </div>
-        <div id="mobile-user-group" style="display:none;" class="nav-auth-group">
-            <button type="button" class="btn-nav-login" onclick="logoutCliente();closeMobileDrawer()" style="color:#ef4444;border-color:#ef4444;">Sair da conta</button>
-        </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" type="button" data-open-login>Entrar</button>
+      <button class="btn btn-dark" type="button" data-open-register>Comecar agora</button>
+      <button class="btn btn-ghost is-hidden" type="button" data-logout>Sair</button>
     </div>
+  </header>
 
-    <!-- LANDING PAGE (hidden when logged in) -->
-    <div id="landing-page">
-
-    <!-- HERO -->
-    <section class="hero">
-        <div class="hero-badge">
-            <div class="hero-badge-dot"></div>
-            CFO Digital para PMEs · SaaS
+  <main>
+    <section id="home" class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Open Finance, impostos e caixa em um so lugar</p>
+        <h1>Controle financeiro PJ com menos ruido e mais previsibilidade.</h1>
+        <p class="hero-text">Conecte bancos, acompanhe movimentacoes e organize indicadores sem planilhas quebradas ou etapas desnecessarias.</p>
+        <div class="hero-actions">
+          <button class="btn btn-dark btn-lg" type="button" data-open-register>Testar agora</button>
+          <button class="btn btn-light btn-lg" type="button" data-open-login>Ja tenho conta</button>
         </div>
-        <h1>Seu lucro está <em>escapando</em> pela carga tributária</h1>
-        <p class="hero-sub">O FinPJ identifica automaticamente regimes mais baratos, créditos fiscais não aproveitados e
-            gargalos de custo — em tempo real.</p>
-        <div class="cta-group">
-            <button class="btn-primary" onclick="openModal('diagnose')">Ver diagnóstico gratuito</button>
-            <button class="btn-secondary">Assistir demonstração</button>
+      </div>
+      <aside class="hero-card" aria-label="Resumo financeiro">
+        <div class="metric-card">
+          <span>Saldo projetado</span>
+          <strong data-hero-balance>R$ 42.800</strong>
+          <small>+18% nos proximos 30 dias</small>
         </div>
-        <p class="hero-note">Sem cartão de crédito · Diagnóstico em 3 minutos · Integração Open Finance</p>
+        <div class="glass-list">
+          <div><span>Receitas</span><strong>R$ 128k</strong></div>
+          <div><span>Impostos</span><strong>R$ 9,4k</strong></div>
+          <div><span>Pendencias</span><strong>3</strong></div>
+        </div>
+      </aside>
     </section>
 
-    <!-- STATS -->
-    <section class="stats">
-        <div class="stat">
-            <div class="stat-num">R$ 23.700</div>
-            <div class="stat-label">Créditos tributários médios identificados/mês</div>
-        </div>
-        <div class="stat">
-            <div class="stat-num">2–5%</div>
-            <div class="stat-label">Redução média de carga tributária</div>
-        </div>
-        <div class="stat">
-            <div class="stat-num">2 horas</div>
-            <div class="stat-label">Economia de tempo em relatórios financeiros por semana</div>
-        </div>
-        <div class="stat">
-            <div class="stat-num">98%</div>
-            <div class="stat-label">Precisão em conformidade fiscal automatizada</div>
-        </div>
+    <section id="recursos" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Operacao limpa</p>
+        <h2>O essencial para decidir rapido.</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="card"><h3>Cadastro direto</h3><p>Fluxo de CNPJ com validacao, persistencia e login imediato apos criacao.</p></article>
+        <article class="card"><h3>Open Finance</h3><p>Token Pluggy gerado no backend e conexao bancaria com mensagens claras de erro.</p></article>
+        <article class="card"><h3>Dashboard protegido</h3><p>Indicadores e bancos carregam apenas com sessao valida.</p></article>
+      </div>
     </section>
 
-    <!-- FEATURES -->
-    <section id="features" class="section">
-        <div class="section-label">O que o FinPJ faz</div>
-        <div class="section-title">Três frentes que impactam seu lucro líquido</div>
-        <p class="section-sub">Automatizamos o trabalho de um departamento de controladoria inteiro, acessível por uma
-            fração do custo.</p>
-        <div class="features">
-            <div class="feat-card">
-                <div class="feat-icon" style="background: #E1F5EE; color: #0F6E56;">📊</div>
-                <div class="feat-title">Análise preditiva de balanços</div>
-                <div class="feat-desc">Importa seu DRE e Balanço e entrega EBITDA, margens e ponto de equilíbrio em
-                    segundos, com visualizações sem jargão contábil.</div>
-            </div>
-            <div class="feat-card">
-                <div class="feat-icon" style="background: #E6F1FB; color: #0C447C;">⏱️</div>
-                <div class="feat-title">Motor de inteligência tributária</div>
-                <div class="feat-desc">Simula Simples, Lucro Presumido e Lucro Real em tempo real. Detecta créditos
-                    monofásicos e alertas de incentivos fiscais vigentes.</div>
-            </div>
-            <div class="feat-card">
-                <div class="feat-icon" style="background: #FAEEDA; color: #633806;">💰</div>
-                <div class="feat-title">Monitor de eficiência de custos</div>
-                <div class="feat-desc">Algoritmos detectam variações anômalas em custos fixos e variáveis, com alertas
-                    preventivos antes que virem problema no caixa.</div>
-            </div>
-        </div>
+    <section id="planos" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Planos</p>
+        <h2>Escolha o ritmo da sua empresa.</h2>
+      </div>
+      <div class="pricing-grid">
+        <article class="price-card" data-plan-card="starter">
+          <span>Starter</span>
+          <strong>R$ 49</strong>
+          <p>Para organizar o basico com velocidade.</p>
+          <button class="btn btn-light" type="button" data-select-plan="starter">Selecionar</button>
+        </article>
+        <article class="price-card featured" data-plan-card="growth">
+          <span>Growth</span>
+          <strong>R$ 129</strong>
+          <p>Para empresas que precisam de integracoes e previsao.</p>
+          <button class="btn btn-dark" type="button" data-select-plan="growth">Selecionar</button>
+        </article>
+        <article class="price-card" data-plan-card="enterprise">
+          <span>Enterprise</span>
+          <strong>R$ 299</strong>
+          <p>Para operacoes maiores com controle avancado.</p>
+          <button class="btn btn-light" type="button" data-select-plan="enterprise">Selecionar</button>
+        </article>
+      </div>
     </section>
 
-    <!-- SIMULADOR FISCAL (Modal) -->
-    <section id="howitworks" class="section-alt">
-        <div class="section-label">Teste agora</div>
-        <div class="section-title">Simulador de regime tributário</div>
-        <p class="section-sub">Ajuste os dados abaixo e veja qual regime paga menos imposto para sua empresa.</p>
-
-        <div
-            style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 40px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                <div>
-                    <label
-                        style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Faturamento
-                        bruto anual</label>
-                    <input type="range" id="simulador-fat" min="800000" max="20000000" step="100000" value="4800000"
-                        oninput="calcularSimulador()" style="width: 100%; cursor: pointer;">
-                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 6px;"
-                        id="lbl-fat">R$ 4.800.000</div>
-                </div>
-                <div>
-                    <label
-                        style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Margem
-                        líquida estimada (Lucro Real)</label>
-                    <select id="simulador-margem" onchange="calcularSimulador()"
-                        style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
-                        <option value="0.08">8%</option>
-                        <option value="0.12" selected>12%</option>
-                        <option value="0.18">18%</option>
-                        <option value="0.25">25%</option>
-                    </select>
-                </div>
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label
-                    style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Atividade
-                    principal (afeta Lucro Presumido e faixa do Simples)</label>
-                <select id="simulador-atividade" onchange="calcularSimulador()"
-                    style="width: 100%; max-width: 420px; padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
-                    <option value="servicos" selected>Prestação de serviços em geral</option>
-                    <option value="comercio">Comércio / varejo</option>
-                    <option value="industria">Indústria / transformação</option>
-                    <option value="tecnologia">Tecnologia da informação (CNAE 62/63)</option>
-                </select>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-                <div id="sim-card-simples" class="sim-card">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Simples Nacional
-                    </div>
-                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary);" id="val-simples">R$ 0
-                    </div>
-                    <div class="sim-pct" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;"
-                        id="pct-simples">0%</div>
-                    <span class="sim-recomendado">Menor carga</span>
-                </div>
-                <div id="sim-card-presumido" class="sim-card">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Lucro Presumido
-                    </div>
-                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary);" id="val-presumido">R$ 0
-                    </div>
-                    <div class="sim-pct" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;"
-                        id="pct-presumido">0%</div>
-                    <span class="sim-recomendado">Menor carga</span>
-                </div>
-                <div id="sim-card-real" class="sim-card">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Lucro Real</div>
-                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary);" id="val-real">R$ 0</div>
-                    <div class="sim-pct" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;"
-                        id="pct-real">0%</div>
-                    <span class="sim-recomendado">Menor carga</span>
-                </div>
-            </div>
-            <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; line-height: 1.5;">
-                Simulação educativa: Simples com alíquota efetiva aproximada por faixa de receita; Lucro Presumido com
-                bases legais típicas por atividade; Lucro Real com IRPJ/CSLL sobre lucro contábil e PIS/COFINS não
-                cumulativos. Não substitui planejamento tributário.
-            </p>
+    <section id="dashboard" class="dashboard is-hidden" data-dashboard>
+      <div class="dashboard-header">
+        <div>
+          <p class="eyebrow">Area logada</p>
+          <h2 data-user-title>Dashboard FinPJ</h2>
         </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section class="section">
-        <div class="section-label">Como funciona</div>
-        <div class="section-title">Do dado ao resultado em 4 etapas</div>
-        <p class="section-sub">Integração rápida, diagnóstico imediato. Sem planilhas, sem importação manual.</p>
-        <div class="steps">
-            <div class="step-box">
-                <div class="step-num">1</div>
-                <div class="step-title">Conecte via Open Finance</div>
-                <div class="step-desc">Autorize o acesso em segundos. Banco Central regulamenta. Seus dados fluem direto
-                    para o FinPJ.</div>
-            </div>
-            <div class="step-box">
-                <div class="step-num">2</div>
-                <div class="step-title">IA processa seus dados</div>
-                <div class="step-desc">Algoritmos categorizam transações, cruzam CNAE e NCM com legislação atualizada
-                    diariamente.</div>
-            </div>
-            <div class="step-box">
-                <div class="step-num">3</div>
-                <div class="step-title">Receba seu diagnóstico</div>
-                <div class="step-desc">Relatório de oportunidades financeiras: regime ideal, créditos a recuperar e
-                    custos fora da curva.</div>
-            </div>
-            <div class="step-box">
-                <div class="step-num">4</div>
-                <div class="step-title">Monitore mensalmente</div>
-                <div class="step-desc">Metas de rentabilidade acompanhadas em tempo real. Alertas automáticos antes de
-                    cada problema.</div>
-            </div>
+        <button class="btn btn-dark" type="button" data-refresh-dashboard>Atualizar</button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab is-active" type="button" data-tab="overview">Visao geral</button>
+        <button class="tab" type="button" data-tab="openfinance">Open Finance</button>
+        <button class="tab" type="button" data-tab="profile">Perfil</button>
+      </div>
+      <div class="tab-panel" data-panel="overview">
+        <div class="metric-grid">
+          <div class="metric-card"><span>Relatorios</span><strong data-metric="reportsCount">0</strong></div>
+          <div class="metric-card"><span>Movimentado</span><strong data-metric="totalMovimentado">R$ 0</strong></div>
+          <div class="metric-card"><span>Pendencias</span><strong data-metric="pendencias">0</strong></div>
         </div>
-    </section>
-
-    <!-- PLANOS -->
-    <section id="planos" class="section-alt">
-        <div class="section-label">Planos</div>
-        <div class="section-title">Preço baseado no valor que você recebe</div>
-        <p class="section-sub">O custo do FinPJ representa menos de 0,1% do seu faturamento. A economia gerada? Entre 2%
-            e 5%.</p>
-        <div class="plans">
-            <div class="plan">
-                <div class="plan-name">Starter</div>
-                <div class="plan-range">Até R$ 3,6 mi / ano</div>
-                <div class="plan-price">R$ 490</div>
-                <div class="plan-period">/mês · cobrado mensalmente</div>
-                <div class="plan-features">
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> DRE gerencial automatizada
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Alertas de variação de custos
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Simulador de regime tributário
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Integração Open Finance
-                    </div>
-                </div>
-                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('starter')">
-                    Saiba Mais
-                </button>
-            </div>
-
-            <div class="plan featured">
-                <div class="plan-badge">Mais popular</div>
-                <div class="plan-name">Growth</div>
-                <div class="plan-range">R$ 3,6 mi a R$ 10 mi / ano</div>
-                <div class="plan-price">R$ 950</div>
-                <div class="plan-period">/mês · cobrado mensalmente</div>
-                <div class="plan-features">
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Tudo do Starter
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Simulador fiscal comparativo
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Margem por produto / linha
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Projeção de caixa 90 dias
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Monitor de créditos monofásicos
-                    </div>
-                </div>
-                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('growth')">
-                    Saiba Mais
-                </button>
-            </div>
-
-            <div class="plan">
-                <div class="plan-name">Enterprise</div>
-                <div class="plan-range">R$ 10 mi a R$ 20 mi / ano</div>
-                <div class="plan-price">R$ 1.850</div>
-                <div class="plan-period">/mês · cobrado mensalmente</div>
-                <div class="plan-features">
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Tudo do Growth
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Auditoria de créditos tributários
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Valuation mensal (FCD)
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Success fee em recuperações
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> API para integração ERP
-                    </div>
-                    <div class="plan-feature-item">
-                        <span class="feat-check">+</span> Suporte dedicado
-                    </div>
-                </div>
-                <button class="plan-btn plan-btn-primary" onclick="abrirModalPagamento('enterprise')">
-                    Falar com vendas
-                </button>
-            </div>
-        </div>
-        <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 20px;">
-            Recuperação de créditos tributários: success fee de 10–20% sobre o valor recuperado.
-        </p>
-    </section>
-    <!-- DEPOIMENTOS -->
-    <section class="section-alt">
-        <div class="section-label">Quem usa FinPJ</div>
-        <div class="section-title">PMEs que pararam de perder dinheiro</div>
-        <p class="section-sub">Resultados reais de empresas que integraram o FinPJ em sua gestão.</p>
-        <div class="testimonials">
-            <div class="testi">
-                <div class="testi-text">&ldquo;Em 3 semanas, o FinPJ identificou R$ 41 mil em créditos de PIS/COFINS que meu escritor de contabilidade não havia percebido. O sistema pagou por si mesmo em 2 dias.&rdquo;</div>
-                <div class="testi-author">
-                    <div class="testi-avatar">RS</div>
-                    <div class="testi-info">
-                        <div class="testi-name">Ricardo Santos</div>
-                        <div class="testi-role">Sócio-diretor &middot; Distribuidora de insumos, SP</div>
-                        <span class="testi-saving" style="background:rgba(59,130,246,0.12);color:#60a5fa;">R$ 41k recuperados</span>
-                    </div>
-                </div>
-            </div>
-            <div class="testi">
-                <div class="testi-text">&ldquo;Trocamos do Lucro Presumido para Simples Nacional depois da simulação do FinPJ. Economia de R$ 8.400 por mês só nisso. O dashboard de fluxo de caixa nos deu controle que não tínhamos.&rdquo;</div>
-                <div class="testi-author">
-                    <div class="testi-avatar">CF</div>
-                    <div class="testi-info">
-                        <div class="testi-name">Carla Freitas</div>
-                        <div class="testi-role">CFO &middot; Agência de marketing digital, MG</div>
-                        <span class="testi-saving" style="background:rgba(16,185,129,0.12);color:#34d399;">R$ 8.4k/mês de economia</span>
-                    </div>
-                </div>
-            </div>
-            <div class="testi">
-                <div class="testi-text">&ldquo;A conciliação bancária automática eliminou 2 dias de trabalho do time financeiro todo mês. E o chat com IA responde dúvidas em segundos que antes exigiam ligar pro contador.&rdquo;</div>
-                <div class="testi-author">
-                    <div class="testi-avatar">PM</div>
-                    <div class="testi-info">
-                        <div class="testi-name">Paulo Mendes</div>
-                        <div class="testi-role">CEO &middot; Indústria de embalagens, RS</div>
-                        <span class="testi-saving" style="background:rgba(245,158,11,0.12);color:#fbbf24;">2 dias/mês economizados</span>
-                    </div>
-                </div>
-            </div>
-            <div class="testi">
-                <div class="testi-text">&ldquo;O calendário fiscal com alertas me salvou de três multas por atraso em um trimestre. O FinPJ é o único sistema que realmente pensa pelo meu financeiro.&rdquo;</div>
-                <div class="testi-author">
-                    <div class="testi-avatar">LA</div>
-                    <div class="testi-info">
-                        <div class="testi-name">Luciana Alves</div>
-                        <div class="testi-role">Administradora &middot; Clínica médica, RJ</div>
-                        <span class="testi-saving" style="background:rgba(239,68,68,0.12);color:#f87171;">3 multas evitadas</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Trust bar -->
-        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:32px;margin-top:48px;padding-top:32px;border-top:1px solid var(--border);">
-            <div style="text-align:center;">
-                <div style="font-size:22px;font-weight:700;color:var(--color-primary);">Open Finance</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Regulado pelo Banco Central</div>
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:22px;font-weight:700;color:var(--color-primary);">LGPD</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Conformidade total</div>
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:22px;font-weight:700;color:var(--color-primary);">TLS 256-bit</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Criptografia de ponta</div>
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:22px;font-weight:700;color:var(--color-primary);">99.9%</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Uptime garantido</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA FINAL -->
-    <section class="cta-section">
-        <div class="cta-title">Descubra quanto dinheiro sua empresa está deixando na mesa</div>
-        <p class="cta-sub">Diagnóstico gratuito em 3 minutos. Sem precisar de contador, sem planilha.</p>
-        <button class="btn-primary" onclick="openModal('diagnose')">Fazer diagnóstico agora</button>
-    </section>
-
-    <footer class="footer">
-        FinPJ · Gestão Financeira para PMEs · © 2026 · Integração regulada pelo Banco Central · Conformidade LGPD
-    </footer>
-    </div><!-- /landing-page -->
-
-    <!-- APP DASHBOARD (hidden when not logged in) -->
-    <div id="app-dashboard" style="display:none;">
-
-    <!-- VIEW: OVERVIEW -->
-    <section id="view-overview" class="section app-view">
-        <div class="section-label">Dashboard</div>
-        <div class="section-title">Visão geral</div>
-        <p class="section-sub">Acompanhe movimentações, conciliação e alertas financeiros.</p>
-
-        <!-- IA INSIGHTS -->
-        <div id="ia-insights" style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); border-radius: 16px; padding: 20px; color: #fff; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3); transition: transform 0.2s; cursor: pointer;">
-            <div style="font-size: 32px; animation: regBounce 2s infinite;">✨</div>
-            <div style="flex: 1;">
-                <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Insights Proativos da IA</h4>
-                <p style="font-size: 13px; opacity: 0.9;" id="ia-insights-text">Analisando histórico... Detectamos aproximadamente <strong>R$ 4.250,00</strong> em impostos recuperáveis de produtos monofásicos neste trimestre.</p>
-            </div>
-            <button style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Revisar Tributos</button>
-        </div>
-        <div class="dashboard-grid">
-            <div class="dashboard-card">
-                <h3>Bem-vindo</h3>
-                <strong id="dashboard-welcome">Carregando...</strong>
-            </div>
-            <div class="dashboard-card">
-                <h3>Bancos conectados</h3>
-                <strong id="dashboard-banks-count">0 bancos</strong>
-            </div>
-            <div class="dashboard-card">
-                <h3>Movimentações</h3>
-                <strong id="dashboard-report-count">0 relatórios</strong>
-            </div>
-            <div class="dashboard-card">
-                <h3>Pendências</h3>
-                <strong id="dashboard-pendings">0 avisos</strong>
-            </div>
-        </div>
-        <div style="overflow-x:auto;">
-            <table class="report-table">
-                <thead><tr><th>Data</th><th>Resumo</th><th>Valor</th><th>Status</th></tr></thead>
-                <tbody id="dashboard-reports-body"><tr><td colspan="4">Nenhum relatório disponível.</td></tr></tbody>
+        <div class="table-card">
+          <div class="table-header"><h3>Atividades recentes</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Evento</th><th>Status</th><th>Valor</th></tr></thead>
+              <tbody data-reports-table></tbody>
             </table>
+          </div>
         </div>
-
-        <!-- GRÁFICOS -->
-        <div id="advanced-charts-grid" class="plan-advanced" style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:32px;position:relative;">
-            
-            <div id="upgrade-overlay-charts" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.8); backdrop-filter:blur(4px); z-index:10; border-radius:16px; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; padding:20px;">
-                <div style="font-size:40px; margin-bottom:12px;">📈</div>
-                <h3 style="font-size:20px; font-weight:700; margin-bottom:8px;">Projeção de Fluxo de Caixa Avançada</h3>
-                <p style="font-size:14px; max-width:400px; margin-bottom:20px; opacity:0.9;">Empresas que usam o Growth têm em média 30% mais previsibilidade de caixa. Mude de plano para destravar este módulo.</p>
-                <button class="btn-primary" style="background:#f59e0b; color:#fff; border:none;" onclick="openModal('register')">Fazer Upgrade agora</button>
-            </div>
-
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
-                <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📈 Fluxo de Caixa — Projeção 90 dias</div>
-                <canvas id="chart-cashflow" height="220"></canvas>
-            </div>
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
-                <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📊 Despesas por Categoria</div>
-                <canvas id="chart-categories" height="220"></canvas>
-            </div>
+      </div>
+      <div class="tab-panel is-hidden" data-panel="openfinance">
+        <div class="split-card">
+          <div>
+            <h3>Conectar banco</h3>
+            <p>O token e gerado no servidor. Se a Pluggy estiver sem credenciais, a mensagem aponta o problema.</p>
+          </div>
+          <button class="btn btn-dark" type="button" data-connect-bank>Conectar banco</button>
         </div>
-
-        <!-- COMPARATIVO MoM -->
-        <div id="mom-container" class="plan-advanced" style="margin-top:24px;position:relative;">
-            <div id="upgrade-overlay-mom" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.8); backdrop-filter:blur(4px); z-index:10; border-radius:16px; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; padding:20px;">
-                <div style="font-size:24px; margin-bottom:8px;">📊 Upgrade Necessário</div>
-                <button class="btn-primary" style="background:#f59e0b; padding:8px 16px; font-size:12px; border:none;" onclick="openModal('register')">Desbloquear Growth</button>
-            </div>
-            <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📉 Comparativo Mensal (MoM)</div>
-            <div id="mom-comparison" class="dashboard-grid"></div>
-        </div>
+        <div class="bank-list" data-bank-list></div>
+      </div>
+      <div class="tab-panel is-hidden" data-panel="profile">
+        <form class="profile-form" data-profile-form>
+          <label>Nome da empresa<input name="nome" autocomplete="organization"></label>
+          <label>Nome fantasia<input name="fantasia" autocomplete="organization-title"></label>
+          <label>Telefone<input name="telefone" autocomplete="tel"></label>
+          <button class="btn btn-dark" type="submit">Salvar perfil</button>
+        </form>
+      </div>
     </section>
-
-    <!-- VIEW: OPEN FINANCE -->
-    <section id="view-openfinance" class="section app-view" style="display:none;">
-        <div class="section-label">Open Finance</div>
-        <div class="section-title">Conecte seus bancos</div>
-        <p class="section-sub">Autorize o acesso via Open Finance (regulado pelo Banco Central) para importar transações automaticamente.</p>
-
-        <div id="connected-banks-area" style="margin-bottom:32px; display:none;">
-            <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">🔗 Bancos Conectados</div>
-            <div id="connected-banks-list" class="dashboard-grid"></div>
-        </div>
-
-        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">Selecione um banco para conectar</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;" id="banks-grid">
-            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('itau','Itaú Unibanco')">
-                <div style="width:48px;height:48px;border-radius:12px;background:#EC7000;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">it</div>
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Itaú Unibanco</div>
-                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
-                </div>
-            </div>
-            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('bb','Banco do Brasil')">
-                <div style="width:48px;height:48px;border-radius:12px;background:#F9D300;display:flex;align-items:center;justify-content:center;color:#0038A8;font-size:24px;font-weight:800;font-family:sans-serif;">bb</div>
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Banco do Brasil</div>
-                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
-                </div>
-            </div>
-            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('bradesco','Bradesco')">
-                <div style="width:48px;height:48px;border-radius:12px;background:#CC092F;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">br</div>
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Bradesco</div>
-                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
-                </div>
-            </div>
-            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('nubank','Nubank')">
-                <div style="width:48px;height:48px;border-radius:12px;background:#8A05BE;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">nu</div>
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Nubank</div>
-                    <div style="font-size:12px;color:var(--text-secondary);">Conta PJ · Open Finance</div>
-                </div>
-            </div>
-            <div class="feat-card bank-card" style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);padding:20px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-md);" onclick="connectBank('inter','Banco Inter')">
-                <div style="width:48px;height:48px;border-radius:12px;background:#FF7A00;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;font-family:sans-serif;">in</div>
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Banco Inter</div>
-                    <div style="font-size:12px;color:var(--text-secondary);">Conta Digital · Open Finance</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="of-transactions" style="margin-top:32px; display:none;">
-            <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">📊 Transações Importadas</div>
-            <div style="overflow-x:auto;">
-                <table class="report-table">
-                    <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th></tr></thead>
-                    <tbody id="of-transactions-body"></tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-
-    <!-- VIEW: ANÁLISE IA -->
-    <section id="view-analise" class="section app-view" style="display:none;">
-        <div class="section-label">Inteligência Artificial</div>
-        <div class="section-title">Análise de Documentos Financeiros</div>
-        <p class="section-sub">Faça upload do seu DRE, Balanço ou Extrato. Nossa IA (Llama 3 via Groq) analisa e gera um planejamento completo.</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:32px;">
-            <div>
-                <div id="upload-dropzone" style="border:2px dashed var(--border); border-radius:16px; padding:40px; text-align:center; cursor:pointer; background:var(--bg-secondary);" onclick="document.getElementById('arquivo-input').click()" ondragover="uploadDragOver(event)" ondrop="uploadDrop(event)">
-                    <div style="font-size:40px; margin-bottom:12px;">📄</div>
-                    <div style="font-weight:600; color:var(--text-primary); margin-bottom:6px;">Arraste ou clique para enviar</div>
-                    <div style="font-size:12px; color:var(--text-muted);">PDF, Excel (.xlsx), CSV · máx 15MB</div>
-                    <input type="file" id="arquivo-input" accept=".pdf,.xlsx,.xls,.csv,.txt,.ods" style="display:none" onchange="uploadArquivo(this.files[0])">
-                </div>
-                <div style="margin-top:14px;">
-                    <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Tipo de documento</label>
-                    <select id="tipo-documento" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
-                        <option value="dre">DRE — Demonstrativo de Resultado</option>
-                        <option value="balanco">Balanço Patrimonial</option>
-                        <option value="extrato">Extrato Bancário / Conciliação</option>
-                    </select>
-                </div>
-                <div style="margin-top:10px;">
-                    <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Contexto adicional (opcional)</label>
-                    <input id="contexto-analise" type="text" placeholder="Ex: Empresa de tecnologia, regime Simples Nacional..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);">
-                </div>
-                <div id="upload-status" style="margin-top:12px; font-size:13px; min-height:20px; color:var(--text-secondary);"></div>
-            </div>
-            <div id="analise-resumo" style="background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; display:flex; align-items:center; justify-content:center;">
-                <div style="text-align:center; color:var(--text-muted);">
-                    <div style="font-size:48px; margin-bottom:12px;">🤖</div>
-                    <div style="font-size:14px;">Faça upload de um documento<br>para receber a análise por IA</div>
-                </div>
-            </div>
-        </div>
-        <div id="analise-resultado" style="display:none;">
-            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:20px;">
-                <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                    <div style="width:36px; height:36px; border-radius:50%; background:rgba(59,130,246,0.15); display:flex; align-items:center; justify-content:center; font-size:18px;">🤖</div>
-                    <div>
-                        <div style="font-size:15px; font-weight:600; color:var(--text-primary);">Análise por IA</div>
-                        <div id="analise-fonte-badge" style="font-size:11px; color:var(--text-muted);"></div>
-                    </div>
-                </div>
-                <div id="analise-resumo-texto" style="font-size:14px; color:var(--text-secondary); line-height:1.7; margin-bottom:20px; padding:16px; background:rgba(59,130,246,0.07); border-radius:10px; border-left:3px solid var(--color-primary);"></div>
-                <div id="analise-metricas" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;"></div>
-                <div id="analise-alertas" style="display:none; margin-bottom:16px;"></div>
-                <div id="analise-recomendacoes" style="display:none;"></div>
-            </div>
-            <div id="conciliacao-panel" style="display:none;">
-                <div style="font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:16px;">📊 Planejamento de Conciliação Bancária</div>
-                <div id="conciliacao-resumo" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;"></div>
-                <div style="overflow-x:auto;">
-                    <table class="report-table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th><th>Status</th></tr></thead>
-                    <tbody id="conciliacao-body"><tr><td colspan="6">—</td></tr></tbody></table>
-                </div>
-            </div>
-        </div>
-        <div id="historico-analises" style="margin-top:32px; display:none;">
-            <div style="font-size:14px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.05em;">Histórico</div>
-            <div id="historico-lista"></div>
-        </div>
-    </section>
-
-    <!-- VIEW: CONCILIAÇÃO -->
-    <section id="view-conciliacao" class="section app-view" style="display:none;">
-        <div class="section-label">Conciliação</div>
-        <div class="section-title">Conciliação Bancária Automatizada</div>
-        <p class="section-sub">Compare transações bancárias com seus lançamentos internos. A IA identifica divergências.</p>
-        <div id="conc-no-banks" style="text-align:center; padding:60px 20px; color:var(--text-muted);">
-            <div style="font-size:48px; margin-bottom:12px;">🏦</div>
-            <div style="font-size:15px; margin-bottom:12px;">Conecte um banco via Open Finance para iniciar a conciliação</div>
-            <button class="btn-primary" onclick="switchView('openfinance')">Conectar banco</button>
-        </div>
-        <div id="conc-with-banks" style="display:none;">
-            <div style="margin-bottom:20px;">
-                <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px;">Selecione o banco</label>
-                <select id="conc-bank-select" onchange="loadConciliacao()" style="padding:10px; border:1px solid var(--border); border-radius:8px; min-width:250px;"></select>
-            </div>
-            <div id="conc-summary" class="dashboard-grid" style="margin-bottom:20px;"></div>
-            <div style="overflow-x:auto;">
-                <table class="report-table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th><th>Status</th></tr></thead>
-                <tbody id="conc-table-body"><tr><td colspan="6">Selecione um banco.</td></tr></tbody></table>
-            </div>
-        </div>
-    </section>
-
-    <!-- VIEW: CHAT IA -->
-    <section id="view-chat" class="section app-view" style="display:none;">
-        <div class="section-label">Assistente IA</div>
-        <div class="section-title">Chat Financeiro com IA</div>
-        <p class="section-sub">Pergunte qualquer coisa sobre suas finanças. A IA analisa seus dados e responde em tempo real.</p>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
-            <div id="chat-messages" style="height:400px;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;">
-                <div style="background:rgba(59,130,246,0.1);border-radius:12px;padding:14px;max-width:80%;font-size:13px;color:var(--text-secondary);">
-                    👋 Olá! Sou seu assistente financeiro IA. Pergunte sobre:<br>
-                    • Fluxo de caixa e projeções<br>• Regime tributário ideal<br>• Análise de despesas<br>• Planejamento fiscal<br>• Qualquer dúvida financeira da sua empresa
-                </div>
-            </div>
-            <div style="display:flex;border-top:1px solid var(--border);padding:12px 16px;gap:10px;align-items:center;">
-                <input id="chat-input" type="text" placeholder="Pergunte algo sobre suas finanças..." style="flex:1;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:14px;" onkeydown="if(event.key==='Enter')sendChat()">
-                <button onclick="sendChat()" class="btn-primary" style="padding:12px 24px;white-space:nowrap;">Enviar</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- VIEW: CALCULADORA DAS/DARF & SIMULADOR -->
-    <section id="view-calculadora" class="section app-view" style="display:none;">
-        <div class="section-label">Calculadora e Simulador Fiscal</div>
-        <div class="section-title">Cálculo de Impostos e OCR</div>
-        <p class="section-sub">Suba Notas Fiscais (XML/PDF) para extração automática ou calcule e simule novos regimes tributários.</p>
-        
-        <div style="margin-bottom:24px;background:var(--bg-card);border:1px dashed var(--color-primary);border-radius:16px;padding:20px;text-align:center; display: flex; flex-direction: column; gap: 16px;">
-            <div>
-                <div style="font-size:24px;margin-bottom:8px;">📄 Automação Fiscal (NF-e)</div>
-                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Busque as notas emitidas na prefeitura/SEFAZ e gere seu imposto num clique.</p>
-                <button onclick="gerarDasAutomatico()" class="btn-primary" style="padding:12px 24px;">Sincronizar Notas e Gerar DAS</button>
-            </div>
-            
-            <div style="border-top: 1px solid var(--border); padding-top: 16px;">
-                <div style="font-size:16px;margin-bottom:8px;font-weight:600;">Ou faça upload manual (OCR / XML)</div>
-                <input type="file" id="ocr-upload" accept=".xml,.pdf" style="display:none;" onchange="processarOCR(this)">
-                <label for="ocr-upload" class="btn-secondary" style="cursor:pointer;padding:8px 16px;">Selecionar Arquivo (XML/PDF)</label>
-                <div id="ocr-status" style="margin-top:12px;font-size:12px;color:var(--text-secondary);"></div>
-            </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
-                <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Faturamento Anual (R$)</label>
-                    <input id="das-faturamento" type="number" placeholder="Ex: 360000" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
-                </div>
-                <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Regime Tributário Atual</label>
-                    <select id="das-regime" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
-                        <option value="simples">Simples Nacional</option>
-                        <option value="presumido">Lucro Presumido</option>
-                        <option value="real">Lucro Real</option>
-                    </select>
-                </div>
-                <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Atividade</label>
-                    <select id="das-atividade" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
-                        <option value="servicos">Serviços</option>
-                        <option value="comercio">Comércio</option>
-                        <option value="industria">Indústria</option>
-                    </select>
-                </div>
-                <div style="display:flex;gap:10px;">
-                    <button onclick="calcularDAS()" class="btn-primary" style="flex:1;padding:14px;">Calcular Guia Atual</button>
-                    <button onclick="simularRegime()" class="btn-secondary" style="flex:1;padding:14px;background:#f59e0b;color:#fff;border:none;">Simular Economia</button>
-                </div>
-            </div>
-            <div id="das-resultado" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                <div style="text-align:center;color:var(--text-muted);">
-                    <div style="font-size:48px;margin-bottom:12px;">🧾</div>
-                    <div style="font-size:14px;">Preencha os dados ao lado<br>para calcular ou simular</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- VIEW: CALENDÁRIO FISCAL -->
-    <section id="view-calendario" class="section app-view" style="display:none;">
-        <div class="section-label">Agenda Fiscal</div>
-        <div class="section-title">Calendário de Obrigações</div>
-        <p class="section-sub">Visualize todas as obrigações fiscais com datas de vencimento e status.</p>
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-            <select id="cal-year-select" onchange="loadFiscalCalendar()" style="padding:10px 16px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-weight:600;">
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-            </select>
-            <div style="display:flex; gap:8px; background:var(--bg-secondary); padding:4px; border-radius:8px; border:1px solid var(--border);">
-                <button id="cal-btn-all" onclick="setCalFilter('all')" style="padding:6px 12px; border:none; border-radius:6px; background:var(--bg-primary); color:var(--text-primary); font-weight:600; cursor:pointer;">Todos</button>
-                <button id="cal-btn-history" onclick="setCalFilter('history')" style="padding:6px 12px; border:none; border-radius:6px; background:transparent; color:var(--text-secondary); cursor:pointer;">Histórico</button>
-                <button id="cal-btn-proj" onclick="setCalFilter('projection')" style="padding:6px 12px; border:none; border-radius:6px; background:transparent; color:var(--text-secondary); cursor:pointer;">Projeção</button>
-            </div>
-        </div>
-
-        <div id="fiscal-calendar-grid" style="display:flex;flex-direction:column;gap:16px;"></div>
-    </section>
-
-    <!-- VIEW: PERFIL -->
-    <section id="view-perfil" class="section app-view" style="display:none;">
-        <div class="section-label">Configurações</div>
-        <div class="section-title">Perfil da Empresa</div>
-        <p class="section-sub">Configure os dados da sua empresa para análises mais precisas.</p>
-        <div style="max-width:600px;">
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;">
-                <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Nome da Empresa</label>
-                    <input id="profile-nome" type="text" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
-                </div>
-                <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">CNPJ</label>
-                    <input id="profile-cnpj" type="text" placeholder="00.000.000/0000-00" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
-                </div>
-                <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Regime Tributário</label>
-                    <select id="profile-regime" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
-                        <option value="">Selecione</option>
-                        <option value="simples">Simples Nacional</option>
-                        <option value="presumido">Lucro Presumido</option>
-                        <option value="real">Lucro Real</option>
-                    </select>
-                </div>
-                <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Setor</label>
-                    <select id="profile-setor" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;">
-                        <option value="">Selecione</option>
-                        <option value="tecnologia">Tecnologia</option>
-                        <option value="comercio">Comércio</option>
-                        <option value="servicos">Serviços</option>
-                        <option value="industria">Indústria</option>
-                        <option value="saude">Saúde</option>
-                        <option value="educacao">Educação</option>
-                    </select>
-                </div>
-                <button onclick="saveProfile()" class="btn-primary" style="width:100%;padding:14px;">Salvar Configurações</button>
-                <div id="profile-status" style="margin-top:12px;font-size:13px;text-align:center;"></div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="footer">FinPJ · Gestão Financeira para PMEs · © 2026 · Open Finance regulado pelo Banco Central</footer>
-    </div><!-- /app-dashboard -->
-
-    <div id="login-modal" class="modal">
-        <div class="modal-content" style="max-width: 520px;">
-            <button class="modal-close" onclick="closeModal('login')">&times;</button>
-            <h2 class="modal-title">Entrar na sua conta</h2>
-            <div class="tabs" id="login-tabs" style="margin-bottom: 20px;">
-                <button type="button" class="tab-btn active" data-tab="email"
-                    onclick="setLoginTab('email')">E-mail</button>
-                <button type="button" class="tab-btn" data-tab="cnpj" onclick="setLoginTab('cnpj')">CNPJ</button>
-            </div>
-            <div class="login-step active" id="login-step-email">
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
-                    <div
-                        style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:#1D74F2;">
-                        @</div>
-                    <div style="font-size:14px; color:var(--text-primary);">Entrada com E-mail</div>
-                </div>
-                <input id="login-email" type="email" class="login-input" placeholder="seunome@email.com"
-                    autocomplete="email" onkeydown="if(event.key==='Enter'){event.preventDefault();sendLoginCode();}">
-                <button type="button" class="btn-primary" style="width:100%;" onclick="sendLoginCode()">Enviar código</button>
-                <div style="display: flex; align-items: center; margin: 24px 0; color: #8B95A7; font-size: 13px;">
-                    <hr style="flex-grow: 1; border: none; border-top: 1px solid var(--border); margin: 0 10px;">
-                    ou
-                    <hr style="flex-grow: 1; border: none; border-top: 1px solid var(--border); margin: 0 10px;">
-                </div>
-                <a href="/api/auth/auth0/login" class="btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; text-decoration: none;">
-                    <img src="https://cdn.auth0.com/website/bob/brand-assets/auth0-logo-badge.png" alt="Auth0" style="height: 24px; filter: grayscale(100%); opacity: 0.8;">
-                    Continuar com Auth0
-                </a>
-            </div>
-            <div class="login-step" id="login-step-cnpj">
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
-                    <div
-                        style="width:40px; height:40px; border-radius:50%; background:#fff; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:#1D74F2;">
-                        🏢</div>
-                    <div style="font-size:14px; color:var(--text-primary);">Entrada com CNPJ</div>
-                </div>
-                <input id="login-cnpj" type="text" class="login-input" placeholder="00.000.000/0001-00"
-                    autocomplete="off" oninput="formatarCNPJInput(this)">
-                <input id="login-password" type="password" class="login-input" placeholder="Senha"
-                    autocomplete="current-password">
-                <button type="button" class="btn-primary" style="width:100%;" onclick="loginWithCnpj()">Entrar</button>
-                <p style="text-align:center; margin-top:14px; font-size:13px; color:var(--text-secondary);">Não tem
-                    conta? <button type="button" onclick="closeModal('login');openModal('register')"
-                        style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:13px;font-weight:600;">Criar
-                        conta</button></p>
-            </div>
-            <div class="login-step" id="login-step-code">
-                <p class="login-note">Digitando o código enviado para <strong id="login-email-preview"></strong>.</p>
-                <input id="login-code" type="text" class="login-input" placeholder="Código de 6 dígitos" maxlength="6"
-                    inputmode="numeric" onkeydown="if(event.key==='Enter'){event.preventDefault();verifyLoginCode();}">
-                <button type="button" class="btn-primary" style="width:100%;" onclick="verifyLoginCode()">Verificar
-                    código</button>
-                <button type="button" class="btn-secondary" style="width:100%; margin-top:12px;"
-                    onclick="setLoginStep('email')">Usar outro e-mail</button>
-            </div>
-            <div id="login-message" class="login-note" style="min-height:20px;"></div>
-        </div>
-    </div>
-    <div id="register-modal" class="modal">
-        <div class="modal-content" style="max-width: 600px; padding: 0; overflow: hidden;">
-            <!-- Header gradiente com progress -->
-            <div id="reg-header" style="background: linear-gradient(135deg, #0A2540 0%, #1D74F2 100%); padding: 24px 28px 20px; position: relative;">
-                <button class="modal-close" onclick="closeModal('register')" style="color: rgba(255,255,255,0.7);">&#x00d7;</button>
-                <div id="reg-step-label" style="font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;">Etapa 1 de 3</div>
-                <h2 style="color: #fff; font-size: 20px; margin: 0 0 16px;">Criar sua conta FinPJ</h2>
-                <div style="background: rgba(255,255,255,0.2); border-radius: 999px; height: 4px;">
-                    <div id="reg-progress-bar" style="height: 4px; border-radius: 999px; background: #fff; width: 33%; transition: width 0.5s ease;"></div>
-                </div>
-            </div>
-
-            <!-- Body -->
-            <div style="padding: 28px;">
-
-                <!-- ETAPA 1: CNPJ -->
-                <div id="reg-step-1">
-                    <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 20px;">Informe o CNPJ da sua empresa para começar. Buscaremos os dados automaticamente.</p>
-                    <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">CNPJ da Empresa</label>
-                    <div style="position: relative;">
-                        <input id="reg-cnpj" type="text" class="login-input" placeholder="00.000.000/0001-00"
-                            autocomplete="off" oninput="regOnCnpjInput(this)"
-                            style="padding-right: 48px; font-size: 16px; letter-spacing: 1px;">
-                        <div id="reg-cnpj-icon" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px;"></div>
-                    </div>
-                    <div id="reg-cnpj-status" style="margin-top: 10px; min-height: 44px;"></div>
-                    <div id="reg-company-card" style="display: none; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-top: 4px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #1D74F2, #0A2540); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">&#x1f3e2;</div>
-                            <div>
-                                <div id="reg-company-name" style="font-weight: 700; font-size: 14px; color: var(--text-primary);"></div>
-                                <div id="reg-company-detail" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;"></div>
-                            </div>
-                            <div style="margin-left: auto;"><span style="background: rgba(52,211,153,0.15); color: #34d399; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600;">&#x2713; Ativa</span></div>
-                        </div>
-                    </div>
-                    <div id="reg-message-1" style="min-height: 18px; margin-top: 10px; font-size: 13px;"></div>
-                    <button type="button" id="reg-btn-1" class="btn-primary" style="width: 100%; margin-top: 20px; height: 48px; font-size: 15px;" onclick="regNextStep()" disabled>
-                        Continuar &#x2192;
-                    </button>
-                    <p style="text-align: center; margin-top: 14px; font-size: 13px; color: var(--text-secondary);">Já tem conta? <button type="button" onclick="closeModal('register');openModal('login')" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:13px;font-weight:600;">Entrar</button></p>
-                </div>
-
-                <!-- ETAPA 2: Escolha de plano -->
-                <div id="reg-step-2" style="display: none;">
-                    <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 20px;">Escolha o plano ideal para o faturamento da sua empresa. Você pode mudar a qualquer momento.</p>
-                    <div style="display:flex; flex-direction:column; gap:12px;">
-                        <!-- Starter -->
-                        <label id="plan-card-starter" style="display:flex; align-items:center; gap:14px; background:var(--bg-secondary); border:2px solid var(--border); border-radius:14px; padding:16px; cursor:pointer; transition:all 0.2s;" onclick="selectPlan('starter')">
-                            <div style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;" id="plan-radio-starter"></div>
-                            <div style="flex:1;">
-                                <div style="font-weight:700;font-size:15px;color:var(--text-primary);">Starter</div>
-                                <div style="font-size:12px;color:var(--text-muted);">Até R$ 3,6 mi/ano &middot; DRE, alertas, simulador, Open Finance</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-size:18px;font-weight:700;color:var(--text-primary);">R$&nbsp;490</div>
-                                <div style="font-size:11px;color:var(--text-muted);">/mês</div>
-                            </div>
-                        </label>
-                        <!-- Growth -->
-                        <label id="plan-card-growth" style="display:flex; align-items:center; gap:14px; background:var(--bg-secondary); border:2px solid var(--color-primary); border-radius:14px; padding:16px; cursor:pointer; transition:all 0.2s; position:relative;" onclick="selectPlan('growth')">
-                            <div style="position:absolute;top:-10px;left:16px;background:var(--color-primary);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;">MAIS POPULAR</div>
-                            <div style="width:20px;height:20px;border-radius:50%;border:2px solid var(--color-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--color-primary);" id="plan-radio-growth"><div style="width:8px;height:8px;border-radius:50%;background:#fff;"></div></div>
-                            <div style="flex:1;">
-                                <div style="font-weight:700;font-size:15px;color:var(--text-primary);">Growth</div>
-                                <div style="font-size:12px;color:var(--text-muted);">R$ 3,6 mi &ndash; R$ 10 mi/ano &middot; + Projeção 90 dias, margens e créditos</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-size:18px;font-weight:700;color:var(--color-primary);">R$&nbsp;950</div>
-                                <div style="font-size:11px;color:var(--text-muted);">/mês</div>
-                            </div>
-                        </label>
-                        <!-- Enterprise -->
-                        <label id="plan-card-enterprise" style="display:flex; align-items:center; gap:14px; background:var(--bg-secondary); border:2px solid var(--border); border-radius:14px; padding:16px; cursor:pointer; transition:all 0.2s;" onclick="selectPlan('enterprise')">
-                            <div style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;" id="plan-radio-enterprise"></div>
-                            <div style="flex:1;">
-                                <div style="font-weight:700;font-size:15px;color:var(--text-primary);">Enterprise</div>
-                                <div style="font-size:12px;color:var(--text-muted);">R$ 10 mi &ndash; R$ 20 mi/ano &middot; + Auditoria, valuation e API ERP</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-size:18px;font-weight:700;color:var(--text-primary);">R$&nbsp;1.850</div>
-                                <div style="font-size:11px;color:var(--text-muted);">/mês</div>
-                            </div>
-                        </label>
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:20px;">
-                        <button type="button" class="btn-secondary" style="flex:1;" onclick="regGoStep(1)">&#x2190; Voltar</button>
-                        <button type="button" id="reg-btn-2" class="btn-primary" style="flex:2; height:48px; font-size:15px;" onclick="regGoStep(3)">Continuar &#x2192;</button>
-                    </div>
-                </div>
-
-                <!-- ETAPA 3: Senha -->
-                <div id="reg-step-3" style="display: none;">
-                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border);">
-                        <span style="font-size: 18px;">&#x1f3e2;</span>
-                        <div>
-                            <div id="reg-step3-company" style="font-weight: 600; font-size: 13px; color: var(--text-primary);"></div>
-                            <div id="reg-step3-cnpj" style="font-size: 11px; color: var(--text-secondary);"></div>
-                        </div>
-                        <div id="reg-step3-plan-badge" style="margin-left:auto;background:rgba(59,130,246,0.12);color:#60a5fa;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;"></div>
-                    </div>
-                    <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Crie uma senha</label>
-                    <div style="position: relative;">
-                        <input id="reg-password" type="password" class="login-input" placeholder="Mínimo 6 caracteres"
-                            autocomplete="new-password" oninput="regCheckPassword()" style="padding-right: 48px;">
-                        <button onclick="regTogglePassword('reg-password', this)" type="button"
-                            style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-secondary);">&#x1f441;</button>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-                            <div id="reg-str-1" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
-                            <div id="reg-str-2" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
-                            <div id="reg-str-3" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
-                            <div id="reg-str-4" style="height: 4px; flex: 1; border-radius: 999px; background: var(--border); transition: background 0.3s;"></div>
-                        </div>
-                        <div id="reg-str-label" style="font-size: 12px; color: var(--text-secondary);"></div>
-                    </div>
-                    <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin: 16px 0 6px;">Confirmar senha</label>
-                    <div style="position: relative;">
-                        <input id="reg-confirm" type="password" class="login-input" placeholder="Digite a senha novamente"
-                            autocomplete="new-password" oninput="regCheckConfirm()" style="padding-right: 48px;">
-                        <span id="reg-confirm-icon" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 16px;"></span>
-                    </div>
-                    <div id="reg-message-3" style="min-height: 18px; margin-top: 10px; font-size: 13px;"></div>
-                    <div style="display:flex; gap:10px; margin-top:20px;">
-                        <button type="button" class="btn-secondary" style="flex:1;" onclick="regGoStep(2)">&#x2190; Voltar</button>
-                        <button type="button" id="reg-btn-3" class="btn-primary" style="flex:2; height:48px; font-size:15px;" onclick="regSubmit()" disabled>Criar conta &#x2192;</button>
-                    </div>
-                </div>
-
-                <!-- ETAPA 4: Checkout / Pagamento -->
-                <div id="reg-step-4" style="display: none; text-align: center; min-height:400px; position:relative;">
-                    <div id="checkout" style="width: 100%;"></div>
-                    <button type="button" onclick="closeModal('register');openModal('login');setLoginTab('cnpj')" style="background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;margin-top:14px;display:block;width:100%;">Pular e continuar sem plano (acesso básico)</button>
-                    <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">&#x1f512; Pagamento via Stripe &middot; Dados protegidos por TLS &middot; Cancele online a qualquer momento</p>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-
-    <div id="diagnose-modal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('diagnose')">&times;</button>
-            <h2 class="modal-title">Diagnóstico Financeiro Gratuito</h2>
-
-            <div class="tabs" id="onboarding-tabs" style="margin-bottom: 20px;">
-                <button type="button" class="tab-btn active" data-tab="1" onclick="goTab(1)">1. Empresa</button>
-                <button type="button" class="tab-btn" data-tab="2" onclick="goTab(2)">2. Dados</button>
-                <button type="button" class="tab-btn" data-tab="3" onclick="goTab(3)">3. Análise</button>
-                <button type="button" class="tab-btn" data-tab="4" onclick="goTab(4)">4. Resultado</button>
-            </div>
-
-            <div id="tab1" class="tab-content active" style="margin-bottom: 20px;">
-                <div style="margin-bottom: 14px;">
-                    <label
-                        style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Razão
-                        social</label>
-                    <input type="text" placeholder="Ex: Tech Brasil Ltda." id="inp-nome"
-                        style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                </div>
-                <div style="margin-bottom: 14px;">
-                    <label
-                        style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">CNPJ</label>
-                    <div style="display: flex; gap: 10px; align-items: stretch;">
-                        <input type="text" placeholder="00.000.000/0001-00" id="inp-cnpj" maxlength="18"
-                            oninput="onCnpjInput(this)" autocomplete="off" inputmode="numeric"
-                            style="flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                        <button type="button" class="btn-secondary"
-                            style="padding: 10px 16px; font-size: 13px; white-space: nowrap; border-radius: 8px;"
-                            onclick="buscarCnpjNaReceita(false)">Buscar</button>
-                    </div>
-                    <div id="cnpj-consulta-msg" class="cnpj-msg" aria-live="polite"></div>
-                </div>
-                <div id="linha-cnae"
-                    style="display: none; margin-bottom: 14px; padding: 10px 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
-                    <strong style="color: var(--text-primary);">CNAE fiscal (Receita Federal)</strong><br>
-                    <span id="inp-cnae-codigo"></span> — <span id="inp-cnae-texto"></span>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-                    <div>
-                        <label
-                            style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Setor
-                            (ajustado pelo CNAE)</label>
-                        <select id="inp-setor"
-                            style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                            <option value="comercio">Comércio varejista</option>
-                            <option value="servicos" selected>Serviços especializados</option>
-                            <option value="industria">Indústria</option>
-                            <option value="tecnologia">Tecnologia</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label
-                            style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Regime
-                            atual</label>
-                        <select id="inp-regime"
-                            style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                            <option>Simples Nacional</option>
-                            <option selected>Lucro Presumido</option>
-                            <option>Lucro Real</option>
-                            <option>Não sei</option>
-                        </select>
-                    </div>
-                </div>
-                <button type="button" class="btn-primary" style="width: 100%; margin-top: 14px;"
-                    onclick="goTab(2)">Próximo passo →</button>
-            </div>
-
-            <div id="tab2" class="tab-content" style="margin-bottom: 20px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-                    <div>
-                        <label
-                            style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Faturamento
-                            anual</label>
-                        <select id="inp-faturamento"
-                            style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                            <option value="900000">Até R$ 1,8 mi</option>
-                            <option value="2900000">R$ 1,8–4 mi</option>
-                            <option value="7000000" selected>R$ 4–10 mi</option>
-                            <option value="15000000">R$ 10–20 mi</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label
-                            style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Nº
-                            funcionários</label>
-                        <select id="inp-funcionarios"
-                            style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                            <option value="1-5">1–5</option>
-                            <option value="6-20" selected>6–20</option>
-                            <option value="21-50">21–50</option>
-                            <option value="51+">51+</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-                    <div>
-                        <label
-                            style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Margem
-                            líquida</label>
-                        <select id="inp-margem-diagnostico"
-                            style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                            <option value="0.06">Abaixo de 8%</option>
-                            <option value="0.115" selected>8–15%</option>
-                            <option value="0.20">15–25%</option>
-                            <option value="0.28">+25%</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label
-                            style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Contador
-                            externo?</label>
-                        <select id="inp-contador"
-                            style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
-                            <option value="terceirizado" selected>Sim, terceirizado</option>
-                            <option value="interno">Sim, interno</option>
-                            <option value="nao">Não</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 12px; margin-top: 14px;">
-                    <button type="button" class="btn-secondary" style="flex: 1;" onclick="goTab(1)">← Voltar</button>
-                    <button type="button" class="btn-primary" style="flex: 1;" onclick="goTab(3)">Iniciar análise
-                        →</button>
-                </div>
-            </div>
-
-            <div id="tab3" class="tab-content" style="margin-bottom: 20px;">
-                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">Analisando sua empresa...
-                </p>
-                <div style="margin-bottom: 14px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-                        <span>Lendo transações bancárias</span>
-                        <span id="p1-pct">0%</span>
-                    </div>
-                    <div
-                        style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
-                        <div id="p1"
-                            style="height: 6px; background: var(--color-primary); width: 0%; border-radius: 3px; transition: width 0.4s;">
-                        </div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 14px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-                        <span>Simulando regimes tributários</span>
-                        <span id="p2-pct">0%</span>
-                    </div>
-                    <div
-                        style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
-                        <div id="p2"
-                            style="height: 6px; background: var(--color-primary); width: 0%; border-radius: 3px; transition: width 0.4s;">
-                        </div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 14px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-                        <span>Identificando créditos fiscais</span>
-                        <span id="p3-pct">0%</span>
-                    </div>
-                    <div
-                        style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
-                        <div id="p3"
-                            style="height: 6px; background: var(--color-primary); width: 0%; border-radius: 3px; transition: width 0.4s;">
-                        </div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-                        <span>Detectando anomalias de custo</span>
-                        <span id="p4-pct">0%</span>
-                    </div>
-                    <div
-                        style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
-                        <div id="p4"
-                            style="height: 6px; background: var(--color-primary); width: 0%; border-radius: 3px; transition: width 0.4s;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab4" class="tab-content">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <div id="res-total-oportunidades"
-                        style="font-size: 36px; font-weight: 600; color: var(--color-primary); margin-bottom: 6px;">—
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-secondary);">Oportunidades financeiras identificadas
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
-                    <div
-                        style="background: var(--bg-secondary); border-radius: 8px; padding: 14px; text-align: center;">
-                        <div id="res-credito-tributario"
-                            style="font-size: 16px; font-weight: 600; color: var(--color-primary);">—</div>
-                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Crédito tributário
-                        </div>
-                    </div>
-                    <div
-                        style="background: var(--bg-secondary); border-radius: 8px; padding: 14px; text-align: center;">
-                        <div id="res-anomalia-custo"
-                            style="font-size: 16px; font-weight: 600; color: var(--color-danger);">—</div>
-                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Anomalia de custo
-                        </div>
-                    </div>
-                    <div
-                        style="background: var(--bg-secondary); border-radius: 8px; padding: 14px; text-align: center;">
-                        <div id="res-regime-ideal"
-                            style="font-size: 16px; font-weight: 600; color: var(--text-primary);">—</div>
-                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Regime otimizado
-                        </div>
-                    </div>
-                    <div
-                        style="background: var(--bg-secondary); border-radius: 8px; padding: 14px; text-align: center;">
-                        <div id="res-economia-anual"
-                            style="font-size: 16px; font-weight: 600; color: var(--color-primary);">—</div>
-                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Economia anual
-                            estimada</div>
-                    </div>
-                </div>
-
-                <div id="res-proximo-passo"
-                    style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 12px; line-height: 1.6; color: #93c5fd;">
-                    <strong>Próximo passo:</strong> conclua o diagnóstico para ver recomendações personalizadas.
-                </div>
-                <div id="res-ai-summary"
-                    style="background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.5; color: #fde68a;">
-                    Aguarde o cálculo para ver uma análise financeira inteligente.
-                </div>
-
-                <button type="button" class="btn-primary" style="width: 100%;"
-                    onclick="closeModal('diagnose')">Fechar</button>
-                <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 12px;">
-                    Relatório enviado para seu e-mail
-                </p>
-            </div>
-        </div>
-    </div>
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="app.js"></script>
-
-    <style>
-        @keyframes regBounce {
-            0%   { transform: scale(0.5); opacity: 0; }
-            70%  { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); }
-        }
-        @keyframes regFadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        #reg-step-1, #reg-step-2, #reg-step-3 { animation: regFadeIn 0.3s ease; }
-        #reg-cnpj.valid   { border-color: #34d399 !important; }
-        #reg-cnpj.invalid { border-color: #ef4444 !important; }
-    </style>
-
-    <script>
-        // ============================================================
-        // NOVA JORNADA DE CRIAÇÃO DE CONTA (multi-step)
-        // ============================================================
-        let _regStep = 1;
-        let _regCompanyData = null;
-        let _regCnpjTimer = null;
-        let _regStep = 1;
-        let _regCompanyData = null;
-        let _selectedPlan = 'growth';
-
-        function selectPlan(planId) {
-            _selectedPlan = planId;
-            ['starter', 'growth', 'enterprise'].forEach(p => {
-                const card = document.getElementById('plan-card-' + p);
-                const radio = document.getElementById('plan-radio-' + p);
-                if (card) {
-                    card.style.borderColor = p === planId ? 'var(--color-primary)' : 'var(--border)';
-                    card.style.background = p === planId ? 'rgba(29,116,242,0.08)' : 'var(--bg-secondary)';
-                }
-                if (radio) {
-                    if (p === planId) {
-                        radio.style.borderColor = 'var(--color-primary)';
-                        radio.style.background = 'var(--color-primary)';
-                        radio.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#fff;"></div>';
-                    } else {
-                        radio.style.borderColor = 'var(--border)';
-                        radio.style.background = 'transparent';
-                        radio.innerHTML = '';
-                    }
-                }
-            });
-            const badge = document.getElementById('reg-step3-plan-badge');
-            const planNames = { starter: 'Starter • R$ 490/mês', growth: 'Growth • R$ 950/mês', enterprise: 'Enterprise • R$ 1.850/mês' };
-            if (badge) badge.textContent = planNames[planId] || 'Growth • R$ 950/mês';
-        }
-
-        function regGoStep(n) {
-            _regStep = n;
-            [1, 2, 3].forEach(i => {
-                const el = document.getElementById('reg-step-' + i);
-                if (el) el.style.display = i === n ? 'block' : 'none';
-            });
-
-            const bar   = document.getElementById('reg-progress-bar');
-            const label = document.getElementById('reg-step-label');
-            const hdr   = document.getElementById('reg-header');
-
-            if (n === 1) {
-                if (bar)   bar.style.width = '33%';
-                if (label) label.textContent = 'Etapa 1 de 3';
-                if (hdr)   hdr.style.display = 'block';
-            } else if (n === 2) {
-                if (bar)   bar.style.width = '66%';
-                if (label) label.textContent = 'Etapa 2 de 3';
-                if (hdr)   hdr.style.display = 'block';
-            } else if (n === 3) {
-                if (bar)   bar.style.width = '100%';
-                if (label) label.textContent = 'Etapa 3 de 3';
-                if (hdr)   hdr.style.display = 'block';
-                const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
-                const step3Company = document.getElementById('reg-step3-company');
-                const step3Cnpj = document.getElementById('reg-step3-cnpj');
-                if (step3Company) step3Company.textContent = (_regCompanyData && _regCompanyData.nome) || 'Empresa';
-                if (step3Cnpj) step3Cnpj.textContent = 'CNPJ: ' + cnpjRaw;
-                selectPlan(_selectedPlan);
-            }
-        }
-
-        function regNextStep() {
-            if (_regStep === 1) {
-                const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
-                const digits = cnpjRaw.replace(/\D/g, '');
-                if (digits.length !== 14) {
-                    regSetMsg(1, 'Informe o CNPJ completo antes de continuar.', '#ef4444');
-                    return;
-                }
-                // Ensure lookup is triggered; proceed even if lookup hasn't finished
-                if (!_regCompanyData) {
-                    regLookupCnpj(digits).catch(() => {});
-                }
-                regGoStep(2);
-            }
-        }
-
-        function regSetMsg(stepN, msg, color) {
-            const el = document.getElementById('reg-message-' + stepN);
-            if (!el) return;
-            el.textContent = msg;
-            el.style.color = color || 'var(--text-secondary)';
-        }
-
-        // ---- Step 1: CNPJ ----
-        function regOnCnpjInput(el) {
-            // Formata CNPJ
-            let v = el.value.replace(/\D/g, '');
-            if (v.length > 14) v = v.slice(0, 14);
-            v = v
-                .replace(/^(\d{2})(\d)/, '$1.$2')
-                .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-                .replace(/\.(\d{3})(\d)/, '.$1/$2')
-                .replace(/(\d{4})(\d)/, '$1-$2');
-            el.value = v;
-
-            // Reset estado
-            el.className = 'login-input';
-            document.getElementById('reg-cnpj-icon').textContent = '';
-            document.getElementById('reg-company-card').style.display = 'none';
-            document.getElementById('reg-btn-1').disabled = true;
-            regSetMsg(1, '');
-            _regCompanyData = null;
-
-            const digits = el.value.replace(/\D/g, '');
-            if (digits.length === 14) {
-                document.getElementById('reg-cnpj-icon').textContent = '⏳';
-                if (_regCnpjTimer) clearTimeout(_regCnpjTimer);
-                _regCnpjTimer = setTimeout(() => regLookupCnpj(digits), 700);
-            }
-        }
-
-        async function regLookupCnpj(digits) {
-            const icon = document.getElementById('reg-cnpj-icon');
-            icon.textContent = '⏳';
-            regSetMsg(1, 'Consultando CNPJ...', 'var(--text-secondary)');
-            try {
-                const res = await fetch('/api/cnpj?cnpj=' + digits);
-                const data = await res.json();
-                const input = document.getElementById('reg-cnpj');
-
-                if (!res.ok || data.erro) {
-                    icon.textContent = '❌';
-                    input.classList.add('invalid');
-                    regSetMsg(1, data.erro || 'CNPJ não encontrado. Verifique e tente novamente.', '#ef4444');
-                    return;
-                }
-
-                if (!data.ativo) {
-                    icon.textContent = '⚠️';
-                    input.classList.add('invalid');
-                    regSetMsg(1, 'Este CNPJ está inativo na Receita Federal.', '#f59e0b');
-                    return;
-                }
-
-                // Sucesso
-                _regCompanyData = data;
-                icon.textContent = '✅';
-                input.classList.add('valid');
-                regSetMsg(1, '');
-
-                const card   = document.getElementById('reg-company-card');
-                const nome   = document.getElementById('reg-company-name');
-                const detail = document.getElementById('reg-company-detail');
-                nome.textContent   = data.nome || 'Empresa encontrada';
-                detail.textContent = [data.municipio, data.uf].filter(Boolean).join(' – ') + (data.cnae_descricao ? ' · ' + data.cnae_descricao : '');
-                card.style.display = 'block';
-
-                document.getElementById('reg-btn-1').disabled = false;
-
-            } catch (e) {
-                document.getElementById('reg-cnpj-icon').textContent = '❌';
-                regSetMsg(1, 'Falha ao consultar CNPJ. Verifique sua conexão.', '#ef4444');
-            }
-        }
-
-        // ---- Step 2: Senha ----
-        function regCheckPassword() {
-            const pwd = (document.getElementById('reg-password') || {}).value || '';
-            const bars = [1, 2, 3, 4].map(i => document.getElementById('reg-str-' + i));
-            const lbl  = document.getElementById('reg-str-label');
-
-            let strength = 0;
-            if (pwd.length >= 6)  strength++;
-            if (pwd.length >= 10) strength++;
-            if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) strength++;
-            if (/[^A-Za-z0-9]/.test(pwd)) strength++;
-
-            const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#34d399'];
-            const labels = ['Muito fraca', 'Fraca', 'Boa', 'Forte'];
-
-            bars.forEach((b, i) => {
-                if (b) b.style.background = i < strength ? colors[strength - 1] : 'var(--border)';
-            });
-            if (lbl) {
-                lbl.textContent = pwd.length ? labels[strength - 1] || '' : '';
-                lbl.style.color = strength > 0 ? colors[strength - 1] : 'var(--text-secondary)';
-            }
-
-            regCheckConfirm();
-        }
-
-        function regCheckConfirm() {
-            const pwd  = (document.getElementById('reg-password') || {}).value || '';
-            const conf = (document.getElementById('reg-confirm')  || {}).value || '';
-            const icon = document.getElementById('reg-confirm-icon');
-            const btn  = document.getElementById('reg-btn-3');
-
-            const validPwd  = pwd.length >= 6;
-            const validConf = conf.length > 0 && pwd === conf;
-
-            if (icon) {
-                if (conf.length === 0) { icon.textContent = ''; }
-                else if (validConf)    { icon.textContent = '✅'; }
-                else                   { icon.textContent = '❌'; }
-            }
-
-            if (btn) btn.disabled = !(validPwd && validConf);
-            regSetMsg(3, (!validConf && conf.length > 0) ? 'As senhas não coincidem.' : '', '#ef4444');
-        }
-
-        function regTogglePassword(id, btn) {
-            const inp = document.getElementById(id);
-            if (!inp) return;
-            if (inp.type === 'password') {
-                inp.type = 'text';
-                btn.textContent = '🙈';
-            } else {
-                inp.type = 'password';
-                btn.textContent = '👁';
-            }
-        }
-
-        async function regSubmit() {
-            const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
-            const cnpj = cnpjRaw.replace(/\D/g, '');
-            const pwd  = (document.getElementById('reg-password') || {}).value || '';
-            const btn  = document.getElementById('reg-btn-3'); // Corrected from reg-btn-2
-            const planId = _selectedPlan || 'starter';
-
-            if (cnpj.length !== 14) {
-                regSetMsg(3, 'CNPJ inválido. Verifique e tente novamente.', '#ef4444');
-                return;
-            }
-
-            if (btn) { btn.disabled = true; btn.textContent = 'Criando conta...'; }
-            regSetMsg(3, '');
-
-            try {
-                const res = await fetch('/api/auth/register-cnpj', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cnpj, password: pwd, plan: planId })
-                });
-                const data = await res.json();
-
-                if (!res.ok || !data.sucesso) {
-                    throw new Error(data.erro || 'Não foi possível criar a conta.');
-                }
-
-                // Initialize Stripe Embedded Checkout
-                regGoStep(4);
-                const stripe = Stripe('pk_test_fake'); // Substituir pela pk real em produção
-                const checkout = await stripe.initEmbeddedCheckout({
-                    fetchClientSecret: async () => {
-                        const sRes = await fetch('/api/stripe/create-checkout-session', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ planId, cnpj })
-                        });
-                        const sData = await sRes.json();
-                        return sData.clientSecret;
-                    }
-                });
-                checkout.mount('#checkout');
-
-            } catch (e) {
-                regSetMsg(3, e.message || 'Erro ao criar conta.', '#ef4444');
-                if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
-            }
-        }
-
-        // Patch do openModal para resetar o modal de cadastro ao abrir
-        // e preencher CNPJ no modal de login após cadastro bem-sucedido
-        const _openModalBase = openModal;
-        openModal = function(name) {
-            if (name === 'register') {
-                // Reset todos os campos e estado
-                ['reg-cnpj', 'reg-password', 'reg-confirm'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) { el.value = ''; el.className = 'login-input'; el.type = 'password'; }
-                });
-                ['reg-cnpj-icon', 'reg-str-label', 'reg-confirm-icon'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = '';
-                });
-                [1, 2, 3, 4].forEach(i => {
-                    const b = document.getElementById('reg-str-' + i);
-                    if (b) b.style.background = 'var(--border)';
-                });
-                const card = document.getElementById('reg-company-card');
-                if (card) card.style.display = 'none';
-                const step4 = document.getElementById('reg-step-4');
-                if (step4) step4.style.display = 'none';
-                const btn1 = document.getElementById('reg-btn-1');
-                if (btn1) btn1.disabled = true;
-                const btn3 = document.getElementById('reg-btn-3');
-                if (btn3) { btn3.disabled = true; btn3.textContent = 'Criar conta'; }
-                regSetMsg(1, '');
-                regSetMsg(3, '');
-                _regCompanyData = null;
-                _selectedPlan = 'growth';
-                selectPlan('growth');
-                regGoStep(1);
-            }
-            // Usa o openModal original (que adiciona a classe 'active')
-            _openModalBase(name);
-        };
-
-        // Override do fluxo legado para usar login automatico + checkout hospedado.
-        regSubmit = async function() {
-            const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
-            const cnpj = cnpjRaw.replace(/\D/g, '');
-            const pwd  = (document.getElementById('reg-password') || {}).value || '';
-            const btn  = document.getElementById('reg-btn-3');
-            const planId = _selectedPlan || 'starter';
-
-            if (cnpj.length !== 14) {
-                regSetMsg(3, 'CNPJ invÃ¡lido. Verifique e tente novamente.', '#ef4444');
-                return;
-            }
-
-            if (btn) { btn.disabled = true; btn.textContent = 'Criando conta...'; }
-            regSetMsg(3, '');
-
-            try {
-                const res = await fetch('/api/auth/register-cnpj', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cnpj, password: pwd, plan: planId })
-                });
-                const data = await res.json();
-                if (!res.ok || !data.sucesso) {
-                    throw new Error(data.erro || 'NÃ£o foi possÃ­vel criar a conta.');
-                }
-
-                regSetMsg(3, 'Conta criada com sucesso. Entrando...', '#34d399');
-
-                const loginRes = await fetch('/api/auth/login-cnpj', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cnpj, password: pwd })
-                });
-                const loginData = await loginRes.json();
-                if (!loginRes.ok || !loginData.sucesso) {
-                    throw new Error(loginData.erro || 'Conta criada, mas o login automÃ¡tico falhou.');
-                }
-
-                localStorage.setItem('finpjToken', loginData.token);
-                localStorage.setItem('finpjAuthEmail', loginData.email || '');
-                if (typeof updateAuthState === 'function') updateAuthState();
-
-                closeModal('register');
-                if (typeof iniciarCompra === 'function') {
-                    iniciarCompra(planId);
-                    return;
-                }
-                if (typeof openDashboard === 'function') openDashboard();
-            } catch (e) {
-                regSetMsg(3, e.message || 'Erro ao criar conta.', '#ef4444');
-                if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
-                return;
-            }
-
-            if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
-        };
-    </script>
+  </main>
+
+  <dialog class="modal" data-login-modal>
+    <form method="dialog" class="modal-shell">
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">x</button>
+      <div class="modal-header">
+        <p class="eyebrow">Entrar</p>
+        <h2>Acesse sua conta</h2>
+      </div>
+      <div class="tabs compact">
+        <button class="tab is-active" type="button" data-auth-tab="email">Email</button>
+        <button class="tab" type="button" data-auth-tab="cnpj">CNPJ</button>
+      </div>
+      <div data-auth-panel="email">
+        <label>Email<input type="email" data-login-email placeholder="voce@empresa.com" autocomplete="email"></label>
+        <button class="btn btn-dark full" type="button" data-send-code>Enviar codigo</button>
+        <label>Codigo<input data-login-code inputmode="numeric" placeholder="000000" autocomplete="one-time-code"></label>
+        <button class="btn btn-light full" type="button" data-verify-code>Confirmar codigo</button>
+      </div>
+      <div class="is-hidden" data-auth-panel="cnpj">
+        <label>CNPJ<input data-login-cnpj inputmode="numeric" placeholder="00.000.000/0001-00" autocomplete="username"></label>
+        <label>Senha<input type="password" data-login-password autocomplete="current-password"></label>
+        <button class="btn btn-dark full" type="button" data-login-cnpj-submit>Entrar com CNPJ</button>
+      </div>
+      <a class="auth0-btn" href="/api/auth/auth0/login" data-auth0-login>
+        <span class="auth0-mark">A0</span>
+        Entrar com Auth0
+      </a>
+      <p class="form-note" data-login-note></p>
+    </form>
+  </dialog>
+
+  <dialog class="modal" data-register-modal>
+    <form class="modal-shell" data-register-form>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">x</button>
+      <div class="modal-header">
+        <p class="eyebrow">Cadastro</p>
+        <h2>Crie sua conta PJ</h2>
+      </div>
+      <label>CNPJ<input data-register-cnpj name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00" required></label>
+      <label>Senha<input data-register-password name="password" type="password" minlength="6" autocomplete="new-password" required></label>
+      <label>Confirmar senha<input data-register-confirm type="password" minlength="6" autocomplete="new-password" required></label>
+      <label>Plano
+        <select data-register-plan name="plan">
+          <option value="starter">Starter</option>
+          <option value="growth">Growth</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+      </label>
+      <div class="company-preview" data-company-preview>Informe o CNPJ para criar a conta.</div>
+      <button class="btn btn-dark full" type="submit">Criar conta</button>
+      <p class="form-note" data-register-note></p>
+    </form>
+  </dialog>
+
+  <div class="toast-stack" data-toast-stack aria-live="polite"></div>
 </body>
-
 </html>

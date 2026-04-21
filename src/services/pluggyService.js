@@ -2,84 +2,105 @@ const { PluggyClient } = require('pluggy-sdk');
 
 let pluggyClient = null;
 
+function getConfig() {
+    return {
+        clientId: process.env.PLUGGY_CLIENT_ID,
+        clientSecret: process.env.PLUGGY_CLIENT_SECRET
+    };
+}
+
+function isConfigured() {
+    const { clientId, clientSecret } = getConfig();
+    return Boolean(clientId && clientSecret);
+}
+
 function getClient() {
     if (pluggyClient) return pluggyClient;
-    
-    const clientId = process.env.PLUGGY_CLIENT_ID;
-    const clientSecret = process.env.PLUGGY_CLIENT_SECRET;
-    
+
+    const { clientId, clientSecret } = getConfig();
     if (!clientId || !clientSecret) {
-        console.warn('Pluggy API keys not configured. Open Finance functions will use mocked data.');
         return null;
     }
 
-    pluggyClient = new PluggyClient({
-        clientId: clientId,
-        clientSecret: clientSecret,
-    });
+    pluggyClient = new PluggyClient({ clientId, clientSecret });
     return pluggyClient;
 }
 
-/**
- * Gera um token de conexão (Connect Token) para iniciar o widget no frontend
- */
-async function createConnectToken() {
+function mapRequestError(error) {
+    const detail = error?.response?.body?.message || error?.message || 'Erro desconhecido';
+    return {
+        detail,
+        userMessage: 'Nao foi possivel comunicar com a Pluggy no momento.',
+        statusCode: error?.response?.statusCode || 502
+    };
+}
+
+async function createConnectToken(clientUserId) {
     const client = getClient();
-    if (!client) return null;
+    if (!client) {
+        return {
+            ok: false,
+            statusCode: 503,
+            detail: 'PLUGGY_CLIENT_ID/PLUGGY_CLIENT_SECRET ausentes.',
+            userMessage: 'Pluggy nao configurado no ambiente.'
+        };
+    }
+
     try {
-        const token = await client.createConnectToken();
-        return token.accessToken;
-    } catch (e) {
-        console.error('Erro ao gerar token da Pluggy:', e);
-        return null;
+        const token = await client.createConnectToken(undefined, {
+            clientUserId,
+            avoidDuplicates: true
+        });
+        return {
+            ok: true,
+            token: token.accessToken
+        };
+    } catch (error) {
+        console.error('Erro ao gerar token da Pluggy:', error);
+        return {
+            ok: false,
+            ...mapRequestError(error)
+        };
     }
 }
 
-/**
- * Busca detalhes de uma conta conectada (Item)
- */
 async function getItemDetails(itemId) {
     const client = getClient();
     if (!client) return null;
     try {
         return await client.fetchItem(itemId);
-    } catch (e) {
-        console.error('Erro ao buscar item da Pluggy:', e);
+    } catch (error) {
+        console.error('Erro ao buscar item da Pluggy:', error);
         return null;
     }
 }
 
-/**
- * Busca as contas de um item (ex: Conta Corrente, Poupança)
- */
 async function getAccounts(itemId) {
     const client = getClient();
     if (!client) return [];
     try {
         const response = await client.fetchAccounts(itemId);
         return response.results || [];
-    } catch (e) {
-        console.error('Erro ao buscar contas da Pluggy:', e);
+    } catch (error) {
+        console.error('Erro ao buscar contas da Pluggy:', error);
         return [];
     }
 }
 
-/**
- * Busca as transações de uma conta
- */
 async function getTransactions(accountId) {
     const client = getClient();
     if (!client) return [];
     try {
-        const response = await client.fetchTransactions(accountId);
+        const response = await client.fetchTransactions(accountId, { pageSize: 50 });
         return response.results || [];
-    } catch (e) {
-        console.error('Erro ao buscar transações da Pluggy:', e);
+    } catch (error) {
+        console.error('Erro ao buscar transacoes da Pluggy:', error);
         return [];
     }
 }
 
 module.exports = {
+    isConfigured,
     createConnectToken,
     getItemDetails,
     getAccounts,

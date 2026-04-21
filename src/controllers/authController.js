@@ -8,6 +8,7 @@ if (!JWT_SECRET) {
     console.error('JWT_SECRET environment variable is NOT set. Auth endpoints will return 500 until configured.');
 }
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
+const PLANOS_PERMITIDOS = ['starter', 'growth', 'enterprise'];
 
 function validarEmail(email) {
     return typeof email === 'string' && email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -174,6 +175,11 @@ async function registerCnpj(req, res) {
         return res.status(400).json({ erro: 'CNPJ inválido. Informe os 14 dígitos.' });
     }
 
+    const planNorm = plan ? String(plan).trim().toLowerCase() : 'starter';
+    if (!PLANOS_PERMITIDOS.includes(planNorm)) {
+        return res.status(400).json({ erro: 'Plano invalido.' });
+    }
+
     const emailSistema = `cnpj-${cnpjNorm}@finpj.local`;
 
     // Busca por CNPJ ou pelo Email de Sistema para evitar qualquer brecha de duplicidade
@@ -190,7 +196,7 @@ async function registerCnpj(req, res) {
         cnpj: cnpjNorm,
         passwordHash: await bcrypt.hash(password, 10),
         email: emailSistema,
-        plano: plan || 'starter',
+        plano: planNorm,
         statusPagamento: 'pendente',
         createdAt: new Date().toISOString(),
         bankReports: gerarRelatorioBancario(emailSistema)

@@ -13,7 +13,10 @@ async function conectarDB() {
 
     try {
         if (!mongoClient) {
-            mongoClient = new MongoClient(uri);
+            mongoClient = new MongoClient(uri, {
+                serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS || 5000),
+                connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 5000)
+            });
         }
         await mongoClient.connect();
         db = mongoClient.db('finpj');

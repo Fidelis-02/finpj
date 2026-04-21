@@ -1,7 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const rateLimit = require('express-rate-limit');
+let rateLimit;
+try {
+    rateLimit = require('express-rate-limit');
+} catch {
+    rateLimit = () => (req, res, next) => next();
+}
+const wrap = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 
 // Middlewares
 const { verificarTokenMiddleware } = require('../middlewares/auth');
@@ -43,33 +49,33 @@ const otpLimiter = rateLimit({
 // ===============================
 // AUTH & CNPJ ROUTES
 // ===============================
-router.post('/auth/send-code', otpLimiter, authController.sendCode);
-router.post('/auth/verify-code', authController.verifyCode);
-router.post('/auth/login-cnpj', authController.loginCnpj);
-router.post('/auth/register-cnpj', authController.registerCnpj);
-router.get('/dashboard', verificarTokenMiddleware, authController.getDashboard);
-router.get('/cnpj', cnpjController.consultarCnpj);
+router.post('/auth/send-code', otpLimiter, wrap(authController.sendCode));
+router.post('/auth/verify-code', wrap(authController.verifyCode));
+router.post('/auth/login-cnpj', wrap(authController.loginCnpj));
+router.post('/auth/register-cnpj', wrap(authController.registerCnpj));
+router.get('/dashboard', verificarTokenMiddleware, wrap(authController.getDashboard));
+router.get('/cnpj', wrap(cnpjController.consultarCnpj));
 
 // ===============================
 // FINANCE & OPEN FINANCE ROUTES
 // ===============================
-router.get('/openfinance/token', verificarTokenMiddleware, financeController.getPluggyToken);
-router.get('/openfinance/banks', verificarTokenMiddleware, financeController.getBanks);
-router.post('/openfinance/connect', verificarTokenMiddleware, financeController.connectBank);
-router.post('/openfinance/sync/:bankId', verificarTokenMiddleware, financeController.syncBank);
-router.delete('/openfinance/banks/:bankId', verificarTokenMiddleware, financeController.removeBank);
-router.post('/openfinance/transactions/:txId/tags', verificarTokenMiddleware, financeController.tagTransaction);
-router.post('/conciliacao', verificarTokenMiddleware, financeController.conciliar);
-router.get('/cashflow-projection', verificarTokenMiddleware, financeController.cashflowProjection);
+router.get('/openfinance/token', verificarTokenMiddleware, wrap(financeController.getPluggyToken));
+router.get('/openfinance/banks', verificarTokenMiddleware, wrap(financeController.getBanks));
+router.post('/openfinance/connect', verificarTokenMiddleware, wrap(financeController.connectBank));
+router.post('/openfinance/sync/:bankId', verificarTokenMiddleware, wrap(financeController.syncBank));
+router.delete('/openfinance/banks/:bankId', verificarTokenMiddleware, wrap(financeController.removeBank));
+router.post('/openfinance/transactions/:txId/tags', verificarTokenMiddleware, wrap(financeController.tagTransaction));
+router.post('/conciliacao', verificarTokenMiddleware, wrap(financeController.conciliar));
+router.get('/cashflow-projection', verificarTokenMiddleware, wrap(financeController.cashflowProjection));
 
 // ===============================
 // TAX & DIAGNOSTIC ROUTES
 // ===============================
-router.post('/calcular-das', verificarTokenMiddleware, taxController.calcularDas);
-router.post('/gerar-das-automatico', verificarTokenMiddleware, taxController.gerarDasAutomatico);
-router.get('/fiscal-calendar', verificarTokenMiddleware, taxController.fiscalCalendar);
-router.post('/diagnosticos', taxController.postDiagnostico);
-router.get('/diagnosticos', verificarTokenMiddleware, async (req, res) => {
+router.post('/calcular-das', verificarTokenMiddleware, wrap(taxController.calcularDas));
+router.post('/gerar-das-automatico', verificarTokenMiddleware, wrap(taxController.gerarDasAutomatico));
+router.get('/fiscal-calendar', verificarTokenMiddleware, wrap(taxController.fiscalCalendar));
+router.post('/diagnosticos', verificarTokenMiddleware, wrap(taxController.postDiagnostico));
+router.get('/diagnosticos', verificarTokenMiddleware, wrap(async (req, res) => {
     try {
         const { obterDiagnosticos } = require('../services/database');
         const diagnosticos = await obterDiagnosticos(req.userEmail);
@@ -78,8 +84,8 @@ router.get('/diagnosticos', verificarTokenMiddleware, async (req, res) => {
         console.error('Erro ao obter diagnosticos:', erro);
         res.status(500).json({ erro: 'Erro ao obter diagnosticos' });
     }
-});
-router.get('/diagnosticos/:id', verificarTokenMiddleware, async (req, res) => {
+}));
+router.get('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, res) => {
     try {
         const { obterDiagnostico } = require('../services/database');
         const diag = await obterDiagnostico(req.params.id, req.userEmail);
@@ -89,8 +95,8 @@ router.get('/diagnosticos/:id', verificarTokenMiddleware, async (req, res) => {
         console.error('Erro ao obter diagnostico:', erro);
         res.status(500).json({ erro: 'Erro ao obter diagnostico' });
     }
-});
-router.delete('/diagnosticos/:id', verificarTokenMiddleware, async (req, res) => {
+}));
+router.delete('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, res) => {
     try {
         const { deletarDiagnostico } = require('../services/database');
         const deletado = await deletarDiagnostico(req.params.id, req.userEmail);
@@ -100,29 +106,29 @@ router.delete('/diagnosticos/:id', verificarTokenMiddleware, async (req, res) =>
         console.error('Erro ao deletar diagnostico:', erro);
         res.status(500).json({ erro: 'Erro ao deletar diagnostico' });
     }
-});
+}));
 
 // ===============================
 // DOCUMENTS & AI ROUTES
 // ===============================
-router.post('/upload-documento', verificarTokenMiddleware, upload.single('arquivo'), documentController.uploadDocumento);
-router.get('/analises', verificarTokenMiddleware, documentController.getAnalises);
-router.post('/chat', verificarTokenMiddleware, documentController.postChat);
+router.post('/upload-documento', verificarTokenMiddleware, upload.single('arquivo'), wrap(documentController.uploadDocumento));
+router.get('/analises', verificarTokenMiddleware, wrap(documentController.getAnalises));
+router.post('/chat', verificarTokenMiddleware, wrap(documentController.postChat));
 
 // ===============================
 // USER PROFILE & NOTIFICATIONS ROUTES
 // ===============================
-router.get('/profile', verificarTokenMiddleware, userController.getProfile);
-router.put('/profile', verificarTokenMiddleware, userController.updateProfile);
-router.get('/notifications', verificarTokenMiddleware, userController.getNotifications);
-router.post('/notifications/read', verificarTokenMiddleware, userController.readNotifications);
+router.get('/profile', verificarTokenMiddleware, wrap(userController.getProfile));
+router.put('/profile', verificarTokenMiddleware, wrap(userController.updateProfile));
+router.get('/notifications', verificarTokenMiddleware, wrap(userController.getNotifications));
+router.post('/notifications/read', verificarTokenMiddleware, wrap(userController.readNotifications));
 
 // ===============================
 // PAYMENTS & STRIPE ROUTES
 // ===============================
-router.post('/pagamento', verificarTokenMiddleware, paymentController.processarPagamento);
-router.post('/stripe/create-checkout-session', verificarTokenMiddleware, paymentController.createCheckoutSession);
-router.post('/webhooks/stripe', paymentController.webhookStripe);
+router.post('/pagamento', verificarTokenMiddleware, wrap(paymentController.processarPagamento));
+router.post('/stripe/create-checkout-session', verificarTokenMiddleware, wrap(paymentController.createCheckoutSession));
+router.post('/webhooks/stripe', wrap(paymentController.webhookStripe));
 
 // Health check
 router.get('/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));

@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -6,47 +7,50 @@ const path = require('path');
 const passport = require('passport');
 const session = require('express-session');
 
-// Configuração do DB e Rotas
 const { conectarDB } = require('./src/services/database');
 const apiRoutes = require('./src/routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Conecta ao DB na inicialização
-conectarDB().catch(console.error);
+conectarDB().catch((error) => {
+    console.error('Falha ao conectar no MongoDB:', error.message);
+});
 
-// Middlewares
-const allowedOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:3001'];
-const corsOptions = {
+const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+    : ['http://localhost:3000', 'http://localhost:3001'];
+
+app.use(cors({
     origin: (origin, callback) => {
-        if (!origin) return callback(null, true); // allow non-browser or server-to-server requests
-        if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
-        callback(new Error('Not allowed by CORS'));
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true
-};
-app.use(cors(corsOptions));
+}));
+
 function isStripeWebhookRequest(req) {
     return req.originalUrl === '/api/webhooks/stripe';
 }
 
 app.use((req, res, next) => {
-    if (isStripeWebhookRequest(req)) return express.raw({ type: 'application/json' })(req, res, next);
-    next();
+    if (isStripeWebhookRequest(req)) {
+        return express.raw({ type: 'application/json' })(req, res, next);
+    }
+    return next();
 });
+
 app.use((req, res, next) => {
     if (isStripeWebhookRequest(req)) return next();
     return bodyParser.json({ limit: '10mb' })(req, res, next);
 });
+
 app.use((req, res, next) => {
     if (isStripeWebhookRequest(req)) return next();
     return bodyParser.urlencoded({ limit: '10mb', extended: true })(req, res, next);
 });
-app.use((req, res, next) => {
-    if (isStripeWebhookRequest(req)) return next();
-    return express.json({ limit: '10mb' })(req, res, next);
-});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET;
@@ -61,7 +65,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24h
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
@@ -71,27 +76,30 @@ app.use(passport.session());
 passport.serializeUser((user, done) => {
     done(null, user.email || user.id || user);
 });
+
 passport.deserializeUser((id, done) => {
     done(null, { email: id });
 });
 
-// Autenticações OAuth (Se arquivos existirem)
 try {
     const initGoogleAuth = require('./api/auth/google/init.js');
     initGoogleAuth(app, passport);
-} catch (e) {
+} catch (error) {
     console.log('Google Auth module not found or failed to load.');
 }
 
 try {
     const initAuth0 = require('./api/auth/auth0/init.js');
     initAuth0(app, passport);
-} catch (e) {
+} catch (error) {
     console.log('Auth0 module not found or failed to load.');
 }
 
-// Rotas estáticas
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -101,38 +109,23 @@ app.get('/logo.svg', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'logo.svg'));
 });
 
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Rotas da API Centralizadas
 app.use('/api', apiRoutes);
 
-// Global Error Handler
 app.use((err, req, res, next) => {
-    if (err.type === 'entity.too.large') {
-        return res.status(413).json({ erro: 'Payload muito grande. Limite máximo: 10MB.' });
+    if (err.type === 'entity.too.large' || err.status === 413) {
+        return res.status(413).json({ erro: 'Payload muito grande. Limite maximo: 10MB.' });
     }
-    if (err.status === 413) {
-        return res.status(413).json({ erro: 'Payload muito grande. Limite máximo: 10MB.' });
-    }
+
     if (err.type === 'entity.parse.failed') {
-        return res.status(400).json({ erro: 'JSON inválido na requisição.' });
+        return res.status(400).json({ erro: 'JSON invalido na requisicao.' });
     }
-    console.error('Erro não tratado:', err.message || err);
-    res.status(err.status || 500).json({ erro: err.message || 'Erro interno do servidor.' });
+
+    console.error('Erro nao tratado:', err.message || err);
+    return res.status(err.status || 500).json({ erro: err.message || 'Erro interno do servidor.' });
 });
 
 app.listen(PORT, () => {
-    console.log(`
-====================================
-FinPJ Backend rodando 🚀 (Refatorado)
-====================================
-
-http://localhost:${PORT}
-
-====================================
-`);
+    console.log(`FinPJ backend em http://localhost:${PORT}`);
 });
 
 module.exports = app;
