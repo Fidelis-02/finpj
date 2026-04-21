@@ -22,7 +22,7 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
     secret: process.env.JWT_SECRET || 'finpj-session-secret',
@@ -61,17 +61,17 @@ try {
 
 // Rotas estáticas
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/logo.svg', (req, res) => {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.sendFile(path.join(__dirname, 'logo.svg'));
+    res.sendFile(path.join(__dirname, 'public', 'logo.svg'));
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Rotas da API Centralizadas
