@@ -9,7 +9,6 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 const passport = require('passport');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_fake');
 const uri = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'finpj-secret-default';
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
