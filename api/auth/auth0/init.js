@@ -5,6 +5,9 @@ module.exports = function initAuth0(app, passport) {
     const domain = process.env.AUTH0_DOMAIN;
     const clientID = process.env.AUTH0_CLIENT_ID;
     const clientSecret = process.env.AUTH0_CLIENT_SECRET;
+    const resolvedBaseUrl = process.env.BASE_URL
+        || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+        || 'https://finpj.vercel.app';
 
     // Debug route — always available so we can check config status
     app.get('/api/auth/auth0/status', (req, res) => {
@@ -13,7 +16,7 @@ module.exports = function initAuth0(app, passport) {
             domain: domain ? domain.substring(0, 10) + '...' : 'NOT SET',
             clientID: clientID ? clientID.substring(0, 8) + '...' : 'NOT SET',
             clientSecret: clientSecret ? '***SET***' : 'NOT SET',
-            baseUrl: process.env.BASE_URL || 'NOT SET',
+            baseUrl: resolvedBaseUrl,
             nodeEnv: process.env.NODE_ENV || 'NOT SET'
         });
     });
@@ -39,7 +42,7 @@ module.exports = function initAuth0(app, passport) {
             throw new Error('JWT_SECRET não configurado.');
         }
 
-        const BASE_URL = process.env.BASE_URL || 'https://finpj.vercel.app';
+        const BASE_URL = resolvedBaseUrl;
 
         passport.use('auth0', new Auth0Strategy({
             domain: domain,
