@@ -1,3 +1,6 @@
+import taxEngine from '../src/tax/index.js';
+import taxUtils from '../src/tax/utils.js';
+
 function fmtReais(valor) {
     return 'R$ ' + Math.round(Number(valor) || 0).toLocaleString('pt-BR');
 }
@@ -26,31 +29,41 @@ export default function handler(req, res) {
     if (req.method === 'POST') {
         const { faturamento, margem, setor, regime } = req.body;
 
-        const fat = parseInt(faturamento) || 4800000;
-        const marg = parseFloat(margem) || 0.12;
+        const fat = taxUtils.parseNumber(faturamento);
+        const marg = taxUtils.parseMargin(margem);
+        if (!Number.isFinite(fat) || fat <= 0) {
+            return res.status(400).json({ erro: 'Informe o faturamento anual.' });
+        }
+        if (!Number.isFinite(marg) || marg < 0 || marg > 1) {
+            return res.status(400).json({ erro: 'Informe uma margem entre 0% e 100%.' });
+        }
 
-        const impostoSimples = fat * 0.11;
-        const impostoPresumido = fat * 0.15;
-        const impostoReal = (fat * marg) * 0.24;
+        let simulation;
+        try {
+            simulation = taxEngine.simulateTaxes({
+                annualRevenue: fat,
+                margin: marg,
+                activity: taxUtils.normalizeActivity(setor || 'comercio')
+            });
+        } catch (error) {
+            return res.status(400).json({ erro: error.message });
+        }
 
-        const regimeIdeal =
-            impostoSimples < impostoPresumido && impostoSimples < impostoReal
-                ? 'Simples Nacional'
-                : impostoPresumido < impostoReal
-                ? 'Lucro Presumido'
-                : 'Lucro Real';
+        const best = simulation.bestRegime;
+        const impostos = simulation.regimes.reduce((acc, item) => {
+            acc[item.key] = item.annualTax == null ? null : Math.round(item.annualTax);
+            return acc;
+        }, {});
 
         const resultados = {
-            regimeIdeal,
-            impostoIdeal: Math.min(impostoSimples, impostoPresumido, impostoReal),
-            economia: Math.round(Math.max(impostoSimples, impostoPresumido, impostoReal) - Math.min(impostoSimples, impostoPresumido, impostoReal)),
-            creditosIdentificados: Math.round(fat * 0.05),
-            anomaliaValor: Math.round(Math.random() > 0.5 ? fat * 0.01 : 0),
-            impostos: {
-                simples: Math.round(impostoSimples),
-                presumido: Math.round(impostoPresumido),
-                real: Math.round(impostoReal)
-            }
+            regimeIdeal: best.name,
+            impostoIdeal: Math.round(best.annualTax),
+            economia: Math.round(simulation.savingsComparedToWorst?.annual || 0),
+            creditosIdentificados: 0,
+            anomaliaValor: 0,
+            impostos,
+            regimes: simulation.regimes,
+            premissas: simulation.assumptions
         };
 
         const analise = gerarAnaliseInterna(resultados, { faturamento: fat, margem: marg, setor, regime });

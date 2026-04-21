@@ -22,8 +22,13 @@ function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
 }
 
-function formatPercent(value) {
-  return `${Math.round((Number(value) || 0) * 100)}%`;
+function formatPercent(value, digits = 2) {
+  const numeric = Number(value) || 0;
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  }).format(numeric);
 }
 
 function onlyDigits(value) {
@@ -56,9 +61,9 @@ function parseMoneyLike(value) {
   return Number(normalized) || 0;
 }
 
-function parsePercentLike(value, fallback = 0.12) {
+function parsePercentLike(value, fallback = NaN) {
   const parsed = Number(String(value || '').replace(',', '.'));
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
   return parsed > 1 ? parsed / 100 : parsed;
 }
 
@@ -81,31 +86,23 @@ function inferActivity(setor = '') {
   const normalized = String(setor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/comerc|varejo|atacad/.test(normalized)) return 'comercio';
   if (/industr|fabric|manuf/.test(normalized)) return 'industria';
-  return 'servicos';
+  if (/servic|consult|clin|agenc|software|profission/.test(normalized)) return 'servicos';
+  return 'comercio';
 }
 
-function calculatePublicRegime({ faturamento, margem, atividade }) {
-  const annualRevenue = Number(faturamento) || 0;
-  const margin = Number(margem) || 0.12;
-  const presumidoBase = atividade === 'comercio' ? annualRevenue * 0.08 : annualRevenue * 0.32;
-  const simplesRate = annualRevenue <= 180000 ? 0.06
-    : annualRevenue <= 360000 ? 0.112
-    : annualRevenue <= 720000 ? 0.135
-    : annualRevenue <= 1800000 ? 0.16
-    : annualRevenue <= 3600000 ? 0.21
-    : 0.33;
-  const simplesAdjust = atividade === 'comercio' ? 0.85 : atividade === 'industria' ? 0.92 : 1;
-  const regimes = [
-    { key: 'simples', name: 'Simples Nacional', tax: annualRevenue * simplesRate * simplesAdjust },
-    { key: 'presumido', name: 'Lucro Presumido', tax: presumidoBase * 0.15 + Math.max(0, presumidoBase - 240000) * 0.1 + presumidoBase * 0.09 + annualRevenue * 0.0925 },
-    { key: 'real', name: 'Lucro Real', tax: annualRevenue * margin * 0.34 + annualRevenue * 0.0925 }
-  ].map((item) => ({
-    ...item,
-    monthly: item.tax / 12,
-    effectiveRate: annualRevenue > 0 ? item.tax / annualRevenue : 0
-  }));
-  regimes.sort((a, b) => a.tax - b.tax);
-  return regimes;
+function calculateTaxSimulation({ faturamento, margem, atividade }) {
+  if (!window.FinPJTax?.simulateTaxes) {
+    throw new Error('Motor tributario indisponivel. Recarregue a pagina.');
+  }
+  return window.FinPJTax.simulateTaxes({
+    annualRevenue: faturamento,
+    margin: margem,
+    activity: atividade
+  });
+}
+
+function calculatePublicRegime(params) {
+  return calculateTaxSimulation(params).regimes;
 }
 
 function setLoading(element, isLoading, label = 'Processando...') {
@@ -228,6 +225,18 @@ function renderTaxRows(selector, regimes) {
   regimes.forEach((regime, index) => {
     const row = document.createElement('div');
     row.className = `regime-row ${index === 0 ? 'is-best' : ''}`;
+    if (regime.eligible === false) {
+      row.classList.remove('is-best');
+      row.innerHTML = `
+        <div>
+          <strong>${escapeHtml(regime.name)}</strong>
+          <small>${escapeHtml(regime.reason || 'Regime nao aplicavel aos dados informados.')}</small>
+        </div>
+        <span>-</span>
+      `;
+      target.appendChild(row);
+      return;
+    }
     row.innerHTML = `
       <div>
         <strong>${escapeHtml(regime.name)}</strong>
@@ -235,6 +244,15 @@ function renderTaxRows(selector, regimes) {
       </div>
       <span>${formatCurrency(regime.monthly)}/mês</span>
     `;
+    if (regime.eligible !== false) {
+      const detail = document.createElement('small');
+      detail.className = 'regime-row-detail';
+      const annualTax = regime.annualTax ?? regime.tax;
+      const monthlyTax = regime.monthlyTax ?? regime.monthly;
+      const savings = regime.savingsComparedToWorst?.annual || 0;
+      detail.textContent = `Anual ${formatCurrency(annualTax)} | mensal ${formatCurrency(monthlyTax)} | aliquota efetiva ${formatPercent(regime.effectiveRate)}${savings ? ` | economia vs pior ${formatCurrency(savings)}` : ''}`;
+      $('div', row)?.appendChild(detail);
+    }
     target.appendChild(row);
   });
 }
@@ -257,8 +275,14 @@ function runPublicDiagnostic(event) {
   const faturamento = parseMoneyLike(form.elements.faturamento.value);
   const margem = parsePercentLike(form.elements.margem.value);
   const atividade = form.elements.atividade.value;
-  const regimes = calculatePublicRegime({ faturamento, margem, atividade });
-  renderPublicDiagnostic(regimes, faturamento);
+  try {
+    const regimes = calculatePublicRegime({ faturamento, margem, atividade });
+    renderPublicDiagnostic(regimes, faturamento);
+  } catch (error) {
+    $('[data-public-best-regime]').textContent = 'Dados invalidos';
+    $('[data-public-diagnostic-copy]').textContent = error.message;
+    renderTaxRows('[data-regime-comparison]', []);
+  }
 }
 
 function getCurrentUser() {
@@ -289,17 +313,27 @@ function buildMetrics(dashboard = state.dashboard || {}) {
 
   const totalMovimentado = Number(summary.totalMovimentado || 0);
   const annualRevenue = Number(user.faturamento || user.faturamentoAnual || 0)
-    || (monthlyIncome ? Math.round(monthlyIncome * 12) : Math.round(totalMovimentado * 0.62));
+    || (monthlyIncome ? Math.round(monthlyIncome * 12) : Math.round(totalMovimentado));
   const informedMargin = Number(user.margem || user.margemEstimada || 0);
-  const margin = informedMargin > 1 ? informedMargin / 100 : informedMargin || (annualRevenue > 0 ? 0.18 : 0);
+  const margin = informedMargin > 1 ? informedMargin / 100 : informedMargin || 0;
   const profit = Math.round(annualRevenue * margin);
   const expenses = Math.max(0, annualRevenue - profit);
   const activity = inferActivity(user.setor);
-  const regimes = calculatePublicRegime({ faturamento: annualRevenue, margem: margin || 0.12, atividade: activity });
-  const bestRegime = regimes[0];
+  let regimes = [];
+  let bestRegime = { name: 'Nao calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 };
+  try {
+    regimes = annualRevenue && margin > 0
+      ? calculatePublicRegime({ faturamento: annualRevenue, margem: margin, atividade: activity })
+      : [];
+    bestRegime = regimes[0] || bestRegime;
+  } catch {
+    regimes = [];
+  }
   const currentRegime = formatRegime(user.regime || '');
   const currentRegimeItem = regimes.find((regime) => regime.name === currentRegime);
-  const taxGap = currentRegimeItem ? Math.max(0, currentRegimeItem.tax - bestRegime.tax) : Math.max(0, regimes[regimes.length - 1].tax - bestRegime.tax);
+  const taxGap = regimes.length
+    ? (currentRegimeItem ? Math.max(0, currentRegimeItem.tax - bestRegime.tax) : Math.max(0, regimes[regimes.length - 1].tax - bestRegime.tax))
+    : 0;
 
   return {
     user,
@@ -614,6 +648,16 @@ function runDashboardTaxSimulation(event) {
 
   const margem = parsePercentLike(form.elements.margem.value);
   const atividade = form.elements.atividade.value || inferActivity(getCurrentUser().setor);
+  if (!Number.isFinite(margem) || margem < 0) {
+    $('[data-dashboard-tax-comparison]').innerHTML = '';
+    if (summary) summary.textContent = 'Informe uma margem entre 0% e 100%.';
+    return;
+  }
+  if (atividade !== 'comercio') {
+    $('[data-dashboard-tax-comparison]').innerHTML = '';
+    if (summary) summary.textContent = 'O comparador atual usa regras de comercio. Selecione comercio para simular.';
+    return;
+  }
   const currentRegime = formatRegime(form.elements.regime.value || getCurrentUser().regime || '');
   const regimes = calculatePublicRegime({ faturamento, margem, atividade });
   const best = regimes[0];
@@ -795,6 +839,23 @@ function renderAnalysisResult(targetSelector, payload) {
     const recText = document.createElement('p');
     recText.textContent = `Recomendações: ${recomendacoes.join(' | ')}`;
     target.appendChild(recText);
+  }
+  if (Array.isArray(dados.regimes) && dados.regimes.length) {
+    const list = document.createElement('div');
+    list.className = 'regime-comparison';
+    dados.regimes.forEach((regime) => {
+      const row = document.createElement('div');
+      row.className = `regime-row ${regime.name === dados.regimeIdeal ? 'is-best' : ''}`;
+      row.innerHTML = `
+        <div>
+          <strong>${escapeHtml(regime.name)}</strong>
+          <small>Anual ${escapeHtml(formatCurrency(regime.annualTax || regime.tax || 0))} | mensal ${escapeHtml(formatCurrency(regime.monthlyTax || regime.monthly || 0))} | aliquota efetiva ${escapeHtml(formatPercent(regime.effectiveRate || 0))}</small>
+        </div>
+        <span>${escapeHtml(formatCurrency(regime.savingsComparedToWorst?.annual || 0))}</span>
+      `;
+      list.appendChild(row);
+    });
+    target.appendChild(list);
   }
 }
 
@@ -1039,13 +1100,17 @@ async function connectBank(button) {
 async function submitDiagnostic(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  const faturamento = parseMoneyLike(form.elements.faturamento.value);
+  const margem = parsePercentLike(form.elements.margem.value);
+  if (!faturamento) throw new Error('Informe o faturamento anual.');
+  if (!Number.isFinite(margem) || margem < 0) throw new Error('Informe uma margem entre 0% e 100%.');
   const payload = {
     nome: form.elements.nome.value.trim(),
     cnpj: onlyDigits(form.elements.cnpj.value),
     setor: form.elements.setor.value.trim(),
     regime: form.elements.regime.value,
-    faturamento: parseMoneyLike(form.elements.faturamento.value) || 480000,
-    margem: parsePercentLike(form.elements.margem.value)
+    faturamento,
+    margem
   };
   const button = $('button[type="submit"]', form);
   setLoading(button, true, 'Analisando...');

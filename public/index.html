@@ -10,6 +10,12 @@
   <link rel="apple-touch-icon" href="/logo.svg">
   <link rel="stylesheet" href="/style.css">
   <script src="https://cdn.pluggy.ai/pluggy-connect/v2.7.0/pluggy-connect.js" defer></script>
+  <script src="/tax/tables.js" defer></script>
+  <script src="/tax/utils.js" defer></script>
+  <script src="/tax/regimes/simplesNacional.js" defer></script>
+  <script src="/tax/regimes/lucroPresumido.js" defer></script>
+  <script src="/tax/regimes/lucroReal.js" defer></script>
+  <script src="/tax/index.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -84,9 +90,9 @@
             </label>
             <label>Atividade
               <select name="atividade">
-                <option value="servicos">Serviços</option>
                 <option value="comercio">Comércio</option>
-                <option value="industria">Indústria</option>
+                <option value="servicos" disabled>Serviços (em breve)</option>
+                <option value="industria" disabled>Indústria (em breve)</option>
               </select>
             </label>
             <button class="btn btn-dark full" type="submit">Simular regime</button>
@@ -260,9 +266,9 @@
                   <label>Margem estimada<input name="margem" inputmode="decimal" placeholder="Ex.: 0,12"></label>
                   <label>Atividade
                     <select name="atividade">
-                      <option value="servicos">Serviços</option>
                       <option value="comercio">Comércio</option>
-                      <option value="industria">Indústria</option>
+                      <option value="servicos" disabled>Serviços (em breve)</option>
+                      <option value="industria" disabled>Indústria (em breve)</option>
                     </select>
                   </label>
                   <label>Regime atual

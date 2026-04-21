@@ -52,6 +52,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/tax', express.static(path.join(__dirname, 'src', 'tax')));
 
 const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET;
 if (!SESSION_SECRET) {

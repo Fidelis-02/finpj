@@ -1,32 +1,51 @@
 const { salvarDiagnostico, obterUsuario } = require('../services/database');
 const { gerarAnaliseFinanceira } = require('../services/aiService');
 const { fetchNotasFiscais, calcularDasAutomatico } = require('../services/nfeService');
+const taxEngine = require('../tax');
+const taxUtils = require('../tax/utils');
+
+function inferActivity(setor = '') {
+    return taxUtils.normalizeActivity(setor || 'comercio');
+}
 
 async function calcularDas(req, res) {
-    const { faturamento, regime, atividade } = req.body;
-    const fat = Number(faturamento) || 0;
-    if (fat <= 0) return res.status(400).json({ erro: 'Informe o faturamento.' });
-    let aliq, valor, guia, vencimento;
+    const { faturamento, margem, regime, atividade } = req.body;
+    const fat = taxUtils.parseNumber(faturamento);
+    const marg = taxUtils.parseMargin(margem);
+    if (!Number.isFinite(fat) || fat <= 0) return res.status(400).json({ erro: 'Informe o faturamento.' });
+    if (!Number.isFinite(marg) || marg < 0 || marg > 1) return res.status(400).json({ erro: 'Informe uma margem entre 0% e 100%.' });
+
+    let simulation;
+    try {
+        simulation = taxEngine.simulateTaxes({
+            annualRevenue: fat,
+            margin: marg,
+            activity: inferActivity(atividade)
+        });
+    } catch (error) {
+        return res.status(400).json({ erro: error.message });
+    }
+
+    const regimeKey = taxUtils.normalizeRegime(regime || 'simples') || 'simples';
+    const selected = simulation.regimes.find((item) => item.key === regimeKey);
+    if (!selected || selected.eligible === false) {
+        return res.status(400).json({ erro: selected?.reason || 'Regime nao aplicavel aos dados informados.' });
+    }
+
     const hoje = new Date();
     const proxMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 20);
-    vencimento = proxMes.toISOString().slice(0, 10);
-    if (regime === 'simples') {
-        if (fat <= 180000) aliq = 0.06; else if (fat <= 360000) aliq = 0.112; else if (fat <= 720000) aliq = 0.135;
-        else if (fat <= 1800000) aliq = 0.16; else if (fat <= 3600000) aliq = 0.21; else aliq = 0.33;
-        if (atividade === 'comercio') aliq *= 0.85;
-        valor = Math.round((fat / 12) * aliq);
-        guia = 'DAS';
-    } else if (regime === 'presumido') {
-        const base = atividade === 'comercio' ? fat * 0.08 : fat * 0.32;
-        valor = Math.round((base * 0.15 + Math.max(0, base - 240000) * 0.10 + base * 0.09 + fat * 0.0925) / 12);
-        aliq = valor / (fat / 12);
-        guia = 'DARF';
-    } else {
-        valor = Math.round((fat * 0.12 * 0.34 + fat * 0.0925) / 12);
-        aliq = valor / (fat / 12);
-        guia = 'DARF';
-    }
-    res.json({ sucesso: true, guia, valor, aliquotaEfetiva: (aliq * 100).toFixed(2), vencimento, faturamentoMensal: Math.round(fat / 12) });
+    const guia = selected.key === 'simples' ? 'DAS' : 'DARF';
+    res.json({
+        sucesso: true,
+        guia,
+        valor: Math.round(selected.monthlyTax),
+        valorAnual: Math.round(selected.annualTax),
+        aliquotaEfetiva: (selected.effectiveRate * 100).toFixed(2),
+        vencimento: proxMes.toISOString().slice(0, 10),
+        faturamentoMensal: Math.round(fat / 12),
+        regime: selected.name,
+        detalhamento: selected.breakdown
+    });
 }
 
 function fiscalCalendar(req, res) {
@@ -67,25 +86,32 @@ async function postDiagnostico(req, res) {
         return res.status(400).json({ erro: 'Nome e CNPJ são obrigatórios' });
     }
 
-    const fat = parseInt(faturamento) || 4800000;
-    const marg = parseFloat(margem) || 0.12;
+    const fat = taxUtils.parseNumber(faturamento);
+    const marg = taxUtils.parseMargin(margem);
+    if (!Number.isFinite(fat) || fat <= 0) {
+        return res.status(400).json({ erro: 'Informe o faturamento anual.' });
+    }
+    if (!Number.isFinite(marg) || marg < 0 || marg > 1) {
+        return res.status(400).json({ erro: 'Informe uma margem entre 0% e 100%.' });
+    }
 
-    const impostoSimples = fat * 0.11;
-    const impostoPresumido = fat * 0.15;
-    const impostoReal = (fat * marg) * 0.24;
+    let simulation;
+    try {
+        simulation = taxEngine.simulateTaxes({
+            annualRevenue: fat,
+            margin: marg,
+            activity: inferActivity(setor)
+        });
+    } catch (error) {
+        return res.status(400).json({ erro: error.message });
+    }
 
-    const regimeIdeal =
-        impostoSimples < impostoPresumido && impostoSimples < impostoReal
-            ? 'Simples Nacional'
-            : impostoPresumido < impostoReal
-            ? 'Lucro Presumido'
-            : 'Lucro Real';
-
-    const impostoIdeal = Math.min(impostoSimples, impostoPresumido, impostoReal);
-    const economia = Math.max(impostoSimples, impostoPresumido, impostoReal) - impostoIdeal;
-
-    const creditosIdentificados = fat * 0.05;
-    const anomaliaValor = Math.random() > 0.5 ? fat * 0.01 : 0;
+    const best = simulation.bestRegime;
+    const economia = simulation.savingsComparedToWorst?.annual || 0;
+    const impostos = simulation.regimes.reduce((acc, item) => {
+        acc[item.key] = item.annualTax == null ? null : Math.round(item.annualTax);
+        return acc;
+    }, {});
 
     const diagnostico = {
         id: `diag_${Date.now()}`,
@@ -98,16 +124,14 @@ async function postDiagnostico(req, res) {
         margem: marg,
         data: new Date().toISOString(),
         resultados: {
-            regimeIdeal,
-            impostoIdeal: Math.round(impostoIdeal),
+            regimeIdeal: best.name,
+            impostoIdeal: Math.round(best.annualTax),
             economia: Math.round(economia),
-            creditosIdentificados: Math.round(creditosIdentificados),
-            anomaliaValor: Math.round(anomaliaValor),
-            impostos: {
-                simples: Math.round(impostoSimples),
-                presumido: Math.round(impostoPresumido),
-                real: Math.round(impostoReal)
-            }
+            creditosIdentificados: 0,
+            anomaliaValor: 0,
+            impostos,
+            regimes: simulation.regimes,
+            premissas: simulation.assumptions
         }
     };
 

@@ -1,3 +1,5 @@
+const simplesNacional = require('../tax/regimes/simplesNacional');
+
 function gerarNotasMocks(cnpj) {
     const hoje = new Date();
     const notas = [];
@@ -59,23 +61,24 @@ function calcularDasAutomatico(faturamentoPeriodo, anexoI = true) {
     // No mundo real, precisaríamos do faturamento dos últimos 12 meses (RBT12)
     // Aqui usamos o faturamento do mês projetado para o ano
     const rbt12 = faturamentoPeriodo * 12;
-    let aliquota = 0;
+    const result = simplesNacional.calculate({
+        annualRevenue: rbt12,
+        margin: 0,
+        activity: 'comercio',
+        calendarYear: new Date().getFullYear()
+    });
+    if (result.eligible === false) {
+        throw new Error(result.reason || 'Faturamento fora do Simples Nacional.');
+    }
     
     // Tabela Anexo I (Comércio)
-    if (rbt12 <= 180000) aliquota = 0.04;
-    else if (rbt12 <= 360000) aliquota = 0.073;
-    else if (rbt12 <= 720000) aliquota = 0.095;
-    else if (rbt12 <= 1800000) aliquota = 0.107;
-    else if (rbt12 <= 3600000) aliquota = 0.143;
-    else aliquota = 0.19;
-
-    const valorDas = Math.round(faturamentoPeriodo * aliquota * 100) / 100;
+    const valorDas = Math.round((result.annualTax / 12) * 100) / 100;
     const hoje = new Date();
     const vencimento = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 20).toISOString().slice(0, 10);
     
     return {
         valor: valorDas,
-        aliquotaEfetiva: (aliquota * 100).toFixed(2),
+        aliquotaEfetiva: (result.effectiveRate * 100).toFixed(2),
         vencimento: vencimento,
         competencia: hoje.toISOString().slice(0, 7),
         linhaDigitavel: '858' + Math.floor(Math.random() * 9000000000000000000).toString().padStart(40, '0') // PIX/Código de barras mockado

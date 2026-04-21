@@ -32,7 +32,9 @@ function gerarAnaliseInterna(diagnostico) {
         recomendacoes.push(`Detectamos uma possível anomalia de custo de ${fmtReais(anomalia)}; verifique despesas não usuais e fluxo de caixa.`);
     }
 
-    const resumo = `Este diagnóstico sugere ${resultados.regimeIdeal} como melhor opção fiscal e indica até ${fmtReais(economia)} de economia anual, com ${fmtReais(creditos)} em créditos tributários identificados.`;
+    const resumo = creditos > 0
+        ? `Este diagnostico sugere ${resultados.regimeIdeal} como melhor opcao fiscal e indica ate ${fmtReais(economia)} de economia anual, com ${fmtReais(creditos)} em creditos tributarios identificados.`
+        : `Este diagnostico sugere ${resultados.regimeIdeal} como melhor opcao fiscal e indica ate ${fmtReais(economia)} de economia anual. Creditos tributarios exigem documentos fiscais para estimativa confiavel.`;
     return {
         resumo,
         recomendacoes
