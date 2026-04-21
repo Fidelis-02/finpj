@@ -1543,3 +1543,42 @@ let cnpjConsultaTimer = null;
             }
         })();
     
+async function gerarDasAutomatico() {
+    const token = localStorage.getItem('finpjToken') || localStorage.getItem('authToken');
+    const resDiv = document.getElementById('das-resultado');
+    
+    resDiv.innerHTML = \
+        <div style="text-align:center;">
+            <div class="spinner" style="margin: 0 auto 15px;"></div>
+            <p style="font-size:14px;color:var(--text-secondary);">Buscando Notas Fiscais na Prefeitura/SEFAZ...</p>
+        </div>
+    \;
+
+    try {
+        const res = await fetch('/api/gerar-das-automatico', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.erro || 'Falha na automação.');
+
+        resDiv.innerHTML = \
+            <div style="text-align:left; width:100%;">
+                <h3 style="color:#34d399;margin-bottom:12px;">? DAS Gerado com Sucesso!</h3>
+                <p style="font-size:13px;margin-bottom:8px;"><strong>Período:</strong> \</p>
+                <p style="font-size:13px;margin-bottom:8px;"><strong>Faturamento Identificado:</strong> R$ \</p>
+                <p style="font-size:24px;font-weight:700;color:var(--text-primary);margin:12px 0;">R$ \</p>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">Alíquota efetiva: \% | Vencimento: \</p>
+                
+                <div style="background:var(--bg-secondary);padding:12px;border-radius:8px;margin-bottom:16px;">
+                    <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px;">CÓDIGO PIX PARA PAGAMENTO</label>
+                    <code style="font-size:10px;word-break:break-all;color:var(--color-primary);">\</code>
+                </div>
+                <button class="btn-primary" style="width:100%;" onclick="alert('Funcionalidade de download em implementação...')">Baixar PDF da Guia</button>
+            </div>
+        \;
+    } catch (e) {
+        resDiv.innerHTML = \<p style="color:#ef4444;">? Erro: \</p>\;
+    }
+}
