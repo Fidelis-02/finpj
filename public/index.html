@@ -1331,7 +1331,19 @@
         }
 
         function regNextStep() {
-            if (_regStep === 1) regGoStep(2);
+            if (_regStep === 1) {
+                const cnpjRaw = (document.getElementById('reg-cnpj') || {}).value || '';
+                const digits = cnpjRaw.replace(/\D/g, '');
+                if (digits.length !== 14) {
+                    regSetMsg(1, 'Informe o CNPJ completo antes de continuar.', '#ef4444');
+                    return;
+                }
+                // Ensure lookup is triggered; proceed even if lookup hasn't finished
+                if (!_regCompanyData) {
+                    regLookupCnpj(digits).catch(() => {});
+                }
+                regGoStep(2);
+            }
         }
 
         function regSetMsg(stepN, msg, color) {
