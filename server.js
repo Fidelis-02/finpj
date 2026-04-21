@@ -19,12 +19,24 @@ conectarDB().catch((error) => {
 
 const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
-    : ['http://localhost:3000', 'http://localhost:3001'];
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'];
+
+if (process.env.BASE_URL && !allowedOrigins.includes(process.env.BASE_URL)) {
+    allowedOrigins.push(process.env.BASE_URL);
+}
+
 
 app.use(cors({
     origin: (origin, callback) => {
+        // Permitir requisições sem origin (como mobile apps ou curl)
         if (!origin) return callback(null, true);
+        
+        // Verificar se está na lista explícita
         if (allowedOrigins.includes(origin)) return callback(null, true);
+        
+        // Permitir qualquer subdomínio vercel.app
+        if (origin.endsWith('.vercel.app')) return callback(null, true);
+        
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true
