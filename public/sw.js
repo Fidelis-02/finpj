@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finpj-v1';
+const CACHE_NAME = 'finpj-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
