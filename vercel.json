@@ -16,12 +16,44 @@
       "dest": "server.js"
     },
     {
-      "src": "/(.*\\.(?:css|js|svg|json|webmanifest|png|jpg|jpeg|ico|map))",
+      "src": "/(tax/.*)",
       "dest": "public/$1"
+    },
+    {
+      "src": "/(js/.*)",
+      "dest": "public/$1"
+    },
+    {
+      "src": "/(.*\\.(?:css|js|svg|json|webmanifest|png|jpg|jpeg|ico|map|html))",
+      "dest": "public/$1"
+    },
+    {
+      "src": "/",
+      "dest": "public/index.html"
     },
     {
       "src": "/(.*)",
       "dest": "public/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*\\.html)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=utf-8"
+        }
+      ]
     }
   ]
 }
