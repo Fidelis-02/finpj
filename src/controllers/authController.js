@@ -331,7 +331,7 @@ async function getDashboard(req, res) {
 async function getSession(req, res) {
     const usuario = await obterUsuario(req.userEmail);
     if (!usuario) {
-        return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+        return res.status(404).json({ erro: 'Usuário não encontrado.' });
     }
 
     return res.json({

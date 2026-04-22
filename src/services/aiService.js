@@ -49,19 +49,19 @@ function buildConfidence(dados, tipoDoc) {
     if (tipoDoc === 'dre') {
         const rb = Number(dados.receita_bruta ?? dados.receitaBruta ?? dados.receita ?? 0);
         const ll = Number(dados.lucro_liquido ?? dados.lucroLiquido ?? dados.lucro ?? 0);
-        if (rb > 0) score += 0.25; else flags.push('Receita bruta nao identificada');
-        if (ll !== 0) score += 0.15; else flags.push('Lucro liquido nao identificado');
+        if (rb > 0) score += 0.25; else flags.push('Receita bruta não identificada');
+        if (ll !== 0) score += 0.15; else flags.push('Lucro líquido não identificado');
         if ((dados.margem_bruta_pct ?? dados.margemBrutaPct ?? -1) >= 0) score += 0.1;
-        else flags.push('Margem bruta nao calculada');
+        else flags.push('Margem bruta não calculada');
     } else if (tipoDoc === 'balanco') {
         const at = Number(dados.ativo_total ?? dados.ativoTotal ?? 0);
         const pl = Number(dados.patrimonio_liquido ?? dados.patrimonioLiquido ?? 0);
-        if (at > 0) score += 0.3; else flags.push('Ativo total nao identificado');
-        if (pl !== 0) score += 0.2; else flags.push('Patrimonio liquido nao identificado');
+        if (at > 0) score += 0.3; else flags.push('Ativo total não identificado');
+        if (pl !== 0) score += 0.2; else flags.push('Patrimônio líquido não identificado');
     } else if (tipoDoc === 'extrato') {
         const te = Number(dados.total_entradas ?? dados.totalEntradas ?? 0);
         const ts = Number(dados.total_saidas ?? dados.totalSaidas ?? 0);
-        if (te > 0 || ts > 0) score += 0.4; else flags.push('Nenhuma movimentacao identificada');
+        if (te > 0 || ts > 0) score += 0.4; else flags.push('Nenhuma movimentação identificada');
         if ((dados.categorias ?? []).length > 1) score += 0.2;
     }
     return { score: Math.min(1, Math.max(0, score)), flags };
@@ -89,8 +89,8 @@ function gerarAnaliseInterna(diagnostico) {
     }
 
     const resumo = creditos > 0
-        ? `Este diagnostico sugere ${resultados.regimeIdeal} como melhor opcao fiscal e indica ate ${fmtReais(economia)} de economia anual, com ${fmtReais(creditos)} em creditos tributarios identificados.`
-        : `Este diagnostico sugere ${resultados.regimeIdeal} como melhor opcao fiscal e indica ate ${fmtReais(economia)} de economia anual. Creditos tributarios exigem documentos fiscais para estimativa confiavel.`;
+        ? `Este diagnóstico sugere ${resultados.regimeIdeal} como melhor opção fiscal e indica até ${fmtReais(economia)} de economia anual, com ${fmtReais(creditos)} em créditos tributários identificados.`
+        : `Este diagnóstico sugere ${resultados.regimeIdeal} como melhor opção fiscal e indica até ${fmtReais(economia)} de economia anual. Créditos tributários exigem documentos fiscais para estimativa confiável.`;
     return {
         resumo,
         recomendacoes
@@ -167,7 +167,7 @@ async function callGroq(messages, maxTokens = 2000, retries = 1) {
             if (attempt < retries) {
                 messages.push({
                     role: 'user',
-                    content: 'A resposta anterior nao foi um JSON valido. Retorne APENAS um objeto JSON, sem texto fora do JSON, sem markdown, sem explicacoes.'
+                    content: 'A resposta anterior não foi um JSON válido. Retorne APENAS um objeto JSON, sem texto fora do JSON, sem markdown, sem explicações.'
                 });
             }
             lastError = new Error(`JSON parse falhou na tentativa ${attempt + 1}. Resposta: ${content.slice(0, 300)}`);
@@ -176,7 +176,7 @@ async function callGroq(messages, maxTokens = 2000, retries = 1) {
             console.error(`Groq attempt ${attempt + 1} failed:`, err.message);
         }
     }
-    throw lastError || new Error('Falha ao obter JSON valido da Groq apos retries');
+    throw lastError || new Error('Falha ao obter JSON válido da Groq após retries');
 }
 
 async function analisarComGroq(tipoDoc, textoDoc, contexto = '') {
@@ -185,19 +185,19 @@ async function analisarComGroq(tipoDoc, textoDoc, contexto = '') {
         return analisarLocalmente(tipoDoc, textoDoc);
     }
     const prompts = {
-        dre: `Voce e analista financeiro especialista em PMEs brasileiras. Analise o DRE abaixo e extraia os valores numericos principais. Formato numerico: 1.234.567,89 (ponto milhar, virgula decimal). Ignore cabecalhos, rodapes e numeros de pagina.
+        dre: `Você é analista financeiro especialista em PMEs brasileiras. Analise o DRE abaixo e extraia os valores numéricos principais. Formato numérico: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos, rodapés e números de página.
 
 Retorne EXCLUSIVAMENTE JSON:
 {"receita_bruta": number, "deducoes": number, "receita_liquida": number, "custos": number, "lucro_bruto": number, "despesas_operacionais": number, "ebitda": number, "lucro_liquido": number, "margem_bruta_pct": number, "margem_liquida_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
 
 Exemplo: {"receita_bruta":1250000.00,"deducoes":25000.00,"receita_liquida":1225000.00,"custos":612500.00,"lucro_bruto":612500.00,"despesas_operacionais":245000.00,"ebitda":367500.00,"lucro_liquido":245000.00,"margem_bruta_pct":0.50,"margem_liquida_pct":0.20,"alertas":["Despesas subiram 12%"],"recomendacoes":["Rever aluguel"],"resumo":"Margem bruta 50%, mas despesas elevadas."}`,
-        balanco: `Voce e analista financeiro especialista em PMEs brasileiras. Analise o Balanco Patrimonial e extraia os valores numericos. Formato: 1.234.567,89 (ponto milhar, virgula decimal). Ignore cabecalhos, rodapes.
+        balanco: `Você é analista financeiro especialista em PMEs brasileiras. Analise o Balanço Patrimonial e extraia os valores numéricos. Formato: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos, rodapés.
 
 Retorne EXCLUSIVAMENTE JSON:
 {"ativo_total": number, "ativo_circulante": number, "ativo_nao_circulante": number, "passivo_total": number, "passivo_circulante": number, "patrimonio_liquido": number, "liquidez_corrente": number, "endividamento_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
 
 Exemplo: {"ativo_total":2500000.00,"ativo_circulante":1250000.00,"ativo_nao_circulante":1250000.00,"passivo_total":1500000.00,"passivo_circulante":875000.00,"patrimonio_liquido":1000000.00,"liquidez_corrente":1.43,"endividamento_pct":0.60,"alertas":["Endividamento alto"],"recomendacoes":["Reduzir passivo circulante"],"resumo":"Liquidez 1,43 OK, mas endividamento 60% preocupante."}`,
-        extrato: `Voce e especialista em conciliacao bancaria. Analise o extrato e extraia totais e padroes. Formato: 1.234.567,89 (ponto milhar, virgula decimal). Ignore cabecalhos.
+        extrato: `Você é especialista em conciliação bancária. Analise o extrato e extraia totais e padrões. Formato: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos.
 
 Retorne EXCLUSIVAMENTE JSON:
 {"saldo_inicial": number, "saldo_final": number, "total_entradas": number, "total_saidas": number, "num_transacoes": number, "categorias": [{"nome": "string", "valor": number}], "anomalias": ["string"], "itens_conciliacao": [{"data": "string", "descricao": "string", "valor": number, "tipo": "entrada|saida", "categoria": "string", "flag": "string"}], "recomendacoes": ["string"], "resumo": "string"}
@@ -211,7 +211,7 @@ Exemplo: {"saldo_inicial":45230.00,"saldo_final":38910.00,"total_entradas":12500
     try {
         const { dados } = await callGroq([
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Documento:\n\n${texto}\n\nContexto adicional: ${sanitizeText(contexto, 1000)}\n\nRetorne SOMENTE o JSON valido, sem markdown, sem texto fora do JSON.` }
+            { role: 'user', content: `Documento:\n\n${texto}\n\nContexto adicional: ${sanitizeText(contexto, 1000)}\n\nRetorne SOMENTE o JSON válido, sem markdown, sem texto fora do JSON.` }
         ], 2000, 1);
         const confianca = buildConfidence(dados, tipoDoc);
         return { sucesso: true, dados, fonte: 'groq-llama3', confianca };
@@ -283,7 +283,7 @@ function analisarLocalmente(tipoDoc, texto) {
             if (!valores.length) continue;
             const valor = valores[valores.length - 1];
 
-            // Detectar saldo inicial/final; nao contar como transacao
+            // Detectar saldo inicial/final; não contar como transação
             if (linhaLower.includes('saldo anterior') || linhaLower.includes('saldo inicial')) {
                 saldoInicial = Math.abs(valor);
                 continue;
@@ -305,12 +305,12 @@ function analisarLocalmente(tipoDoc, texto) {
                     descricao: linha.slice(0, 80).trim(),
                     valor: Math.abs(valor),
                     tipo: valor >= 0 ? 'entrada' : 'saida',
-                    categoria: 'Nao classificado',
+                    categoria: 'Não classificado',
                     flag: 'LOCAL'
                 });
             }
         }
-        // Se nao achou saldo_inicial/final explicito, inferir pelo maior numero positivo/negativo
+        // Se não achou saldo_inicial/final explícito, inferir pelo maior número positivo/negativo
         if (!saldoInicial && numeros.length) {
             saldoInicial = numeros[0] || 0;
         }
@@ -327,23 +327,23 @@ function analisarLocalmente(tipoDoc, texto) {
                 total_saidas: saidas,
                 num_transacoes: numTransacoes,
                 categorias: [{ nome: 'Outros', valor: soma }],
-                anomalias: soma > 100000 ? ['Movimentacao elevada detectada'] : [],
+                anomalias: soma > 100000 ? ['Movimentação elevada detectada'] : [],
                 itens_conciliacao: itensConciliacao.slice(0, 20),
                 recomendacoes: ['Envie documentos mais completos ou verifique se o extrato esta em formato de texto.'],
-                resumo: `Extrato processado localmente com ${numTransacoes} transacoes identificadas. Saldo liquido estimado: R$ ${saldoCalculado.toLocaleString('pt-BR')}.`
+                resumo: `Extrato processado localmente com ${numTransacoes} transações identificadas. Saldo líquido estimado: R$ ${saldoCalculado.toLocaleString('pt-BR')}.`
             },
             fonte: 'local',
-            confianca: { score: numTransacoes > 0 ? 0.35 : 0.1, flags: ['Analise local aproximada'] }
+            confianca: { score: numTransacoes > 0 ? 0.35 : 0.1, flags: ['Análise local aproximada'] }
         };
     }
 
     if (tipoDoc === 'balanco') {
         const ativoTotal = buscarValorPorRotulos(texto, ['Ativo Total', 'TOTAL DO ATIVO']);
         const ativoCirculante = buscarValorPorRotulos(texto, ['Ativo Circulante', 'Circulante']);
-        const ativoNaoCirculante = buscarValorPorRotulos(texto, ['Ativo Nao Circulante', 'Ativo Realizavel a Longo Prazo', 'Imobilizado', 'Intangivel']);
+        const ativoNaoCirculante = buscarValorPorRotulos(texto, ['Ativo Não Circulante', 'Ativo Realizável a Longo Prazo', 'Imobilizado', 'Intangível']);
         const passivoTotal = buscarValorPorRotulos(texto, ['Passivo Total', 'TOTAL DO PASSIVO']);
         const passivoCirculante = buscarValorPorRotulos(texto, ['Passivo Circulante', 'Exigivel a Curto Prazo']);
-        const patrimonioLiquido = buscarValorPorRotulos(texto, ['Patrimonio Liquido', 'Patrimonio Liquido Consolidado', 'PL']);
+        const patrimonioLiquido = buscarValorPorRotulos(texto, ['Patrimônio Líquido', 'Patrimônio Líquido Consolidado', 'PL']);
         const ativoBase = ativoTotal || max;
         const plBase = patrimonioLiquido || (ativoBase * 0.4);
         const pcBase = passivoCirculante || (ativoBase * 0.35);
@@ -360,22 +360,22 @@ function analisarLocalmente(tipoDoc, texto) {
                 patrimonio_liquido: plBase,
                 liquidez_corrente: liquidez,
                 endividamento_pct: endividamento,
-                alertas: ['Analise local aproximada com base nos valores identificados.'],
-                recomendacoes: ['Envie demonstrativos completos para melhorar a precisao da analise.'],
-                resumo: `Balanco processado localmente. Ativo total R$ ${ativoBase.toLocaleString('pt-BR')}, liquidez ${liquidez.toFixed(2)}.`
+                alertas: ['Análise local aproximada com base nos valores identificados.'],
+                recomendacoes: ['Envie demonstrativos completos para melhorar a precisão da análise.'],
+                resumo: `Balanço processado localmente. Ativo total R$ ${ativoBase.toLocaleString('pt-BR')}, liquidez ${liquidez.toFixed(2)}.`
             },
             fonte: 'local',
-            confianca: { score: ativoTotal > 0 ? 0.4 : 0.15, flags: ['Analise local aproximada'] }
+            confianca: { score: ativoTotal > 0 ? 0.4 : 0.15, flags: ['Análise local aproximada'] }
         };
     }
 
-    // DRE (padrao)
+    // DRE (padrão)
     const receitaBruta = buscarValorPorRotulos(texto, ['Receita Bruta', 'Receitas Operacionais', 'Vendas', 'Faturamento']);
-    const deducoesRaw = buscarValorPorRotulos(texto, ['Deducoes', 'Impostos sobre Vendas', 'Tributos']);
-    const custosRaw = buscarValorPorRotulos(texto, ['Custo dos Servicos', 'Custo dos Produtos', 'CMV', 'CPV', 'Custos']);
+    const deducoesRaw = buscarValorPorRotulos(texto, ['Deduções', 'Impostos sobre Vendas', 'Tributos']);
+    const custosRaw = buscarValorPorRotulos(texto, ['Custo dos Serviços', 'Custo dos Produtos', 'CMV', 'CPV', 'Custos']);
     const lucroBruto = buscarValorPorRotulos(texto, ['Lucro Bruto', 'Resultado Bruto']);
     const despesasOpRaw = buscarValorPorRotulos(texto, ['Despesas Operacionais', 'Despesas Administrativas', 'Despesas Comerciais', 'Despesas Gerais']);
-    const lucroLiquido = buscarValorPorRotulos(texto, ['Lucro Liquido', 'Lucro Liquido do Exercicio', 'Resultado Liquido']);
+    const lucroLiquido = buscarValorPorRotulos(texto, ['Lucro Líquido', 'Lucro Líquido do Exercício', 'Resultado Líquido']);
     const receitaBase = receitaBruta || max;
     // Valores dedutores no DRE costumam vir entre parenteses (negativos no parse); normalizar para positivo
     const deducoes = Math.abs(deducoesRaw);
@@ -397,12 +397,12 @@ function analisarLocalmente(tipoDoc, texto) {
             lucro_liquido: ll,
             margem_bruta_pct: receitaBase ? +((lb / receitaBase) * 100).toFixed(1) : 0,
             margem_liquida_pct: receitaBase ? +((ll / receitaBase) * 100).toFixed(1) : 0,
-            alertas: ['Analise local aproximada com base nos valores identificados.'],
-            recomendacoes: ['Envie demonstrativos completos para melhorar a precisao da analise.'],
-            resumo: `DRE processado localmente. Receita R$ ${receitaBase.toLocaleString('pt-BR')}, lucro liquido R$ ${ll.toLocaleString('pt-BR')}.`
+            alertas: ['Análise local aproximada com base nos valores identificados.'],
+            recomendacoes: ['Envie demonstrativos completos para melhorar a precisão da análise.'],
+            resumo: `DRE processado localmente. Receita R$ ${receitaBase.toLocaleString('pt-BR')}, lucro líquido R$ ${ll.toLocaleString('pt-BR')}.`
         },
         fonte: 'local',
-        confianca: { score: receitaBruta > 0 ? 0.4 : 0.15, flags: ['Analise local aproximada'] }
+        confianca: { score: receitaBruta > 0 ? 0.4 : 0.15, flags: ['Análise local aproximada'] }
     };
 }
 

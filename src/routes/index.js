@@ -21,7 +21,7 @@ const documentController = require('../controllers/documentController');
 const userController = require('../controllers/userController');
 const paymentController = require('../controllers/paymentController');
 
-const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || Math.floor(3.5 * 1024 * 1024));
+const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || Math.floor(50 * 1024 * 1024));
 
 // Configuração do multer para upload
 const upload = multer({
@@ -35,7 +35,7 @@ const upload = multer({
         if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|xlsx|xls|csv|txt|ods|jpe?g|png|webp|bmp|tiff)$/i)) {
             cb(null, true);
         } else {
-            cb(new Error('Formato nao suportado. Use PDF, Excel, CSV, TXT ou imagem (JPG/PNG).'));
+            cb(new Error('Formato não suportado. Use PDF, Excel, CSV, TXT ou imagem (JPG/PNG).'));
         }
     }
 });
@@ -118,6 +118,8 @@ router.delete('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, re
 // DOCUMENTS & AI ROUTES
 // ===============================
 router.post('/upload-documento', verificarTokenMiddleware, upload.single('arquivo'), wrap(documentController.uploadDocumento));
+router.post('/upload-url', verificarTokenMiddleware, wrap(documentController.getUploadUrl));
+router.post('/process-document', verificarTokenMiddleware, wrap(documentController.processDocumentFromUrl));
 router.get('/analises', verificarTokenMiddleware, wrap(documentController.getAnalises));
 router.post('/chat', verificarTokenMiddleware, wrap(documentController.postChat));
 

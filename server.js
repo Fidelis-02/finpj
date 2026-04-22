@@ -55,12 +55,12 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
     if (isStripeWebhookRequest(req)) return next();
-    return bodyParser.json({ limit: '10mb' })(req, res, next);
+    return bodyParser.json({ limit: '50mb' })(req, res, next);
 });
 
 app.use((req, res, next) => {
     if (isStripeWebhookRequest(req)) return next();
-    return bodyParser.urlencoded({ limit: '10mb', extended: true })(req, res, next);
+    return bodyParser.urlencoded({ limit: '50mb', extended: true })(req, res, next);
 });
 
 const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'finpj-dev-session-secret';
@@ -104,11 +104,14 @@ try {
     console.log('Auth0 module not found or failed to load.');
 }
 
+// Servir arquivos estáticos da pasta public (frontend e tax engine)
+app.use(express.static('public'));
+
 app.use('/api', apiRoutes);
 
 app.use((err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ erro: 'Arquivo muito grande. Envie um arquivo de até 3,5 MB.' });
+        return res.status(413).json({ erro: 'Arquivo muito grande. Envie um arquivo de até 50 MB.' });
     }
 
     if (err.type === 'entity.too.large' || err.status === 413) {

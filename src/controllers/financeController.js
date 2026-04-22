@@ -134,7 +134,7 @@ async function getBanks(req, res) {
 
 async function getOpenFinanceSummary(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
     return res.json({
         sucesso: true,
         summary: summarizeOpenFinance(usuario.connectedBanks || [])
@@ -143,7 +143,7 @@ async function getOpenFinanceSummary(req, res) {
 
 async function getOpenFinanceTransactions(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
     const limit = Math.min(Number(req.query.limit || 50), 200);
     const transactions = flattenBankTransactions(usuario.connectedBanks || [])
         .sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0))

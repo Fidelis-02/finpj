@@ -3,6 +3,7 @@ const { gerarAnaliseFinanceira } = require('../services/aiService');
 const { fetchNotasFiscais, calcularDasAutomatico } = require('../services/nfeService');
 const taxUtils = require('../tax/utils');
 const { getFiscalSimulation } = require('../services/fiscalCache');
+const { verificarNcmMonofasico, calcularImpactoMonofasico } = require('../tax');
 
 function inferActivity(setor = '') {
     return taxUtils.normalizeActivity(setor || 'comercio');
@@ -29,7 +30,7 @@ async function calcularDas(req, res) {
     const regimeKey = taxUtils.normalizeRegime(regime || 'simples') || 'simples';
     const selected = simulation.regimes.find((item) => item.key === regimeKey);
     if (!selected || selected.eligible === false) {
-        return res.status(400).json({ erro: selected?.reason || 'Regime nao aplicavel aos dados informados.' });
+        return res.status(400).json({ erro: selected?.reason || 'Regime não aplicável aos dados informados.' });
     }
 
     const hoje = new Date();
@@ -109,11 +110,21 @@ async function postDiagnostico(req, res) {
     const best = simulation.bestRegime;
     const economia = simulation.savingsComparedToWorst?.annual || 0;
     
-    // Cálculo PIS/COFINS Monofásico
+    // Cálculo PIS/COFINS Monofásico usando banco de dados real
     let creditosIdentificados = 0;
+    let ncmInfo = null;
+    let alertasNcm = [];
+    
     if (ncm && ncm.trim() !== '') {
-        const parcelaMonofasica = fat * 0.3; // 30% presumido monofásico
-        creditosIdentificados = parcelaMonofasica * 0.0925; // 9,25% PIS/COFINS
+        // Verificar NCM individual
+        ncmInfo = verificarNcmMonofasico(ncm);
+        
+        if (ncmInfo && ncmInfo.isMonofasico) {
+            // Se for monofásico, calcular créditos não aproveitados
+            const parcelaMonofasica = fat * 0.3; // Estimativa de 30% do faturamento como monofásico
+            creditosIdentificados = parcelaMonofasica * ncmInfo.aliquotas.total;
+            alertasNcm.push(`NCM ${ncmInfo.codigo} (${ncmInfo.categoriaDescricao}) possui tributação monofásica.`);
+        }
     }
 
     const impostos = simulation.regimes.reduce((acc, item) => {
@@ -137,6 +148,14 @@ async function postDiagnostico(req, res) {
             impostoIdeal: Math.round(best.annualTax),
             economia: Math.round(economia),
             creditosIdentificados: Math.round(creditosIdentificados),
+            ncmAnalise: ncmInfo ? {
+                codigo: ncmInfo.codigo,
+                descricao: ncmInfo.descricao,
+                categoria: ncmInfo.categoria,
+                isMonofasico: ncmInfo.isMonofasico,
+                aliquotaTotal: ncmInfo.aliquotas?.total
+            } : null,
+            alertasNcm: alertasNcm.length > 0 ? alertasNcm : undefined,
             anomaliaValor: 0,
             impostos,
             regimes: simulation.regimes,

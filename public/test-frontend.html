@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Frontend - Motor Fiscal FinPJ</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f7; }
+        h1 { color: #1a1a1a; }
+        .test-section { background: white; border-radius: 12px; padding: 20px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .test-section h2 { margin-top: 0; color: #333; }
+        .status { padding: 10px 15px; border-radius: 8px; margin: 10px 0; }
+        .status.ok { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        button { background: #007AFF; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0056b3; }
+        .card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .card.best { border-color: #34C759; background: #f0fdf4; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Frontend - Motor Fiscal FinPJ</h1>
+    
+    <div class="test-section">
+        <h2>Status dos Módulos</h2>
+        <div id="module-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Teste RBT12 + Fator R</h2>
+        <button onclick="testRbt12FatorR()">Executar Teste</button>
+        <div id="rbt12-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Teste NCM Monofásico</h2>
+        <button onclick="testNcm()">Executar Teste</button>
+        <div id="ncm-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Teste Simulação Completa (3 Regimes)</h2>
+        <button onclick="testSimulacao()">Executar Teste</button>
+        <div id="simulacao-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Simulador de Enquadramento (Componente)</h2>
+        <div id="simulador-container"></div>
+    </div>
+
+    <!-- Load Tax Engine -->
+    <script src="/tax/tables.js"></script>
+    <script src="/tax/utils.js"></script>
+    <script src="/tax/rbt12FatorR.js"></script>
+    <script src="/tax/ncmMonofasico.js"></script>
+    <script src="/tax/regimes/simplesNacional.js"></script>
+    <script src="/tax/regimes/lucroPresumido.js"></script>
+    <script src="/tax/regimes/lucroReal.js"></script>
+    <script src="/tax/index.js"></script>
+    <script src="/js/simuladorEnquadramento.js"></script>
+
+    <script>
+        // Check module status on load
+        function checkModules() {
+            const modules = [
+                { name: 'FinPJTaxTables', obj: window.FinPJTaxTables },
+                { name: 'FinPJTaxUtils', obj: window.FinPJTaxUtils },
+                { name: 'FinPJRbt12FatorR', obj: window.FinPJRbt12FatorR },
+                { name: 'FinPJNcmMonofasico', obj: window.FinPJNcmMonofasico },
+                { name: 'FinPJTaxRegimes', obj: window.FinPJTaxRegimes },
+                { name: 'FinPJTax', obj: window.FinPJTax },
+                { name: 'SimuladorEnquadramento', obj: window.SimuladorEnquadramento }
+            ];
+
+            let html = '';
+            modules.forEach(mod => {
+                const status = mod.obj ? 'ok' : 'error';
+                const message = mod.obj ? '✓ Carregado' : '✗ Não encontrado';
+                html += `<div class="status ${status}"><strong>${mod.name}:</strong> ${message}</div>`;
+            });
+
+            document.getElementById('module-status').innerHTML = html;
+            return modules.every(m => m.obj);
+        }
+
+        function testRbt12FatorR() {
+            const faturamentos = [
+                { mes: 1, ano: 2026, valor: 50000 },
+                { mes: 2, ano: 2026, valor: 60000 },
+                { mes: 3, ano: 2026, valor: 55000 }
+            ];
+            
+            const folhaPagamento = [
+                { mes: 1, ano: 2026, valor: 15000 },
+                { mes: 2, ano: 2026, valor: 18000 },
+                { mes: 3, ano: 2026, valor: 16000 }
+            ];
+
+            const rbt12 = FinPJTax.calcularRBT12(faturamentos);
+            const fatorR = FinPJTax.calcularFatorR(folhaPagamento, faturamentos);
+            
+            document.getElementById('rbt12-result').innerHTML = `
+                <h4>RBT12:</h4>
+                <pre>${JSON.stringify(rbt12, null, 2)}</pre>
+                <h4>Fator R:</h4>
+                <pre>${JSON.stringify(fatorR, null, 2)}</pre>
+            `;
+        }
+
+        function testNcm() {
+            const ncms = ['2203.00.00', '8708.10.00', '3305.10.00', '1234.56.78'];
+            let html = '';
+            
+            ncms.forEach(ncm => {
+                const result = FinPJTax.verificarNcmMonofasico(ncm);
+                html += `<div class="status ${result ? 'ok' : 'warning'}">
+                    <strong>${ncm}:</strong> ${result ? result.descricao : 'Não é monofásico'}
+                </div>`;
+            });
+            
+            document.getElementById('ncm-result').innerHTML = html;
+        }
+
+        function testSimulacao() {
+            try {
+                const simulacao = FinPJTax.simulateTaxes({
+                    annualRevenue: 480000,
+                    margin: 0.15,
+                    activity: 'comercio'
+                });
+
+                let html = '<div class="grid">';
+                simulacao.regimes.forEach(regime => {
+                    const isBest = simulacao.bestRegime?.key === regime.key;
+                    html += `
+                        <div class="card ${isBest ? 'best' : ''}">
+                            <h4>${isBest ? '✓ ' : ''}${regime.name}</h4>
+                            <p><strong>Imposto Anual:</strong> ${regime.annualTax?.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) || 'N/A'}</p>
+                            <p><strong>Alíquota Efetiva:</strong> ${(regime.effectiveRate * 100).toFixed(2)}%</p>
+                            <p><strong>Elegível:</strong> ${regime.eligible ? 'Sim' : 'Não'}</p>
+                            ${regime.savingsComparedToWorst ? `<p><strong>Economia:</strong> ${regime.savingsComparedToWorst.annual.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</p>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                document.getElementById('simulacao-result').innerHTML = html;
+            } catch (error) {
+                document.getElementById('simulacao-result').innerHTML = `<div class="status error">Erro: ${error.message}</div>`;
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            const allLoaded = checkModules();
+            if (allLoaded) {
+                // Initialize the SimuladorEnquadramento component
+                const simulador = new SimuladorEnquadramento('#simulador-container', {
+                    onRegimeSelect: (regime, dados) => {
+                        console.log('Regime selecionado:', regime, dados);
+                    }
+                });
+                
+                // Run automatic tests
+                setTimeout(() => {
+                    testRbt12FatorR();
+                    testNcm();
+                    testSimulacao();
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -13,10 +13,13 @@
   <script src="https://cdn.pluggy.ai/pluggy-connect/v2.7.0/pluggy-connect.js" defer></script>
   <script src="/tax/tables.js" defer></script>
   <script src="/tax/utils.js" defer></script>
+  <script src="/tax/rbt12FatorR.js" defer></script>
+  <script src="/tax/ncmMonofasico.js" defer></script>
   <script src="/tax/regimes/simplesNacional.js" defer></script>
   <script src="/tax/regimes/lucroPresumido.js" defer></script>
   <script src="/tax/regimes/lucroReal.js" defer></script>
   <script src="/tax/index.js" defer></script>
+  <script src="/js/simuladorEnquadramento.js" defer></script>
   <script src="/js/main.js" type="module"></script>
 </head>
 
@@ -190,9 +193,9 @@
         <div>
           <p class="eyebrow">Área logada</p>
           <nav class="breadcrumb" aria-label="Caminho">
-            <span>Area logada</span>
+            <span>Área logada</span>
             <span aria-hidden="true">/</span>
-            <strong data-current-section>Visao geral</strong>
+            <strong data-current-section>Visão geral</strong>
           </nav>
           <h2 data-user-title>Dashboard FinPJ</h2>
         </div>
@@ -218,7 +221,7 @@
           <small data-exec-note="taxes">Melhor regime calculado</small>
         </button>
         <button class="metric-card metric-button" type="button" data-go-tab="openfinance">
-          <span>Saldo bancario</span>
+          <span>Saldo bancário</span>
           <strong data-exec="bankBalance" class="skeleton skeleton-text">R$ 0</strong>
           <small data-exec-note="bankBalance">Open Finance</small>
         </button>
@@ -544,13 +547,13 @@
             <div class="dashboard-grid openfinance-detail-grid">
               <article class="table-card panel-card">
                 <div class="table-header">
-                  <h3>Sinais fiscais bancarios</h3>
+                  <h3>Sinais fiscais bancários</h3>
                 </div>
                 <div class="summary-list" data-openfinance-fiscal-signals></div>
               </article>
               <article class="table-card panel-card">
                 <div class="table-header">
-                  <h3>Ultimos lancamentos</h3>
+                  <h3>Últimos lançamentos</h3>
                 </div>
                 <div class="table-wrap">
                   <table>

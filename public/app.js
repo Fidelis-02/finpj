@@ -26,13 +26,13 @@ function toggleTheme() {
 initTheme();
 
 const DASHBOARD_TAB_LABELS = {
-  overview: 'Visao geral',
-  financial: 'Analise financeira',
-  statements: 'Balanco e demonstrativos',
-  tax: 'Inteligencia tributaria',
-  diagnostics: 'Diagnostico fiscal',
-  ai: 'Analise IA',
-  insights: 'Insights acionaveis',
+  overview: 'Visão geral',
+  financial: 'Análise financeira',
+  statements: 'Balanço e demonstrativos',
+  tax: 'Inteligência tributária',
+  diagnostics: 'Diagnóstico fiscal',
+  ai: 'Análise IA',
+  insights: 'Insights acionáveis',
   openfinance: 'Open Finance',
   profile: 'Perfil'
 };
@@ -44,7 +44,7 @@ if ('serviceWorker' in navigator) {
 
 function calculateTaxSimulation({ faturamento, margem, atividade }) {
   if (!window.FinPJTax?.simulateTaxes) {
-    throw new Error('Motor tributario indisponivel. Recarregue a pagina.');
+    throw new Error('Motor tributário indisponível. Recarregue a página.');
   }
   return window.FinPJTax.simulateTaxes({
     annualRevenue: faturamento,
@@ -160,7 +160,7 @@ function renderTaxRows(selector, regimes) {
       row.innerHTML = `
         <div>
           <strong>${escapeHtml(regime.name)}</strong>
-          <small>${escapeHtml(regime.reason || 'Regime nao aplicavel aos dados informados.')}</small>
+          <small>${escapeHtml(regime.reason || 'Regime não aplicável aos dados informados.')}</small>
         </div>
         <span>-</span>
       `;
@@ -1424,14 +1424,52 @@ async function uploadAiDocument(event) {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error(`Arquivo muito grande. Envie um arquivo de até ${(MAX_UPLOAD_BYTES / 1024 / 1024).toFixed(1).replace('.', ',')} MB.`);
   }
-  const body = new FormData();
-  body.append('tipo', form.elements.tipo.value);
-  body.append('contexto', form.elements.contexto.value || '');
-  body.append('arquivo', file);
+  const tipo = form.elements.tipo.value;
+  const contexto = form.elements.contexto.value || '';
   const button = $('button[type="submit"]', form);
-  setLoading(button, true, 'Analisando...');
+  setLoading(button, true, 'Enviando...');
   try {
-    const data = await apiRequest('/api/upload-documento', { method: 'POST', body });
+    let data;
+    const useR2 = file.size > 4 * 1024 * 1024;
+    if (useR2) {
+      try {
+        const urlRes = await apiRequest('/api/upload-url', {
+          method: 'POST',
+          body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size })
+        });
+        if (urlRes.sucesso && urlRes.uploadUrl) {
+          setLoading(button, true, 'Enviando para storage...');
+          const uploadRes = await fetch(urlRes.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type }
+          });
+          if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+          setLoading(button, true, 'Analisando...');
+          data = await apiRequest('/api/process-document', {
+            method: 'POST',
+            body: JSON.stringify({ key: urlRes.key, tipo, contexto, filename: file.name, size: file.size })
+          });
+        } else {
+          throw new Error('R2 not available');
+        }
+      } catch (r2Err) {
+        console.warn('[uploadAiDocument] Falha no upload R2, usando fallback:', r2Err.message);
+        setLoading(button, true, 'Analisando (modo compatibilidade)...');
+        const body = new FormData();
+        body.append('tipo', tipo);
+        body.append('contexto', contexto);
+        body.append('arquivo', file);
+        data = await apiRequest('/api/upload-documento', { method: 'POST', body });
+      }
+    } else {
+      setLoading(button, true, 'Analisando...');
+      const body = new FormData();
+      body.append('tipo', tipo);
+      body.append('contexto', contexto);
+      body.append('arquivo', file);
+      data = await apiRequest('/api/upload-documento', { method: 'POST', body });
+    }
     renderAnalysisResult('[data-ai-result]', data);
     await loadAnalyses();
     showToast('Análise concluída.', 'success');

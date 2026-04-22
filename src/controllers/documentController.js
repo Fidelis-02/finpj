@@ -241,7 +241,7 @@ async function uploadDocumento(req, res) {
     const textoLimpo = texto.trim();
     if (!textoLimpo) {
         return res.status(422).json({
-            erro: 'Nao foi possivel extrair texto do documento.',
+            erro: 'Não foi possível extrair texto do documento.',
             sugestao: 'Se for um PDF digitalizado (imagem), converta-o para PNG/JPG e envie, ou use um arquivo Excel/CSV.',
             acoes: ['converter_pdf_para_imagem', 'enviar_excel']
         });
@@ -257,7 +257,7 @@ async function uploadDocumento(req, res) {
     }
 
     if (!possuiTermosContabeisMinimos(textoLimpo, tipo)) {
-        console.warn(`[uploadDocumento] Documento ${req.file.originalname} nao contem termos contabeis minimos esperados para tipo=${tipo}`);
+        console.warn(`[uploadDocumento] Documento ${req.file.originalname} não contém termos contábeis mínimos esperados para tipo=${tipo}`);
     }
 
     texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
@@ -301,7 +301,7 @@ async function getAnalises(req, res) {
 
 async function postChat(req, res) {
     const { message, context } = req.body;
-    if (!message) return res.status(400).json({ erro: 'Mensagem obrigatoria.' });
+    if (!message) return res.status(400).json({ erro: 'Mensagem obrigatória.' });
     const GROQ_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_KEY) return res.json({ sucesso: true, resposta: 'A análise por IA está temporariamente indisponível.', fonte: 'local' });
     try {
@@ -323,8 +323,123 @@ async function postChat(req, res) {
     }
 }
 
+async function getUploadUrl(req, res) {
+    const { filename, contentType, size } = req.body;
+    if (!filename || !contentType) {
+        return res.status(400).json({ erro: 'Nome do arquivo e tipo de conteúdo são obrigatórios.' });
+    }
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (size && size > MAX_SIZE) {
+        return res.status(413).json({ erro: 'Arquivo muito grande. Limite de 50 MB.' });
+    }
+    const { isStorageConfigured, generateUploadUrl, sanitizeFilename, R2_BUCKET_NAME } = require('../services/storageService');
+    if (!isStorageConfigured()) {
+        return res.status(503).json({ erro: 'Serviço de storage não configurado.', fallback: true });
+    }
+    const safeName = sanitizeFilename(filename);
+    const key = `uploads/${Date.now()}-${req.userEmail.replace(/[^a-zA-Z0-9]/g, '_')}-${safeName}`;
+    try {
+        const uploadUrl = await generateUploadUrl(key, contentType, 300);
+        res.json({
+            sucesso: true,
+            uploadUrl,
+            key,
+            bucket: R2_BUCKET_NAME,
+            publicUrl: null,
+            expiresIn: 300
+        });
+    } catch (e) {
+        console.error('[getUploadUrl] Erro:', e.message);
+        res.status(500).json({ erro: 'Erro ao gerar URL de upload.', fallback: true });
+    }
+}
+
+async function processDocumentFromUrl(req, res) {
+    const { key, tipo = 'dre', contexto = '', filename, size } = req.body;
+    if (!key) {
+        return res.status(400).json({ erro: 'Chave do arquivo é obrigatória.' });
+    }
+    const { isStorageConfigured, generateDownloadUrl, deleteObject } = require('../services/storageService');
+    if (!isStorageConfigured()) {
+        return res.status(503).json({ erro: 'Serviço de storage não configurado.' });
+    }
+    let texto = '';
+    let downloadUrl;
+    try {
+        downloadUrl = await generateDownloadUrl(key, 300);
+    } catch (e) {
+        console.error('[processDocumentFromUrl] Erro ao gerar download URL:', e.message);
+        return res.status(500).json({ erro: 'Erro ao acessar arquivo.' });
+    }
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const fileRes = await fetch(downloadUrl);
+        if (!fileRes.ok) {
+            throw new Error(`HTTP ${fileRes.status}`);
+        }
+        const buffer = Buffer.from(await fileRes.arrayBuffer());
+        const nome = (filename || key).toLowerCase();
+        const mime = fileRes.headers.get('content-type') || 'application/octet-stream';
+        if (isImageFile(mime, nome)) {
+            console.log(`[processDocumentFromUrl] OCR em imagem: ${filename || key}`);
+            texto = await extrairTextoOCR(buffer);
+        } else if (mime === 'application/pdf' || nome.endsWith('.pdf')) {
+            texto = await extrairTextoPDF(buffer);
+        } else if (nome.match(/\.(xlsx|xls|ods)$/)) {
+            texto = extrairTextoExcel(buffer);
+        } else {
+            texto = buffer.toString('utf-8');
+        }
+        console.log(`[processDocumentFromUrl] tipo=${tipo} arquivo=${filename || key} tamanhoTextoExtraido=${texto.length}`);
+        const textoLimpo = texto.trim();
+        if (!textoLimpo) {
+            await deleteObject(key).catch(() => {});
+            return res.status(422).json({
+                erro: 'Não foi possível extrair texto do documento.',
+                sugestao: 'Se for um PDF digitalizado (imagem), converta-o para PNG/JPG e envie, ou use um arquivo Excel/CSV.',
+                acoes: ['converter_pdf_para_imagem', 'enviar_excel']
+            });
+        }
+        if (textoLimpo.length < 100 || textoLimpo.replace(/[\d\s.,\-/]/g, '').length < 30) {
+            await deleteObject(key).catch(() => {});
+            return res.status(422).json({
+                erro: 'Texto extraído muito curto ou sem conteúdo semântico.',
+                sugestao: 'Verifique se o PDF está selecionável ou converta-o para imagem/Excel.',
+                acoes: ['converter_pdf_para_imagem', 'enviar_excel']
+            });
+        }
+        if (!possuiTermosContabeisMinimos(textoLimpo, tipo)) {
+            console.warn(`[processDocumentFromUrl] Documento ${filename || key} não contém termos contábeis mínimos esperados para tipo=${tipo}`);
+        }
+        texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
+        console.log(`[processDocumentFromUrl] trechoEnviadoIA=${texto.length} caracteres`);
+        const analise = await analisarComGroq(tipo, texto, contexto);
+        const resultadoCompacto = compactarResultadoAnalise(analise.dados);
+        await salvarAnalise({
+            email: req.userEmail,
+            tipo,
+            nomeArquivo: filename || key,
+            tamanho: size || buffer.length,
+            data: new Date().toISOString(),
+            resultado: resultadoCompacto,
+            fonte: analise.fonte,
+            confianca: analise.confianca
+        });
+        await deleteObject(key).catch((e) => {
+            console.warn('[processDocumentFromUrl] Falha ao deletar arquivo temporário:', e.message);
+        });
+        res.json({ sucesso: true, ...analise, dados: resultadoCompacto, nomeArquivo: filename || key });
+    } catch (e) {
+        console.error('[processDocumentFromUrl] Erro:', e.message);
+        await deleteObject(key).catch(() => {});
+        res.status(500).json({ erro: 'Erro ao processar documento.', detalhes: e.message });
+    }
+}
+
 module.exports = {
     uploadDocumento,
     getAnalises,
-    postChat
+    postChat,
+    getUploadUrl,
+    processDocumentFromUrl
 };
