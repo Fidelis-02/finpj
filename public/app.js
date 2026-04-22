@@ -88,6 +88,26 @@ function clearSession() {
 
 function updateSessionUi() {
   const logged = Boolean(state.token);
+  const mainNav = $('[data-main-nav]');
+  const navLinks = $$('[data-nav-link]');
+  
+  // Mostrar navegação apenas quando logado
+  if (mainNav) {
+    mainNav.classList.toggle('is-hidden', !logged);
+  }
+  
+  // Controlar links individuais: Dashboard só aparece logado, Recursos/Planos escondidos quando logado
+  navLinks.forEach((link) => {
+    const isAuthOnly = link.hasAttribute('data-auth-only');
+    if (isAuthOnly) {
+      // Dashboard: mostrar apenas logado
+      link.classList.toggle('is-hidden', !logged);
+    } else {
+      // Recursos/Planos: esconder quando logado (foco no dashboard)
+      link.classList.toggle('is-hidden', logged);
+    }
+  });
+  
   $('[data-public-area]')?.classList.toggle('is-hidden', logged);
   $$('[data-open-login], [data-open-register]').forEach((el) => el.classList.toggle('is-hidden', logged));
   $('[data-logout]')?.classList.toggle('is-hidden', !logged);

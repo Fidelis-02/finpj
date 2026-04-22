@@ -91,12 +91,14 @@ body::before {
 a {
   color: inherit;
   text-decoration: none;
+  transition: all 0.2s ease-out;
 }
 
 button,
 input,
 select {
   font: inherit;
+  transition: all 0.2s ease-out;
 }
 
 button {
