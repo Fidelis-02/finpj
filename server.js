@@ -3,7 +3,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const path = require('path');
 const passport = require('passport');
 const session = require('express-session');
 
@@ -64,9 +63,6 @@ app.use((req, res, next) => {
     return bodyParser.urlencoded({ limit: '10mb', extended: true })(req, res, next);
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/tax', express.static(path.join(__dirname, 'src', 'tax')));
-
 const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'finpj-dev-session-secret';
 if (!process.env.SESSION_SECRET && !process.env.JWT_SECRET) {
     console.warn('SESSION_SECRET/JWT_SECRET nao definido. Usando segredo temporario apenas para desenvolvimento local.');
@@ -108,20 +104,6 @@ try {
     console.log('Auth0 module not found or failed to load.');
 }
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/logo.svg', (req, res) => {
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.sendFile(path.join(__dirname, 'public', 'logo.svg'));
-});
-
 app.use('/api', apiRoutes);
 
 app.use((err, req, res, next) => {
@@ -141,8 +123,10 @@ app.use((err, req, res, next) => {
     return res.status(err.status || 500).json({ erro: err.message || 'Erro interno do servidor.' });
 });
 
-app.listen(PORT, () => {
-    console.log(`FinPJ backend em http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`FinPJ backend em http://localhost:${PORT}`);
+    });
+}
 
 module.exports = app;

@@ -4,8 +4,9 @@
   "description": "CFO Digital para PMEs",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node local-server.js",
+    "dev": "node local-server.js",
+    "start:api": "node server.js"
   },
   "keywords": [
     "finpj",

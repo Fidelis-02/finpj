@@ -1,5 +1,5 @@
-import taxEngine from '../src/tax/index.js';
-import taxUtils from '../src/tax/utils.js';
+const taxEngine = require('../src/tax');
+const taxUtils = require('../src/tax/utils');
 
 function fmtReais(valor) {
     return 'R$ ' + Math.round(Number(valor) || 0).toLocaleString('pt-BR');
@@ -25,7 +25,7 @@ function gerarAnaliseInterna(resultados, dados) {
     };
 }
 
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
     if (req.method === 'POST') {
         const { faturamento, margem, setor, regime } = req.body;
 
@@ -79,4 +79,4 @@ export default function handler(req, res) {
     }
 
     return res.status(405).json({ erro: 'Método não permitido.' });
-}
+};

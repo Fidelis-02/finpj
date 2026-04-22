@@ -1,4 +1,4 @@
-import Stripe from 'stripe';
+const Stripe = require('stripe');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
@@ -12,7 +12,7 @@ function obterValorPlano(plano) {
     return valores[plano] || 490;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ erro: 'Método não permitido.' });
     }
@@ -51,4 +51,4 @@ export default async function handler(req, res) {
         console.error(erro);
         return res.status(500).json({ erro: 'Erro ao criar sessão de pagamento.' });
     }
-}
+};

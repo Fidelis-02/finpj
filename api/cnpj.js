@@ -104,7 +104,7 @@ async function consultarCnpjReceitaWs(cnpj) {
     return { ok: false, erro: msg };
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     const cnpj = String(req.query.cnpj || '').replace(/\D/g, '');
 
     if (cnpj.length !== 14) {
@@ -132,4 +132,4 @@ export default async function handler(req, res) {
         const detalhe = err && err.name === 'AbortError' ? 'Tempo esgotado ao consultar o CNPJ.' : 'Falha de rede ao consultar o CNPJ.';
         return res.status(502).json({ erro: detalhe });
     }
-}
+};

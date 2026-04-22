@@ -2,6 +2,14 @@
   "version": 2,
   "builds": [
     {
+      "src": "public/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "src/tax/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "server.js",
       "use": "@vercel/node"
     }
@@ -12,12 +20,16 @@
       "dest": "server.js"
     },
     {
-      "handle": "filesystem"
+      "src": "/tax/(.*)",
+      "dest": "src/tax/$1"
+    },
+    {
+      "src": "/(.*\\.(?:css|js|svg|json|webmanifest|png|jpg|jpeg|ico|map))",
+      "dest": "public/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "server.js",
-      "continue": true
+      "dest": "public/index.html"
     }
   ]
 }

@@ -1,6 +1,6 @@
-import { getUser, mountDashboard, verifyToken } from './lib/auth-storage.js';
+const { getUser, mountDashboard, verifyToken } = require('./lib/auth-storage');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ erro: 'Método não permitido' });
     }
@@ -17,4 +17,4 @@ export default async function handler(req, res) {
 
     const dashboard = mountDashboard(user);
     return res.status(200).json({ sucesso: true, dashboard });
-}
+};
