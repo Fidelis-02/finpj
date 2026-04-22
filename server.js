@@ -114,8 +114,14 @@ app.use((err, req, res, next) => {
         return res.status(413).json({ erro: 'Arquivo muito grande. Envie um arquivo de até 50 MB.' });
     }
 
-    if (err.type === 'entity.too.large' || err.status === 413) {
-        return res.status(413).json({ erro: 'Arquivo ou requisição muito grande. Reduza o tamanho e tente novamente.' });
+    if (err.type === 'entity.too.large' || err.status === 413 || err.message?.includes('FUNCTION_PAYLOAD_TOO_LARGE')) {
+        return res.status(413).json({ 
+            erro: 'Arquivo excede limite de 4.5 MB da Vercel.',
+            solucao: 'O sistema deve usar upload direto ao R2 automaticamente. Recarregue a página e tente novamente. Se persistir, contate o suporte.',
+            usarR2: true,
+            maxSizeVercel: '4.5mb',
+            maxSizeR2: '50mb'
+        });
     }
 
     if (err.type === 'entity.parse.failed') {
