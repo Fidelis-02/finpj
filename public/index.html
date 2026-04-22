@@ -133,12 +133,11 @@
             <input type="hidden" name="atividade" data-atividade-input value="comercio">
 
             <label>Faturamento anual (R$)
-              <input name="faturamento" inputmode="decimal" value="480.000,00" placeholder="480.000,00"
-                data-currency-input>
+              <input name="faturamento" inputmode="decimal" placeholder="480.000,00" data-currency-input>
             </label>
 
             <label>Margem estimada (%)
-              <input name="margem" inputmode="decimal" value="12" placeholder="12" data-percent-input>
+              <input name="margem" inputmode="decimal" placeholder="12" data-percent-input>
             </label>
 
             <label>Regime atual (opcional)
@@ -150,12 +149,18 @@
               </select>
             </label>
 
-            <button class="btn btn-dark full" type="submit">Simular regime</button>
+            <button class="btn btn-dark full" type="submit" data-public-simulate-button disabled>Simular regime</button>
           </form>
           <article class="simulator-card simulator-result">
             <span>Melhor opção estimada</span>
-            <strong data-public-best-regime>Simples Nacional</strong>
+            <strong data-public-best-regime>Aguardando CNPJ</strong>
             <p data-public-diagnostic-copy>Preencha os dados para visualizar uma comparação tributária prévia.</p>
+            <small class="simulator-result-status" data-public-simulator-status>Digite o CNPJ para liberar a análise.</small>
+            <div class="simulator-readiness" data-public-simulator-checks>
+              <span data-check="cnpj">CNPJ pendente</span>
+              <span data-check="premissas">Premissas pendentes</span>
+              <span data-check="atividade">Atividade a detectar</span>
+            </div>
             <div class="regime-comparison" data-regime-comparison></div>
           </article>
         </div>
@@ -204,6 +209,24 @@
           <button class="btn btn-light" type="button" data-go-tab="profile">Editar perfil</button>
           <button class="btn btn-dark" type="button" data-refresh-dashboard>Atualizar</button>
         </div>
+      </div>
+      <div class="dashboard-command-strip">
+        <div class="workspace-badge">
+          <span>Empresa ativa</span>
+          <strong data-dashboard-company>Carregando empresa</strong>
+          <small data-dashboard-context>Sincronizando contexto fiscal e financeiro.</small>
+        </div>
+        <div class="quick-actions" aria-label="Ações rápidas">
+          <button class="btn btn-light btn-sm" type="button" data-go-tab="tax">Comparar regimes</button>
+          <button class="btn btn-light btn-sm" type="button" data-go-tab="openfinance">Conectar banco</button>
+          <button class="btn btn-light btn-sm" type="button" data-go-tab="ai">Enviar documento</button>
+          <button class="btn btn-dark btn-sm" type="button" data-go-tab="diagnostics">Gerar diagnóstico</button>
+        </div>
+      </div>
+      <div class="dashboard-pulse" data-dashboard-pulse>
+        <span class="pulse-item skeleton skeleton-text"></span>
+        <span class="pulse-item skeleton skeleton-text"></span>
+        <span class="pulse-item skeleton skeleton-text"></span>
       </div>
       <div class="metric-grid executive-strip" data-executive-strip>
         <button class="metric-card metric-button" type="button" data-go-tab="profile">

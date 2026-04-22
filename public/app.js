@@ -53,8 +53,29 @@ function calculateTaxSimulation({ faturamento, margem, atividade }) {
   });
 }
 
+function pickFiniteNumber(...values) {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return 0;
+}
+
+function normalizeRegimeResult(regime = {}) {
+  const annualTax = pickFiniteNumber(regime.annualTax, regime.tax, regime.monthlyTax * 12, regime.monthly * 12);
+  const monthlyTax = pickFiniteNumber(regime.monthlyTax, regime.monthly, annualTax / 12);
+  return {
+    ...regime,
+    annualTax,
+    tax: annualTax,
+    monthlyTax,
+    monthly: monthlyTax,
+    effectiveRate: pickFiniteNumber(regime.effectiveRate)
+  };
+}
+
 function calculatePublicRegime(params) {
-  return calculateTaxSimulation(params).regimes;
+  return calculateTaxSimulation(params).regimes.map(normalizeRegimeResult);
 }
 
 /* apiRequest imported from ./js/api.js */
@@ -172,9 +193,15 @@ function renderTaxRows(selector, regimes) {
   const target = $(selector);
   if (!target) return;
   target.innerHTML = '';
-  regimes.forEach((regime, index) => {
+  const normalized = regimes.map(normalizeRegimeResult);
+  const eligible = normalized.filter((regime) => regime.eligible !== false);
+  const bestKey = eligible[0]?.key;
+  normalized.forEach((regime) => {
+    const annualTax = regime.annualTax ?? regime.tax ?? 0;
+    const monthlyTax = regime.monthlyTax ?? regime.monthly ?? annualTax / 12;
+    const isBest = regime.eligible !== false && regime.key === bestKey;
     const row = document.createElement('div');
-    row.className = `regime-row ${index === 0 ? 'is-best' : ''}`;
+    row.className = `regime-row ${isBest ? 'is-best' : ''}`;
     if (regime.eligible === false) {
       row.classList.remove('is-best');
       row.innerHTML = `
@@ -190,15 +217,13 @@ function renderTaxRows(selector, regimes) {
     row.innerHTML = `
       <div>
         <strong>${escapeHtml(regime.name)}</strong>
-        <small>${index === 0 ? 'Melhor estimativa' : `Alíquota efetiva ${formatPercent(regime.effectiveRate)}`}</small>
+        <small>${isBest ? 'Melhor estimativa' : `Alíquota efetiva ${formatPercent(regime.effectiveRate)}`}</small>
       </div>
-      <span>${formatCurrency(regime.monthly)}/mês</span>
+      <span>${formatCurrency(monthlyTax)}/mês</span>
     `;
     if (regime.eligible !== false) {
       const detail = document.createElement('small');
       detail.className = 'regime-row-detail';
-      const annualTax = regime.annualTax ?? regime.tax;
-      const monthlyTax = regime.monthlyTax ?? regime.monthly;
       const savings = regime.savingsComparedToWorst?.annual || 0;
       detail.textContent = `Anual ${formatCurrency(annualTax)} | mensal ${formatCurrency(monthlyTax)} | aliquota efetiva ${formatPercent(regime.effectiveRate)}${savings ? ` | economia vs pior ${formatCurrency(savings)}` : ''}`;
       $('div', row)?.appendChild(detail);
@@ -207,11 +232,53 @@ function renderTaxRows(selector, regimes) {
   });
 }
 
+function setPublicSimulatorCheck(name, done, text) {
+  const item = $(`[data-public-simulator-checks] [data-check="${name}"]`);
+  if (!item) return;
+  item.classList.toggle('is-done', done);
+  item.textContent = text;
+}
+
+function resetPublicDiagnostic(message = 'Digite o CNPJ para liberar a análise do melhor regime.', title = 'Aguardando CNPJ') {
+  const titleEl = $('[data-public-best-regime]');
+  const copyEl = $('[data-public-diagnostic-copy]');
+  const statusEl = $('[data-public-simulator-status]');
+  const resultCard = $('.simulator-result');
+  if (titleEl) titleEl.textContent = title;
+  if (copyEl) copyEl.textContent = message;
+  if (statusEl) statusEl.textContent = message;
+  resultCard?.classList.remove('has-result');
+  renderTaxRows('[data-regime-comparison]', []);
+}
+
+function updatePublicSimulatorReadyState() {
+  const form = $('[data-public-diagnostic-form]');
+  if (!form) return false;
+  const cnpjOk = onlyDigits(form.elements.cnpj?.value).length === 14;
+  const faturamento = parseMoneyLike(form.elements.faturamento?.value);
+  const margem = parsePercentLike(form.elements.margem?.value);
+  const premissasOk = faturamento > 0 && Number.isFinite(margem) && margem >= 0;
+  const atividadeLabel = $('[data-company-atividade]')?.textContent?.trim();
+  const button = $('[data-public-simulate-button]');
+  if (button) button.disabled = !(cnpjOk && premissasOk);
+
+  setPublicSimulatorCheck('cnpj', cnpjOk, cnpjOk ? 'CNPJ informado' : 'CNPJ pendente');
+  setPublicSimulatorCheck('premissas', premissasOk, premissasOk ? 'Premissas prontas' : 'Premissas pendentes');
+  setPublicSimulatorCheck('atividade', Boolean(atividadeLabel), atividadeLabel || 'Atividade a detectar');
+  return cnpjOk && premissasOk;
+}
+
 function renderPublicDiagnostic(regimes, annualRevenue) {
-  const best = regimes[0];
-  const worst = regimes[regimes.length - 1];
+  const normalized = regimes.map(normalizeRegimeResult);
+  const eligible = normalized.filter((regime) => regime.eligible !== false);
+  const best = eligible[0] || normalized[0];
+  const worst = eligible[eligible.length - 1] || best;
   const form = $('[data-public-diagnostic-form]');
   const regimeAtual = form?.elements?.regime_atual?.value;
+  if (!best) {
+    resetPublicDiagnostic('Informe CNPJ, faturamento e margem para comparar os regimes.', 'Sem dados suficientes');
+    return;
+  }
 
   // Calculate economy vs worst
   const economyVsWorst = Math.max(0, worst.tax - best.tax);
@@ -243,9 +310,13 @@ function renderPublicDiagnostic(regimes, annualRevenue) {
     message = parts.join('. ') + '.';
   }
 
-  $('[data-public-best-regime]').textContent = best?.name || 'Simples Nacional';
+  $('[data-public-best-regime]').textContent = best?.name || 'Aguardando CNPJ';
   $('[data-public-diagnostic-copy]').textContent = message;
-  renderTaxRows('[data-regime-comparison]', regimes);
+  const statusEl = $('[data-public-simulator-status]');
+  if (statusEl) statusEl.textContent = 'Comparação atualizada com os dados informados.';
+  $('.simulator-result')?.classList.add('has-result');
+  renderTaxRows('[data-regime-comparison]', normalized);
+  updatePublicSimulatorReadyState();
 }
 
 function inferActivityFromCnae(cnaeCode, cnaeDesc = '') {
@@ -342,11 +413,16 @@ async function lookupCnpjForSimulator(cnpj) {
   if (cleanCnpj.length !== 14) return;
 
   try {
+    const statusEl = $('[data-public-simulator-status]');
+    if (statusEl) statusEl.textContent = 'Consultando dados públicos do CNPJ...';
     const data = await apiRequest(`/api/cnpj?cnpj=${cleanCnpj}`);
     if (!data || data.erro) {
       showToast(data?.erro || 'CNPJ não encontrado', 'error');
+      resetPublicDiagnostic('Não foi possível validar este CNPJ nas bases públicas.', 'CNPJ não localizado');
       return;
     }
+    const form = $('[data-public-diagnostic-form]');
+    if (form) form.dataset.cnpjLoaded = cleanCnpj;
 
     // Update company info display
     const companyInfo = $('[data-company-info]');
@@ -366,10 +442,12 @@ async function lookupCnpjForSimulator(cnpj) {
     if (atividadeInput) atividadeInput.value = activity;
 
     if (companyInfo) companyInfo.style.display = 'grid';
+    updatePublicSimulatorReadyState();
 
     // Auto-calculate based on new data
     runPublicDiagnostic();
   } catch (error) {
+    resetPublicDiagnostic('Falha ao consultar o CNPJ. Verifique o número e tente novamente.', 'CNPJ não validado');
     showToast(error.message || 'Erro ao consultar CNPJ', 'error');
   }
 }
@@ -378,15 +456,31 @@ function runPublicDiagnostic(event) {
   event?.preventDefault();
   const form = $('[data-public-diagnostic-form]');
   if (!form) return;
+  const cnpj = onlyDigits(form.elements.cnpj.value);
   const faturamento = parseMoneyLike(form.elements.faturamento.value);
   const margem = parsePercentLike(form.elements.margem.value);
   const atividade = form.elements.atividade.value;
+  updatePublicSimulatorReadyState();
+
+  if (cnpj.length !== 14) {
+    resetPublicDiagnostic('Digite o CNPJ antes de calcular o melhor regime.', 'Aguardando CNPJ');
+    return;
+  }
+
+  if (!faturamento || !Number.isFinite(margem) || margem < 0) {
+    resetPublicDiagnostic('CNPJ informado. Agora preencha faturamento anual e margem estimada.', 'CNPJ informado');
+    return;
+  }
+
   try {
     const regimes = calculatePublicRegime({ faturamento, margem, atividade });
     renderPublicDiagnostic(regimes, faturamento);
   } catch (error) {
-    $('[data-public-best-regime]').textContent = 'Dados invalidos';
+    $('[data-public-best-regime]').textContent = 'Dados inválidos';
     $('[data-public-diagnostic-copy]').textContent = error.message;
+    const statusEl = $('[data-public-simulator-status]');
+    if (statusEl) statusEl.textContent = 'Revise as premissas para recalcular.';
+    $('.simulator-result')?.classList.remove('has-result');
     renderTaxRows('[data-regime-comparison]', []);
   }
 }
@@ -438,12 +532,12 @@ function buildMetrics(dashboard = state.dashboard || {}) {
   const expenses = finiteNumber(backendMetrics.expenses) || Math.max(0, annualRevenue - profit);
   const activity = inferActivity(user.setor);
   let regimes = [];
-  let bestRegime = backendFiscal.bestRegime || { name: 'Nao calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 };
+  let bestRegime = normalizeRegimeResult(backendFiscal.bestRegime || { name: 'Nao calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 });
   try {
     regimes = annualRevenue && margin > 0
       ? calculatePublicRegime({ faturamento: annualRevenue, margem: margin, atividade: activity })
       : [];
-    bestRegime = backendFiscal.bestRegime || regimes[0] || bestRegime;
+    bestRegime = backendFiscal.bestRegime ? normalizeRegimeResult(backendFiscal.bestRegime) : (regimes[0] || bestRegime);
   } catch {
     regimes = [];
   }
@@ -650,6 +744,53 @@ function renderDecisionCenter(metrics) {
   renderActionCards('[data-action-board]', actions);
 }
 
+function renderDashboardContext(metrics) {
+  const user = metrics.user || {};
+  const companyName = user.fantasia || user.nome || user.nomeEmpresa || user.email || 'Empresa sem nome';
+  const cnpj = user.cnpj ? formatCnpj(user.cnpj) : 'CNPJ nao informado';
+  const regime = formatRegime(user.regime || '');
+  const companyEl = $('[data-dashboard-company]');
+  const contextEl = $('[data-dashboard-context]');
+  if (companyEl) companyEl.textContent = companyName;
+  if (contextEl) {
+    contextEl.textContent = `${cnpj} | ${regime} | Plano ${user.plano || 'starter'}`;
+  }
+
+  const readinessItems = getReadinessItems(metrics);
+  const done = readinessItems.filter((item) => item.done).length;
+  const readiness = Math.round((done / readinessItems.length) * 100);
+  const pulse = $('[data-dashboard-pulse]');
+  if (!pulse) return;
+  pulse.innerHTML = '';
+  [
+    {
+      label: 'Perfil',
+      value: `${readiness}% pronto`,
+      tone: readiness >= 80 ? 'success' : 'warning'
+    },
+    {
+      label: 'Regime estimado',
+      value: metrics.bestRegime?.name || 'Aguardando dados',
+      tone: metrics.bestRegime?.name ? 'success' : 'warning'
+    },
+    {
+      label: 'Bancos',
+      value: state.banks.length ? `${state.banks.length} conectado(s)` : 'Sem conexao',
+      tone: state.banks.length ? 'success' : 'warning'
+    },
+    {
+      label: 'Diagnosticos',
+      value: state.diagnostics.length ? `${state.diagnostics.length} salvo(s)` : 'Nenhum salvo',
+      tone: state.diagnostics.length ? 'success' : ''
+    }
+  ].forEach((item) => {
+    const el = document.createElement('span');
+    el.className = `pulse-item ${item.tone ? `is-${item.tone}` : ''}`;
+    el.innerHTML = `<strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.value)}</small>`;
+    pulse.appendChild(el);
+  });
+}
+
 function renderSummaryRows(selector, rows) {
   const target = $(selector);
   if (!target) return;
@@ -842,6 +983,10 @@ function showDashboardSkeletons() {
     el.textContent = '';
     el.classList.add('skeleton', 'skeleton-text');
   });
+  const pulse = $('[data-dashboard-pulse]');
+  if (pulse) {
+    pulse.innerHTML = '<span class="pulse-item skeleton skeleton-text"></span><span class="pulse-item skeleton skeleton-text"></span><span class="pulse-item skeleton skeleton-text"></span>';
+  }
   const decisionTitle = $('[data-decision-title]');
   if (decisionTitle) decisionTitle.classList.add('skeleton', 'skeleton-title');
   const decisionSummary = $('[data-decision-summary]');
@@ -863,6 +1008,7 @@ function renderBusinessDashboards(dashboard = state.dashboard) {
   const metrics = buildMetrics(dashboard);
   const user = metrics.user;
 
+  renderDashboardContext(metrics);
   setDashboardMetric(
     'revenue',
     formatCurrency(metrics.annualRevenue),
@@ -1637,6 +1783,17 @@ function bindEvents() {
     const cnpj = onlyDigits(event.target.value);
     event.target.value = formatCnpj(cnpj);
     event.target.setAttribute('maxlength', '18');
+    const form = $('[data-public-diagnostic-form]');
+    if (form && form.dataset.cnpjLoaded !== cnpj) form.dataset.cnpjLoaded = '';
+    if (cnpj.length < 14) {
+      const companyInfo = $('[data-company-info]');
+      if (companyInfo) companyInfo.style.display = 'none';
+      $('[data-company-nome]') && ($('[data-company-nome]').textContent = '');
+      $('[data-company-cnae]') && ($('[data-company-cnae]').textContent = '');
+      $('[data-company-atividade]') && ($('[data-company-atividade]').textContent = '');
+      resetPublicDiagnostic('Digite o CNPJ antes de calcular o melhor regime.', 'Aguardando CNPJ');
+    }
+    updatePublicSimulatorReadyState();
     simulatorCnpjHandler(cnpj);
   });
 
@@ -1647,6 +1804,7 @@ function bindEvents() {
     if (formatted !== value) {
       event.target.value = formatted;
     }
+    updatePublicSimulatorReadyState();
     runPublicDiagnostic();
   });
 
@@ -1657,6 +1815,7 @@ function bindEvents() {
     if (formatted !== value) {
       event.target.value = formatted;
     }
+    updatePublicSimulatorReadyState();
     runPublicDiagnostic();
   });
 
@@ -1729,7 +1888,8 @@ function bindEvents() {
 
 function initApp() {
   bindEvents();
-  runPublicDiagnostic();
+  resetPublicDiagnostic();
+  updatePublicSimulatorReadyState();
   const handledRedirect = handleAuth0Redirect();
   updateSessionUi();
   if (state.token && !handledRedirect) {
