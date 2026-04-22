@@ -372,7 +372,7 @@ async function processDocumentFromUrl(req, res) {
         return res.status(500).json({ erro: 'Erro ao acessar arquivo.' });
     }
     try {
-        const fetch = (await import('node-fetch')).default;
+        // Usar fetch nativo do Node.js 18+ (não precisa de node-fetch)
         const fileRes = await fetch(downloadUrl);
         if (!fileRes.ok) {
             throw new Error(`HTTP ${fileRes.status}`);

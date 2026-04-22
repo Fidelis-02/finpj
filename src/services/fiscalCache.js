@@ -1,4 +1,4 @@
-const taxEngine = require('../tax');
+const taxEngine = require('../tax/index');
 const taxUtils = require('../tax/utils');
 
 const DEFAULT_TTL_MS = Number(process.env.FISCAL_CACHE_TTL_MS || 2 * 60 * 1000);

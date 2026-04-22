@@ -1,9 +1,13 @@
-const { salvarDiagnostico, obterUsuario } = require('../services/database');
+const { salvarDiagnostico, obterUsuario, salvarUsuario } = require('../services/database');
 const { gerarAnaliseFinanceira } = require('../services/aiService');
 const { fetchNotasFiscais, calcularDasAutomatico } = require('../services/nfeService');
 const taxUtils = require('../tax/utils');
 const { getFiscalSimulation } = require('../services/fiscalCache');
-const { verificarNcmMonofasico, calcularImpactoMonofasico } = require('../tax');
+
+// Importações UMD do motor fiscal - carregar explicitamente
+const taxEngine = require('../tax/index');
+const verificarNcmMonofasico = taxEngine.verificarNcmMonofasico;
+const calcularImpactoMonofasico = taxEngine.calcularImpactoMonofasico;
 
 function inferActivity(setor = '') {
     return taxUtils.normalizeActivity(setor || 'comercio');

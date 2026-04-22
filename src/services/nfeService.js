@@ -1,4 +1,6 @@
-const simplesNacional = require('../tax/regimes/simplesNacional');
+// Importação do módulo UMD - carregar via index.js para garantir compatibilidade
+const taxEngine = require('../tax/index');
+const simplesNacional = taxEngine.regimes.simplesNacional;
 
 function gerarNotasMocks(cnpj) {
     const hoje = new Date();
