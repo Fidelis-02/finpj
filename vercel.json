@@ -12,10 +12,6 @@
       "use": "@vercel/static"
     },
     {
-      "src": "src/tax/**",
-      "use": "@vercel/static"
-    },
-    {
       "src": "server.js",
       "use": "@vercel/node"
     }
@@ -24,10 +20,6 @@
     {
       "src": "/api/(.*)",
       "dest": "server.js"
-    },
-    {
-      "src": "/tax/(.*)",
-      "dest": "src/tax/$1"
     },
     {
       "src": "/(.*\\.(?:css|js|svg|json|webmanifest|png|jpg|jpeg|ico|map))",
