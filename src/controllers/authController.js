@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { obterUsuario, obterUsuarioPorCnpj, salvarUsuario, formatarEmail } = require('../services/database');
 const { enviarEmailVerificacao } = require('../services/emailService');
+const { getFiscalSimulation } = require('../services/fiscalCache');
+const taxUtils = require('../tax/utils');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -44,6 +46,96 @@ function gerarRelatorioBancario(email) {
     });
 }
 
+function getBankTransactions(usuario) {
+    return (usuario.connectedBanks || []).flatMap((bank) => (bank.transactions || []).map((transaction) => ({
+        ...transaction,
+        bankId: bank.bankId,
+        bankName: bank.bankName || 'Banco'
+    })));
+}
+
+function sumTransactions(transactions, predicate) {
+    return transactions
+        .filter(predicate)
+        .reduce((sum, item) => sum + Math.abs(Number(item.valor ?? item.amount) || 0), 0);
+}
+
+function isReportDone(report) {
+    const status = String(report?.status || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    return status.includes('conclu');
+}
+
+function buildDashboardMetrics(usuario, reports, totalMovimentado) {
+    const transactions = getBankTransactions(usuario);
+    const monthlyIncome = sumTransactions(transactions, (item) => Number(item.valor ?? item.amount) > 0 || item.tipo === 'entrada');
+    const monthlyExpenses = sumTransactions(transactions, (item) => Number(item.valor ?? item.amount) < 0 || item.tipo === 'saida');
+    const taxPaid = sumTransactions(transactions, (item) => {
+        const text = String(item.categoria || item.category || item.descricao || item.description || '').toLowerCase();
+        return /imposto|das|darf|tribut|fgts|inss|icms|iss|pis|cofins/.test(text);
+    });
+    const bankBalance = monthlyIncome - monthlyExpenses;
+    const rawRevenue = Number(usuario.faturamento || usuario.faturamentoAnual || 0);
+    const annualRevenue = rawRevenue || (monthlyIncome ? Math.round(monthlyIncome * 12) : Math.round(totalMovimentado || 0));
+    const rawMargin = Number(usuario.margem || usuario.margemEstimada || 0);
+    const margin = rawMargin > 1 ? rawMargin / 100 : rawMargin || 0;
+    const profit = Math.round(annualRevenue * margin);
+    const expenses = Math.max(0, annualRevenue - profit);
+
+    let fiscal = {
+        annualTax: 0,
+        monthlyTax: 0,
+        taxSavings: 0,
+        bestRegime: null,
+        currentRegime: taxUtils.normalizeRegime(usuario.regime || ''),
+        cached: false
+    };
+
+    if (annualRevenue > 0 && margin >= 0) {
+        try {
+            const { simulation, cached } = getFiscalSimulation({
+                annualRevenue,
+                margin,
+                activity: taxUtils.normalizeActivity(usuario.setor || 'comercio')
+            });
+            const best = simulation.bestRegime || simulation.regimes?.[0] || null;
+            const currentKey = taxUtils.normalizeRegime(usuario.regime || '');
+            const current = currentKey ? simulation.regimes.find((item) => item.key === currentKey) : null;
+            const taxSavings = current && current.eligible !== false
+                ? Math.max(0, Number(current.annualTax || 0) - Number(best?.annualTax || 0))
+                : Math.max(0, Number(simulation.savingsComparedToWorst?.annual || 0));
+
+            fiscal = {
+                annualTax: Math.round(Number(best?.annualTax || best?.tax || 0)),
+                monthlyTax: Math.round(Number(best?.monthlyTax || best?.monthly || 0)),
+                taxSavings: Math.round(taxSavings),
+                bestRegime: best,
+                currentRegime: currentKey,
+                cached
+            };
+        } catch (error) {
+            fiscal.error = error.message;
+        }
+    }
+
+    return {
+        annualRevenue,
+        margin,
+        profit,
+        expenses,
+        monthlyIncome,
+        monthlyExpenses,
+        bankBalance,
+        taxPaid,
+        connectedBanks: (usuario.connectedBanks || []).length,
+        reportsCount: reports.length,
+        pendingItems: reports.filter((report) => !isReportDone(report)).length,
+        fiscal
+    };
+}
+
 function montarDashboard(usuario) {
     const safeUser = {
         email: usuario.email,
@@ -66,13 +158,15 @@ function montarDashboard(usuario) {
     salvarUsuario(usuario);
 
     const totalMovimentado = reports.reduce((sum, item) => sum + item.amount, 0);
+    const metrics = buildDashboardMetrics(usuario, reports, totalMovimentado);
     return {
         user: safeUser,
         summary: {
             reportsCount: reports.length,
             totalMovimentado,
-            pendencias: reports.filter((report) => report.status !== 'Concluído').length
+            pendencias: metrics.pendingItems
         },
+        metrics,
         reports
     };
 }
@@ -146,7 +240,7 @@ async function verifyCode(req, res) {
     await salvarUsuario(usuario);
 
     if (!JWT_SECRET) return res.status(500).json({ erro: 'Configuração do servidor incompleta: JWT_SECRET não configurado.' });
-    const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ email: usuario.email, provider: 'email' }, JWT_SECRET, { expiresIn: '7d' });
     const dashboard = montarDashboard(usuario);
 
     return res.json({ sucesso: true, token, dashboard });
@@ -173,7 +267,7 @@ async function loginCnpj(req, res) {
     await salvarUsuario(usuario);
 
     if (!JWT_SECRET) return res.status(500).json({ erro: 'Configuração do servidor incompleta: JWT_SECRET não configurado.' });
-    const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ email: usuario.email, provider: 'cnpj' }, JWT_SECRET, { expiresIn: '7d' });
     const dashboard = montarDashboard(usuario);
     return res.json({ sucesso: true, token, email: usuario.email, dashboard });
 }
@@ -234,11 +328,28 @@ async function getDashboard(req, res) {
     return res.json({ sucesso: true, dashboard: montarDashboard(usuario) });
 }
 
+async function getSession(req, res) {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) {
+        return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    }
+
+    return res.json({
+        sucesso: true,
+        session: {
+            email: usuario.email,
+            provider: req.auth?.provider || 'local',
+            expiresAt: req.auth?.exp ? new Date(req.auth.exp * 1000).toISOString() : null
+        }
+    });
+}
+
 module.exports = {
     sendCode,
     verifyCode,
     loginCnpj,
     registerCnpj,
     getDashboard,
+    getSession,
     montarDashboard
 };

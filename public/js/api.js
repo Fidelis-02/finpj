@@ -28,6 +28,9 @@ export async function apiRequest(path, options = {}) {
   if (!response.ok) {
     const raw = typeof body === 'object' ? (body.erro || body.error || body.mensagem || body.message) : body;
     const friendly = HTTP_MESSAGES[response.status] || `Erro ${response.status}`;
+    if (response.status === 401 && state.token) {
+      window.dispatchEvent(new CustomEvent('finpj:session-expired', { detail: { message: raw || friendly } }));
+    }
     throw new Error(raw || friendly);
   }
   return body;

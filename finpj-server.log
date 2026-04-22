@@ -1,0 +1,8 @@
+◇ injected env (17) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+✅ Auth0 OAuth configured
+   Login:    https://finpj.vercel.app/api/auth/auth0/login
+   Callback: https://finpj.vercel.app/api/auth/auth0/callback
+   Logout:   https://finpj.vercel.app/api/auth/auth0/logout
+FinPJ em http://localhost:3001
+MongoDB Atlas conectado.

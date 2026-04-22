@@ -53,6 +53,64 @@ async function carregarTransacoesPluggy(itemId, bankName) {
     }));
 }
 
+function flattenBankTransactions(banks = []) {
+    return banks.flatMap((bank) => (bank.transactions || []).map((transaction) => ({
+        ...transaction,
+        bankId: bank.bankId,
+        bankName: bank.bankName || 'Banco',
+        data: transaction.data || String(transaction.date || '').slice(0, 10),
+        descricao: transaction.descricao || transaction.description || '-',
+        categoria: transaction.categoria || transaction.category || 'Outros',
+        valor: Number(transaction.valor ?? transaction.amount) || 0,
+        tipo: transaction.tipo || (Number(transaction.valor ?? transaction.amount) >= 0 ? 'entrada' : 'saida')
+    })));
+}
+
+function summarizeOpenFinance(banks = []) {
+    const transactions = flattenBankTransactions(banks);
+    const entradas = transactions
+        .filter((item) => item.valor > 0 || item.tipo === 'entrada')
+        .reduce((sum, item) => sum + Math.abs(item.valor), 0);
+    const saidas = transactions
+        .filter((item) => item.valor < 0 || item.tipo === 'saida')
+        .reduce((sum, item) => sum + Math.abs(item.valor), 0);
+    const impostos = transactions
+        .filter((item) => /imposto|das|darf|tribut|fgts|inss|icms|iss|pis|cofins/i.test(`${item.categoria} ${item.descricao}`))
+        .reduce((sum, item) => sum + Math.abs(item.valor), 0);
+    const categories = transactions.reduce((acc, item) => {
+        const key = item.categoria || 'Outros';
+        const current = acc[key] || { categoria: key, entradas: 0, saidas: 0, transacoes: 0 };
+        if (item.valor >= 0 || item.tipo === 'entrada') current.entradas += Math.abs(item.valor);
+        else current.saidas += Math.abs(item.valor);
+        current.transacoes += 1;
+        acc[key] = current;
+        return acc;
+    }, {});
+    const lastSync = banks
+        .map((bank) => bank.lastSync)
+        .filter(Boolean)
+        .sort((a, b) => new Date(b) - new Date(a))[0] || null;
+
+    return {
+        banksCount: banks.length,
+        transactionsCount: transactions.length,
+        monthlyIncome: Math.round(entradas),
+        monthlyExpenses: Math.round(saidas),
+        bankBalance: Math.round(entradas - saidas),
+        taxPaid: Math.round(impostos),
+        lastSync,
+        categories: Object.values(categories)
+            .sort((a, b) => b.saidas + b.entradas - (a.saidas + a.entradas))
+            .slice(0, 8),
+        fiscalSignals: {
+            importedRevenue: Math.round(entradas),
+            annualizedRevenue: Math.round(entradas * 12),
+            taxOutflow: Math.round(impostos),
+            taxOutflowRate: entradas ? impostos / entradas : 0
+        }
+    };
+}
+
 async function getPluggyToken(req, res) {
     const result = await pluggyService.createConnectToken(req.userEmail);
     if (result.ok) {
@@ -72,6 +130,25 @@ async function getBanks(req, res) {
     const usuario = await obterUsuario(req.userEmail);
     if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
     return res.json({ sucesso: true, banks: usuario.connectedBanks || [] });
+}
+
+async function getOpenFinanceSummary(req, res) {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    return res.json({
+        sucesso: true,
+        summary: summarizeOpenFinance(usuario.connectedBanks || [])
+    });
+}
+
+async function getOpenFinanceTransactions(req, res) {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    const limit = Math.min(Number(req.query.limit || 50), 200);
+    const transactions = flattenBankTransactions(usuario.connectedBanks || [])
+        .sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0))
+        .slice(0, limit);
+    return res.json({ sucesso: true, transactions });
 }
 
 async function connectBank(req, res) {
@@ -227,6 +304,8 @@ async function cashflowProjection(req, res) {
 module.exports = {
     getPluggyToken,
     getBanks,
+    getOpenFinanceSummary,
+    getOpenFinanceTransactions,
     connectBank,
     syncBank,
     removeBank,

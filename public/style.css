@@ -745,11 +745,38 @@ p {
   font-size: 2rem;
 }
 
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.breadcrumb strong {
+  color: var(--accent-strong);
+}
+
 .dashboard-tools,
 .inline-actions,
 .bank-actions {
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.executive-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.executive-strip .metric-card {
+  min-height: 156px;
+}
+
+.executive-strip .metric-card strong {
+  font-size: 2rem;
 }
 
 .tabs {
@@ -1339,6 +1366,10 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
+  .executive-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .setup-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1398,6 +1429,10 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
+  .executive-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dashboard-header,
   .dashboard-tools,
   .split-card,
@@ -1410,6 +1445,16 @@ select:focus {
 
   .side-nav {
     position: static;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px;
+  }
+
+  .side-link {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
   }
 
   .setup-steps {
@@ -1480,6 +1525,10 @@ select:focus {
   .hero-metric strong,
   .simulator-result strong {
     font-size: 2.25rem;
+  }
+
+  .executive-strip {
+    grid-template-columns: 1fr;
   }
 
   .metric-card strong {

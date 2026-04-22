@@ -6,6 +6,8 @@ export const state = {
   dashboard: null,
   profile: null,
   banks: [],
+  openFinanceSummary: null,
+  openFinanceTransactions: [],
   cnpjData: null,
   cnpjTimer: null,
   analyses: [],

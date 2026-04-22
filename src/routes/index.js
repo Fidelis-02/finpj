@@ -56,6 +56,7 @@ router.post('/auth/send-code', otpLimiter, wrap(authController.sendCode));
 router.post('/auth/verify-code', wrap(authController.verifyCode));
 router.post('/auth/login-cnpj', wrap(authController.loginCnpj));
 router.post('/auth/register-cnpj', wrap(authController.registerCnpj));
+router.get('/auth/session', verificarTokenMiddleware, wrap(authController.getSession));
 router.get('/dashboard', verificarTokenMiddleware, wrap(authController.getDashboard));
 router.get('/cnpj', wrap(cnpjController.consultarCnpj));
 
@@ -64,6 +65,8 @@ router.get('/cnpj', wrap(cnpjController.consultarCnpj));
 // ===============================
 router.get('/openfinance/token', verificarTokenMiddleware, wrap(financeController.getPluggyToken));
 router.get('/openfinance/banks', verificarTokenMiddleware, wrap(financeController.getBanks));
+router.get('/openfinance/summary', verificarTokenMiddleware, wrap(financeController.getOpenFinanceSummary));
+router.get('/openfinance/transactions', verificarTokenMiddleware, wrap(financeController.getOpenFinanceTransactions));
 router.post('/openfinance/connect', verificarTokenMiddleware, wrap(financeController.connectBank));
 router.post('/openfinance/sync/:bankId', verificarTokenMiddleware, wrap(financeController.syncBank));
 router.delete('/openfinance/banks/:bankId', verificarTokenMiddleware, wrap(financeController.removeBank));

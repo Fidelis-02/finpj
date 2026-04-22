@@ -1,8 +1,8 @@
 const { salvarDiagnostico, obterUsuario } = require('../services/database');
 const { gerarAnaliseFinanceira } = require('../services/aiService');
 const { fetchNotasFiscais, calcularDasAutomatico } = require('../services/nfeService');
-const taxEngine = require('../tax');
 const taxUtils = require('../tax/utils');
+const { getFiscalSimulation } = require('../services/fiscalCache');
 
 function inferActivity(setor = '') {
     return taxUtils.normalizeActivity(setor || 'comercio');
@@ -17,11 +17,11 @@ async function calcularDas(req, res) {
 
     let simulation;
     try {
-        simulation = taxEngine.simulateTaxes({
-            annualRevenue: fat,
-            margin: marg,
-            activity: inferActivity(atividade)
-        });
+            simulation = getFiscalSimulation({
+                annualRevenue: fat,
+                margin: marg,
+                activity: inferActivity(atividade)
+            }).simulation;
     } catch (error) {
         return res.status(400).json({ erro: error.message });
     }
@@ -97,11 +97,11 @@ async function postDiagnostico(req, res) {
 
     let simulation;
     try {
-        simulation = taxEngine.simulateTaxes({
+        simulation = getFiscalSimulation({
             annualRevenue: fat,
             margin: marg,
             activity: inferActivity(setor)
-        });
+        }).simulation;
     } catch (error) {
         return res.status(400).json({ erro: error.message });
     }

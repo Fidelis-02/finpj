@@ -65,7 +65,7 @@ module.exports = function initGoogleAuth(app, passport) {
         (req, res) => {
             // Sucesso na autenticação
             const token = jwt.sign(
-                { email: req.user.email }, 
+                { email: req.user.email, provider: 'google' }, 
                 process.env.JWT_SECRET, 
                 { expiresIn: '24h' }
             );

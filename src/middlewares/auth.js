@@ -8,7 +8,7 @@ function extrairToken(req) {
     const header = req.headers.authorization || req.headers.Authorization;
     if (!header || typeof header !== 'string') return null;
     const parts = header.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') return null;
+    if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') return null;
     return parts[1];
 }
 
@@ -29,7 +29,11 @@ function verificarTokenMiddleware(req, res, next) {
     if (!token) return res.status(401).json({ erro: 'Token obrigatório.' });
     try {
         const payload = jwt.verify(token, JWT_SECRET);
+        if (!payload || typeof payload.email !== 'string' || !payload.email.trim()) {
+            return res.status(401).json({ erro: 'Token invalido ou expirado.' });
+        }
         req.userEmail = payload.email;
+        req.auth = payload;
         next();
     } catch {
         return res.status(401).json({ erro: 'Token inválido ou expirado.' });

@@ -189,12 +189,39 @@
       <div class="dashboard-header">
         <div>
           <p class="eyebrow">Área logada</p>
+          <nav class="breadcrumb" aria-label="Caminho">
+            <span>Area logada</span>
+            <span aria-hidden="true">/</span>
+            <strong data-current-section>Visao geral</strong>
+          </nav>
           <h2 data-user-title>Dashboard FinPJ</h2>
         </div>
         <div class="dashboard-tools">
           <button class="btn btn-light" type="button" data-go-tab="profile">Editar perfil</button>
           <button class="btn btn-dark" type="button" data-refresh-dashboard>Atualizar</button>
         </div>
+      </div>
+      <div class="metric-grid executive-strip" data-executive-strip>
+        <button class="metric-card metric-button" type="button" data-go-tab="profile">
+          <span>Faturamento anual</span>
+          <strong data-exec="revenue" class="skeleton skeleton-text">R$ 0</strong>
+          <small data-exec-note="revenue">Dados do backend</small>
+        </button>
+        <button class="metric-card metric-button" type="button" data-go-tab="diagnostics">
+          <span>Economia fiscal</span>
+          <strong data-exec="savings" class="skeleton skeleton-text">R$ 0</strong>
+          <small data-exec-note="savings">Comparativo de regimes</small>
+        </button>
+        <button class="metric-card metric-button" type="button" data-go-tab="tax">
+          <span>Impostos estimados</span>
+          <strong data-exec="taxes" class="skeleton skeleton-text">R$ 0</strong>
+          <small data-exec-note="taxes">Melhor regime calculado</small>
+        </button>
+        <button class="metric-card metric-button" type="button" data-go-tab="openfinance">
+          <span>Saldo bancario</span>
+          <strong data-exec="bankBalance" class="skeleton skeleton-text">R$ 0</strong>
+          <small data-exec-note="bankBalance">Open Finance</small>
+        </button>
       </div>
       <div class="app-layout">
         <aside class="side-nav" aria-label="Navegação do aplicativo">
@@ -211,7 +238,7 @@
 
         <div class="app-content">
           <div class="tab-panel" data-panel="overview">
-            <div class="metric-grid">
+            <div class="metric-grid legacy-overview-metrics is-hidden" aria-hidden="true">
               <button class="metric-card metric-button" type="button" data-go-tab="profile">
                 <span>Faturamento estimado</span>
                 <strong data-exec="revenue" class="skeleton skeleton-text skeleton-card">R$ 0</strong>
@@ -514,6 +541,32 @@
               <button class="btn btn-dark" type="button" data-connect-bank>Conectar banco</button>
             </div>
             <div class="metric-grid openfinance-metrics" data-openfinance-summary></div>
+            <div class="dashboard-grid openfinance-detail-grid">
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Sinais fiscais bancarios</h3>
+                </div>
+                <div class="summary-list" data-openfinance-fiscal-signals></div>
+              </article>
+              <article class="table-card panel-card">
+                <div class="table-header">
+                  <h3>Ultimos lancamentos</h3>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Banco</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody data-openfinance-transaction-preview></tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
             <div class="bank-list" data-bank-list></div>
           </div>
 

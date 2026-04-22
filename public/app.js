@@ -25,6 +25,18 @@ function toggleTheme() {
 }
 initTheme();
 
+const DASHBOARD_TAB_LABELS = {
+  overview: 'Visao geral',
+  financial: 'Analise financeira',
+  statements: 'Balanco e demonstrativos',
+  tax: 'Inteligencia tributaria',
+  diagnostics: 'Diagnostico fiscal',
+  ai: 'Analise IA',
+  insights: 'Insights acionaveis',
+  openfinance: 'Open Finance',
+  profile: 'Perfil'
+};
+
 /* Service Worker */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -64,6 +76,8 @@ function clearSession() {
   state.dashboard = null;
   state.profile = null;
   state.banks = [];
+  state.openFinanceSummary = null;
+  state.openFinanceTransactions = [];
   state.analyses = [];
   state.diagnostics = [];
   localStorage.removeItem('finpj_token');
@@ -106,8 +120,15 @@ function setAuthTab(tab) {
 }
 
 function setDashboardTab(tab) {
-  $$('[data-tab]').forEach((button) => button.classList.toggle('is-active', button.dataset.tab === tab));
+  $$('[data-tab]').forEach((button) => {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle('is-active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
   $$('[data-panel]').forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.panel !== tab));
+  const currentSection = $('[data-current-section]');
+  if (currentSection) currentSection.textContent = DASHBOARD_TAB_LABELS[tab] || tab;
 
   if (tab === 'openfinance') loadBanks().catch((error) => showToast(error.message, 'error'));
   if (tab === 'profile') loadProfile().catch((error) => showToast(error.message, 'error'));
@@ -364,41 +385,58 @@ function getBankTransactions() {
   })));
 }
 
+function finiteNumber(value, fallback = 0) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
 function buildMetrics(dashboard = state.dashboard || {}) {
   const user = getCurrentUser();
   const reports = dashboard.reports || [];
   const summary = dashboard.summary || {};
+  const backendMetrics = dashboard.metrics || {};
+  const backendFiscal = backendMetrics.fiscal || {};
+  const openFinanceSummary = state.openFinanceSummary || summary.openFinance || {};
   const transactions = getBankTransactions();
   const monthlyIncome = transactions
     .filter((item) => Number(item.valor) > 0 || item.tipo === 'entrada')
-    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0);
+    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0)
+    || finiteNumber(backendMetrics.monthlyIncome ?? openFinanceSummary.monthlyIncome);
   const monthlyExpenses = transactions
     .filter((item) => Number(item.valor) < 0 || item.tipo === 'saida')
-    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0);
+    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0)
+    || finiteNumber(backendMetrics.monthlyExpenses ?? openFinanceSummary.monthlyExpenses);
 
   const totalMovimentado = Number(summary.totalMovimentado || 0);
-  const annualRevenue = Number(user.faturamento || user.faturamentoAnual || 0)
+  const annualRevenue = finiteNumber(backendMetrics.annualRevenue)
+    || Number(user.faturamento || user.faturamentoAnual || 0)
     || (monthlyIncome ? Math.round(monthlyIncome * 12) : Math.round(totalMovimentado));
-  const informedMargin = Number(user.margem || user.margemEstimada || 0);
-  const margin = informedMargin > 1 ? informedMargin / 100 : informedMargin || 0;
-  const profit = Math.round(annualRevenue * margin);
-  const expenses = Math.max(0, annualRevenue - profit);
+  const informedMargin = finiteNumber(backendMetrics.margin, NaN);
+  const marginSource = Number.isFinite(informedMargin) ? informedMargin : Number(user.margem || user.margemEstimada || 0);
+  const margin = marginSource > 1 ? marginSource / 100 : marginSource || 0;
+  const profit = finiteNumber(backendMetrics.profit) || Math.round(annualRevenue * margin);
+  const expenses = finiteNumber(backendMetrics.expenses) || Math.max(0, annualRevenue - profit);
   const activity = inferActivity(user.setor);
   let regimes = [];
-  let bestRegime = { name: 'Nao calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 };
+  let bestRegime = backendFiscal.bestRegime || { name: 'Nao calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 };
   try {
     regimes = annualRevenue && margin > 0
       ? calculatePublicRegime({ faturamento: annualRevenue, margem: margin, atividade: activity })
       : [];
-    bestRegime = regimes[0] || bestRegime;
+    bestRegime = backendFiscal.bestRegime || regimes[0] || bestRegime;
   } catch {
     regimes = [];
   }
   const currentRegime = formatRegime(user.regime || '');
   const currentRegimeItem = regimes.find((regime) => regime.name === currentRegime);
-  const taxGap = regimes.length
+  const calculatedTaxGap = regimes.length
     ? (currentRegimeItem ? Math.max(0, currentRegimeItem.tax - bestRegime.tax) : Math.max(0, regimes[regimes.length - 1].tax - bestRegime.tax))
     : 0;
+  const taxGap = finiteNumber(backendFiscal.taxSavings) || calculatedTaxGap;
+  const annualTax = finiteNumber(backendFiscal.annualTax ?? bestRegime.annualTax ?? bestRegime.tax);
+  const monthlyTax = finiteNumber(backendFiscal.monthlyTax ?? bestRegime.monthlyTax ?? bestRegime.monthly);
+  const taxPaid = finiteNumber(backendMetrics.taxPaid ?? openFinanceSummary.taxPaid);
+  const bankBalance = finiteNumber(backendMetrics.bankBalance ?? openFinanceSummary.bankBalance, monthlyIncome - monthlyExpenses);
 
   return {
     user,
@@ -410,8 +448,12 @@ function buildMetrics(dashboard = state.dashboard || {}) {
     expenses,
     monthlyIncome,
     monthlyExpenses,
-    monthlyBalance: monthlyIncome - monthlyExpenses,
-    pendencias: Number(summary.pendencias || 0),
+    monthlyBalance: bankBalance,
+    bankBalance,
+    annualTax,
+    monthlyTax,
+    taxPaid,
+    pendencias: finiteNumber(backendMetrics.pendingItems ?? summary.pendencias),
     activity,
     regimes,
     bestRegime,
@@ -766,17 +808,61 @@ function renderTaxCalendar() {
 
 /* removeSkeletons imported from ./js/utils.js */
 
+function setDashboardMetric(name, value, note) {
+  const el = $(`[data-exec="${name}"]`);
+  if (!el) return;
+  el.textContent = value;
+  removeSkeletons(el.closest('.metric-card') || el.parentElement);
+  const noteEl = $(`[data-exec-note="${name}"]`);
+  if (noteEl && note) noteEl.textContent = note;
+}
+
+function showDashboardSkeletons() {
+  $$('[data-exec], [data-financial]').forEach((el) => {
+    el.textContent = '';
+    el.classList.add('skeleton', 'skeleton-text');
+  });
+  const decisionTitle = $('[data-decision-title]');
+  if (decisionTitle) decisionTitle.classList.add('skeleton', 'skeleton-title');
+  const decisionSummary = $('[data-decision-summary]');
+  if (decisionSummary) decisionSummary.classList.add('skeleton', 'skeleton-text');
+  const skeletonLists = [
+    '[data-executive-summary]',
+    '[data-main-alerts]',
+    '[data-openfinance-fiscal-signals]'
+  ];
+  skeletonLists.forEach((selector) => {
+    const target = $(selector);
+    if (!target) return;
+    target.innerHTML = '<div class="insight-item skeleton skeleton-card"></div><div class="insight-item skeleton skeleton-card"></div>';
+  });
+}
+
 function renderBusinessDashboards(dashboard = state.dashboard) {
   if (!dashboard) return;
   const metrics = buildMetrics(dashboard);
   const user = metrics.user;
 
-  const revenueEl = $('[data-exec="revenue"]');
-  if (revenueEl) { revenueEl.textContent = formatCurrency(metrics.annualRevenue); removeSkeletons(revenueEl.parentElement); }
-  const marginEl = $('[data-exec="margin"]');
-  if (marginEl) { marginEl.textContent = formatPercent(metrics.margin); removeSkeletons(marginEl.parentElement); }
-  const regimeEl = $('[data-exec="regime"]');
-  if (regimeEl) { regimeEl.textContent = formatRegime(user.regime || ''); removeSkeletons(regimeEl.parentElement); }
+  setDashboardMetric(
+    'revenue',
+    formatCurrency(metrics.annualRevenue),
+    user.faturamento || user.faturamentoAnual ? 'Perfil empresarial' : (metrics.monthlyIncome ? 'Anualizado pelo Open Finance' : 'Sem fonte financeira')
+  );
+  setDashboardMetric(
+    'savings',
+    formatCurrency(metrics.taxGap),
+    metrics.taxGap ? 'Economia vs. regime atual/pior cenario' : 'Sem economia calculada'
+  );
+  setDashboardMetric(
+    'taxes',
+    formatCurrency(metrics.annualTax),
+    metrics.monthlyTax ? `Mensal ${formatCurrency(metrics.monthlyTax)}` : 'Aguardando premissas fiscais'
+  );
+  setDashboardMetric(
+    'bankBalance',
+    formatCurrency(metrics.bankBalance),
+    state.banks.length ? `${state.banks.length} banco(s) conectado(s)` : 'Aguardando Open Finance'
+  );
   const incomeEl = $('[data-financial="income"]');
   if (incomeEl) { incomeEl.textContent = formatCurrency(metrics.annualRevenue); removeSkeletons(incomeEl.parentElement); }
   const expensesEl = $('[data-financial="expenses"]');
@@ -1091,8 +1177,15 @@ async function loadFiscalCalendar() {
 
 async function loadBanks() {
   if (!state.token) return;
-  const data = await apiRequest('/api/openfinance/banks');
-  state.banks = data.banks || [];
+  const [banksResult, summaryResult, transactionsResult] = await Promise.allSettled([
+    apiRequest('/api/openfinance/banks'),
+    apiRequest('/api/openfinance/summary'),
+    apiRequest('/api/openfinance/transactions?limit=50')
+  ]);
+  if (banksResult.status === 'rejected') throw banksResult.reason;
+  state.banks = banksResult.value.banks || [];
+  if (summaryResult.status === 'fulfilled') state.openFinanceSummary = summaryResult.value.summary || null;
+  if (transactionsResult.status === 'fulfilled') state.openFinanceTransactions = transactionsResult.value.transactions || [];
   renderBanks();
   renderBusinessDashboards();
 }
@@ -1100,11 +1193,50 @@ async function loadBanks() {
 function renderOpenFinanceSummary(metrics = buildMetrics()) {
   const target = $('[data-openfinance-summary]');
   if (!target) return;
+  const summary = state.openFinanceSummary || {};
   target.innerHTML = `
-    <div class="metric-card"><span>Bancos conectados</span><strong>${state.banks.length}</strong><small>Open Finance</small></div>
-    <div class="metric-card"><span>Entradas importadas</span><strong>${escapeHtml(formatCurrency(metrics.monthlyIncome))}</strong><small>Período atual</small></div>
-    <div class="metric-card"><span>Saídas importadas</span><strong>${escapeHtml(formatCurrency(metrics.monthlyExpenses))}</strong><small>Custos e impostos</small></div>
+    <div class="metric-card"><span>Bancos conectados</span><strong>${escapeHtml(summary.banksCount ?? state.banks.length)}</strong><small>Open Finance</small></div>
+    <div class="metric-card"><span>Entradas importadas</span><strong>${escapeHtml(formatCurrency(summary.monthlyIncome ?? metrics.monthlyIncome))}</strong><small>Periodo atual</small></div>
+    <div class="metric-card"><span>Saidas importadas</span><strong>${escapeHtml(formatCurrency(summary.monthlyExpenses ?? metrics.monthlyExpenses))}</strong><small>Custos e impostos</small></div>
   `;
+  renderOpenFinanceFiscalSignals(metrics);
+  renderOpenFinanceTransactionPreview();
+}
+
+function renderOpenFinanceFiscalSignals(metrics = buildMetrics()) {
+  const summary = state.openFinanceSummary || {};
+  const fiscalSignals = summary.fiscalSignals || {};
+  renderSummaryRows('[data-openfinance-fiscal-signals]', [
+    { label: 'Receita importada', value: formatCurrency(fiscalSignals.importedRevenue ?? summary.monthlyIncome ?? metrics.monthlyIncome), note: 'Entradas bancarias do periodo' },
+    { label: 'Base anualizada', value: formatCurrency(fiscalSignals.annualizedRevenue ?? ((summary.monthlyIncome ?? metrics.monthlyIncome) * 12)), note: 'Referencia para simulacao fiscal' },
+    { label: 'Saidas tributarias', value: formatCurrency(fiscalSignals.taxOutflow ?? summary.taxPaid ?? metrics.taxPaid), note: 'DAS, DARF, impostos e encargos detectados' },
+    { label: 'Peso tributario', value: formatPercent(fiscalSignals.taxOutflowRate || 0), note: 'Impostos pagos sobre entradas importadas' }
+  ]);
+}
+
+function renderOpenFinanceTransactionPreview() {
+  const table = $('[data-openfinance-transaction-preview]');
+  if (!table) return;
+  const transactions = state.openFinanceTransactions.length ? state.openFinanceTransactions : getBankTransactions();
+  table.innerHTML = '';
+  if (!transactions.length) {
+    table.innerHTML = '<tr><td colspan="4">Conecte um banco para visualizar lancamentos.</td></tr>';
+    return;
+  }
+  transactions
+    .slice()
+    .sort((a, b) => new Date(b.data || b.date || 0) - new Date(a.data || a.date || 0))
+    .slice(0, 8)
+    .forEach((transaction) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${escapeHtml(formatDate(transaction.data || transaction.date))}</td>
+        <td>${escapeHtml(transaction.bankName || 'Banco')}</td>
+        <td>${escapeHtml(transaction.categoria || transaction.category || 'Outros')}</td>
+        <td>${escapeHtml(formatCurrency(transaction.valor ?? transaction.amount ?? 0))}</td>
+      `;
+      table.appendChild(row);
+    });
 }
 
 function renderBanks() {
@@ -1359,7 +1491,10 @@ async function saveProfile(event) {
 }
 
 function handleAuth0Redirect() {
-  const params = new URLSearchParams(window.location.search);
+  let params = new URLSearchParams(window.location.search);
+  if (!params.get('token') && window.location.hash.includes('?')) {
+    params = new URLSearchParams(window.location.hash.split('?')[1]);
+  }
   const token = params.get('token');
   if (!token) return false;
   persistSession(token, params.get('email') || state.authEmail || 'auth0', 'auth0');
@@ -1370,6 +1505,7 @@ function handleAuth0Redirect() {
 
 async function loadWorkspaceData() {
   if (!state.token) return;
+  showDashboardSkeletons();
   const tasks = [
     loadDashboard(),
     loadBanks(),
@@ -1389,6 +1525,11 @@ async function loadWorkspaceData() {
 }
 
 function bindEvents() {
+  window.addEventListener('finpj:session-expired', (event) => {
+    if (!state.token) return;
+    clearSession();
+    showToast(event.detail?.message || 'Sessao expirada. Faca login novamente.', 'error');
+  });
   $$('[data-open-login]').forEach((button) => button.addEventListener('click', () => openModal('[data-login-modal]')));
   $$('[data-open-register]').forEach((button) => button.addEventListener('click', () => openModal('[data-register-modal]')));
   $$('[data-close-modal]').forEach((button) => button.addEventListener('click', closeModals));

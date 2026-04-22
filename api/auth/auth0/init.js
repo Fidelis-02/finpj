@@ -97,7 +97,7 @@ module.exports = function initAuth0(app, passport) {
             session: false
         }), (req, res) => {
             // Gera JWT no mesmo padrão dos fluxos Google e e-mail.
-            const token = jwt.sign({ email: req.user.email }, JWT_SECRET, { expiresIn: '7d' });
+            const token = jwt.sign({ email: req.user.email, provider: 'auth0' }, JWT_SECRET, { expiresIn: '7d' });
             res.redirect(`/?token=${token}&login=success`);
         });
 
@@ -119,7 +119,7 @@ module.exports = function initAuth0(app, passport) {
                 return res.status(401).json({ erro: 'Não autenticado' });
             }
             const parts = authorization.split(' ');
-            if (parts.length !== 2 || parts[0] !== 'Bearer') {
+            if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
                 return res.status(401).json({ erro: 'Token inválido' });
             }
             try {
