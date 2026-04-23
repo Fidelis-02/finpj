@@ -1,5 +1,6 @@
 import { $, $$, formatCurrency, formatPercent, onlyDigits, escapeHtml, formatCnpj, parseMoneyLike, parsePercentLike, formatDate, formatRegime, inferActivity, debounce, removeSkeletons, setLoading, showToast, trapFocus, untrapFocus } from './js/utils.js';
 import { apiRequest } from './js/api.js';
+import { renderPublicExperience } from './js/publicLanding.js';
 import { state, MAX_UPLOAD_BYTES } from './js/state.js';
 
 /* Theme */
@@ -41,7 +42,13 @@ const DASHBOARD_CLIENT_CACHE_TTL_MS = 60 * 1000;
 const dashboardMemoryCache = new Map();
 let chartModulePromise = null;
 let chartObserver = null;
+let landingRevealObserver = null;
 let addCompanyPrompted = false;
+const PUBLIC_MODAL_ROUTES = {
+  '/login': '[data-login-modal]',
+  '/cadastro': '[data-register-modal]',
+  '/signup': '[data-register-modal]'
+};
 
 /* Service Worker */
 if ('serviceWorker' in navigator) {
@@ -86,6 +93,82 @@ function calculatePublicRegime(params) {
 
 /* apiRequest imported from ./js/api.js */
 
+function currentPublicPath() {
+  const normalized = window.location.pathname.replace(/\/+$/, '');
+  return normalized || '/';
+}
+
+function currentPublicModalSelector() {
+  return PUBLIC_MODAL_ROUTES[currentPublicPath()] || '';
+}
+
+function setMobileMenuOpen(open) {
+  const menu = $('[data-mobile-menu]');
+  const toggle = $('[data-mobile-menu-toggle]');
+  if (!menu || !toggle) return;
+  menu.classList.toggle('is-open', open);
+  toggle.setAttribute('aria-expanded', String(open));
+  document.body.classList.toggle('landing-menu-open', open);
+}
+
+function closeMobileMenu() {
+  setMobileMenuOpen(false);
+}
+
+function clearPublicModalRoute() {
+  if (!currentPublicModalSelector()) return;
+  history.replaceState(null, '', '/');
+}
+
+function closeAuthModals() {
+  ['[data-login-modal]', '[data-register-modal]'].forEach((selector) => {
+    const modal = $(selector);
+    if (!modal) return;
+    untrapFocus(modal);
+    if (typeof modal.close === 'function' && modal.open) modal.close();
+    modal.classList.add('is-hidden');
+  });
+}
+
+function openPublicAuthRoute(selector, path) {
+  if (state.token) {
+    location.hash = '#dashboard';
+    return;
+  }
+  if (currentPublicPath() !== path) history.pushState(null, '', path);
+  closeMobileMenu();
+  openModal(selector);
+}
+
+function syncPublicRouteModal() {
+  if (state.token) {
+    closeAuthModals();
+    closeMobileMenu();
+    return;
+  }
+  const selector = currentPublicModalSelector();
+  if (selector) openModal(selector);
+  else closeAuthModals();
+}
+
+function initLandingReveal() {
+  const items = $$('[data-reveal]');
+  if (!items.length) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    items.forEach((item) => item.classList.add('is-visible'));
+    return;
+  }
+  landingRevealObserver?.disconnect();
+  landingRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      landingRevealObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.14, rootMargin: '0px 0px -40px 0px' });
+  items.forEach((item) => landingRevealObserver.observe(item));
+}
+
 function persistSession(token, email, provider = 'local') {
   state.token = token || '';
   state.authEmail = email || state.authEmail || '';
@@ -125,19 +208,12 @@ function updateSessionUi() {
   
   // Mostrar navegação apenas quando logado
   if (mainNav) {
-    mainNav.classList.toggle('is-hidden', !logged);
+    mainNav.classList.toggle('is-hidden', logged);
   }
   
   // Controlar links individuais: Dashboard só aparece logado, Recursos/Planos escondidos quando logado
   navLinks.forEach((link) => {
-    const isAuthOnly = link.hasAttribute('data-auth-only');
-    if (isAuthOnly) {
-      // Dashboard: mostrar apenas logado
-      link.classList.toggle('is-hidden', !logged);
-    } else {
-      // Recursos/Planos: esconder quando logado (foco no dashboard)
-      link.classList.toggle('is-hidden', logged);
-    }
+    link.classList.toggle('is-hidden', logged && link.hasAttribute('data-auth-only'));
   });
   
   $('[data-public-area]')?.classList.toggle('is-hidden', logged);
@@ -145,12 +221,15 @@ function updateSessionUi() {
   $$('[data-logout]').forEach((el) => el.classList.toggle('is-hidden', !logged));
   $('[data-dashboard]')?.classList.toggle('is-hidden', !logged);
   if (logged) $('[data-user-title]').textContent = `Dashboard ${state.authEmail || ''}`.trim();
+  if (logged && currentPublicModalSelector()) history.replaceState(null, '', '/');
+  if (logged) closeMobileMenu();
   if (logged && location.hash !== '#dashboard') location.hash = '#dashboard';
 }
 
 function openModal(selector) {
   const modal = $(selector);
   if (!modal) return;
+  modal.classList.remove('is-hidden');
   if (typeof modal.showModal === 'function') modal.showModal();
   else modal.classList.remove('is-hidden');
   trapFocus(modal);
@@ -162,6 +241,7 @@ function closeModals() {
     if (typeof modal.close === 'function') modal.close();
     modal.classList.add('is-hidden');
   });
+  clearPublicModalRoute();
 }
 
 export { openModal, closeModals, toggleTheme };
@@ -2133,7 +2213,7 @@ function handleAuth0Redirect() {
   const token = params.get('token');
   if (!token) return false;
   persistSession(token, params.get('email') || state.authEmail || 'auth0', 'auth0');
-  history.replaceState(null, '', `${location.pathname}#dashboard`);
+  history.replaceState(null, '', '/#dashboard');
   loadWorkspaceData().catch((error) => showToast(error.message, 'error'));
   return true;
 }
@@ -2167,9 +2247,25 @@ function bindEvents() {
     clearSession();
     showToast(event.detail?.message || 'Sessao expirada. Faca login novamente.', 'error');
   });
-  $$('[data-open-login]').forEach((button) => button.addEventListener('click', () => openModal('[data-login-modal]')));
-  $$('[data-open-register]').forEach((button) => button.addEventListener('click', () => openModal('[data-register-modal]')));
+  window.addEventListener('popstate', syncPublicRouteModal);
+  $('[data-mobile-menu-toggle]')?.addEventListener('click', () => {
+    const isOpen = $('[data-mobile-menu]')?.classList.contains('is-open');
+    setMobileMenuOpen(!isOpen);
+  });
+  $$('[data-nav-link]').forEach((link) => link.addEventListener('click', () => closeMobileMenu()));
+  $$('[data-open-login]').forEach((button) => button.addEventListener('click', (event) => {
+    event.preventDefault();
+    openPublicAuthRoute('[data-login-modal]', '/login');
+  }));
+  $$('[data-open-register]').forEach((button) => button.addEventListener('click', (event) => {
+    event.preventDefault();
+    openPublicAuthRoute('[data-register-modal]', '/cadastro');
+  }));
   $$('[data-close-modal]').forEach((button) => button.addEventListener('click', closeModals));
+  ['[data-login-modal]', '[data-register-modal]'].forEach((selector) => {
+    $(selector)?.addEventListener('close', clearPublicModalRoute);
+    $(selector)?.addEventListener('cancel', () => setTimeout(clearPublicModalRoute, 0));
+  });
   $$('[data-auth-tab]').forEach((button) => button.addEventListener('click', () => setAuthTab(button.dataset.authTab)));
   $$('[data-tab]').forEach((button) => button.addEventListener('click', () => setDashboardTab(button.dataset.tab)));
 
@@ -2356,7 +2452,7 @@ function bindEvents() {
   $$('[data-select-plan]').forEach((button) => button.addEventListener('click', () => {
     state.pendingPlan = button.dataset.selectPlan;
     $('[data-register-plan]').value = state.pendingPlan;
-    openModal('[data-register-modal]');
+    openPublicAuthRoute('[data-register-modal]', '/cadastro');
   }));
 
   $('[data-bank-list]')?.addEventListener('click', (event) => {
@@ -2389,11 +2485,14 @@ function bindEvents() {
 }
 
 function initApp() {
+  renderPublicExperience();
   bindEvents();
+  initLandingReveal();
   resetPublicDiagnostic();
   updatePublicSimulatorReadyState();
   const handledRedirect = handleAuth0Redirect();
   updateSessionUi();
+  syncPublicRouteModal();
   if (state.token && !handledRedirect) {
     loadWorkspaceData().catch((error) => {
       showToast(error.message, 'error');
