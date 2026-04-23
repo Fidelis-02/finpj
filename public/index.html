@@ -195,75 +195,114 @@
     </div>
 
     <section id="dashboard" class="dashboard app-shell is-hidden" data-dashboard>
-      <div class="dashboard-header">
-        <div>
-          <p class="eyebrow">Área logada</p>
-          <nav class="breadcrumb" aria-label="Caminho">
-            <span>Área logada</span>
-            <span aria-hidden="true">/</span>
-            <strong data-current-section>Visão geral</strong>
-          </nav>
-          <h2 data-user-title>Dashboard FinPJ</h2>
-        </div>
-        <div class="dashboard-tools">
-          <button class="btn btn-light" type="button" data-go-tab="profile">Editar perfil</button>
-          <button class="btn btn-dark" type="button" data-refresh-dashboard>Atualizar</button>
-        </div>
-      </div>
-      <div class="dashboard-command-strip">
-        <div class="workspace-badge">
-          <span>Empresa ativa</span>
-          <strong data-dashboard-company>Carregando empresa</strong>
-          <small data-dashboard-context>Sincronizando contexto fiscal e financeiro.</small>
-        </div>
-        <div class="quick-actions" aria-label="Ações rápidas">
-          <button class="btn btn-light btn-sm" type="button" data-go-tab="tax">Comparar regimes</button>
-          <button class="btn btn-light btn-sm" type="button" data-go-tab="openfinance">Conectar banco</button>
-          <button class="btn btn-light btn-sm" type="button" data-go-tab="ai">Enviar documento</button>
-          <button class="btn btn-dark btn-sm" type="button" data-go-tab="diagnostics">Gerar diagnóstico</button>
-        </div>
-      </div>
-      <div class="dashboard-pulse" data-dashboard-pulse>
-        <span class="pulse-item skeleton skeleton-text"></span>
-        <span class="pulse-item skeleton skeleton-text"></span>
-        <span class="pulse-item skeleton skeleton-text"></span>
-      </div>
-      <div class="metric-grid executive-strip" data-executive-strip>
-        <button class="metric-card metric-button" type="button" data-go-tab="profile">
-          <span>Faturamento anual</span>
-          <strong data-exec="revenue" class="skeleton skeleton-text">R$ 0</strong>
-          <small data-exec-note="revenue">Dados do backend</small>
-        </button>
-        <button class="metric-card metric-button" type="button" data-go-tab="diagnostics">
-          <span>Economia fiscal</span>
-          <strong data-exec="savings" class="skeleton skeleton-text">R$ 0</strong>
-          <small data-exec-note="savings">Comparativo de regimes</small>
-        </button>
-        <button class="metric-card metric-button" type="button" data-go-tab="tax">
-          <span>Impostos estimados</span>
-          <strong data-exec="taxes" class="skeleton skeleton-text">R$ 0</strong>
-          <small data-exec-note="taxes">Melhor regime calculado</small>
-        </button>
-        <button class="metric-card metric-button" type="button" data-go-tab="openfinance">
-          <span>Saldo bancário</span>
-          <strong data-exec="bankBalance" class="skeleton skeleton-text">R$ 0</strong>
-          <small data-exec-note="bankBalance">Open Finance</small>
-        </button>
-      </div>
-      <div class="app-layout">
-        <aside class="side-nav" aria-label="Navegação do aplicativo">
-          <button class="side-link is-active" type="button" data-tab="overview">Visão geral</button>
-          <button class="side-link" type="button" data-tab="financial">Análise financeira</button>
-          <button class="side-link" type="button" data-tab="statements">Balanço e demonstrativos</button>
-          <button class="side-link" type="button" data-tab="tax">Inteligência tributária</button>
-          <button class="side-link" type="button" data-tab="diagnostics">Diagnóstico fiscal</button>
-          <button class="side-link" type="button" data-tab="ai">Análise IA</button>
-          <button class="side-link" type="button" data-tab="insights">Insights acionáveis</button>
-          <button class="side-link" type="button" data-tab="openfinance">Open Finance</button>
-          <button class="side-link" type="button" data-tab="profile">Perfil</button>
+      <div class="app-layout dashboard-frame">
+        <aside class="side-nav dashboard-sidebar" aria-label="Navegação do aplicativo">
+          <a class="dashboard-brand" href="#dashboard" aria-label="FinPJ">
+            <img src="/favicon.svg" alt="" width="28" height="28">
+            <span>FinPJ</span>
+          </a>
+
+          <div class="sidebar-group">
+            <span class="sidebar-kicker">Principal</span>
+            <button class="side-link is-active" type="button" data-tab="overview"><span class="side-icon"></span><span>Visão geral</span></button>
+            <button class="side-link" type="button" data-tab="financial"><span class="side-icon"></span><span>Análise financeira</span></button>
+            <button class="side-link" type="button" data-tab="statements"><span class="side-icon"></span><span>Balanço e DRE</span></button>
+            <button class="side-link" type="button" data-tab="openfinance"><span class="side-icon"></span><span>Open Finance</span></button>
+          </div>
+
+          <div class="sidebar-group">
+            <span class="sidebar-kicker">Fiscal</span>
+            <button class="side-link" type="button" data-tab="tax"><span class="side-icon"></span><span>Tributário</span></button>
+            <button class="side-link" type="button" data-tab="diagnostics"><span class="side-icon"></span><span>Diagnóstico fiscal</span></button>
+            <button class="side-link" type="button" data-tab="ai"><span class="side-icon"></span><span>Análise IA</span></button>
+            <button class="side-link" type="button" data-tab="insights"><span class="side-icon"></span><span>Insights</span></button>
+          </div>
+
+          <div class="sidebar-footer">
+            <button class="side-link" type="button" data-tab="profile"><span class="side-icon"></span><span>Perfil</span></button>
+            <button class="side-link" type="button" data-logout><span class="side-icon"></span><span>Sair</span></button>
+          </div>
         </aside>
 
         <div class="app-content">
+          <div class="dashboard-workbar">
+            <label class="dashboard-search">
+              <span class="sr-only">Pesquisar no dashboard</span>
+              <input type="search" data-dashboard-search placeholder="Pesquisar" autocomplete="off">
+            </label>
+            <div class="dashboard-workbar-actions">
+              <span class="mode-chip"><span>Modo teste</span><i aria-hidden="true"></i></span>
+              <button class="icon-button" type="button" data-theme-toggle aria-label="Alternar tema" title="Alternar tema">◐</button>
+              <button class="icon-button" type="button" data-go-tab="openfinance" aria-label="Conectar banco" title="Conectar banco">+</button>
+              <button class="icon-button" type="button" data-go-tab="profile" aria-label="Editar perfil" title="Editar perfil">⚙</button>
+            </div>
+          </div>
+
+          <div class="dashboard-header">
+            <div>
+              <p class="eyebrow">Área logada</p>
+              <nav class="breadcrumb" aria-label="Caminho">
+                <span>FinPJ</span>
+                <span aria-hidden="true">/</span>
+                <strong data-current-section>Visão geral</strong>
+              </nav>
+              <h2>Sua visão geral</h2>
+              <p class="dashboard-subtitle" data-user-title>Dashboard FinPJ</p>
+            </div>
+            <div class="dashboard-tools">
+              <button class="btn btn-light" type="button" data-refresh-dashboard>Atualizar</button>
+              <button class="btn btn-dark" type="button" data-go-tab="diagnostics">Gerar diagnóstico</button>
+            </div>
+          </div>
+
+          <div class="dashboard-filter-row" aria-label="Filtros do dashboard">
+            <button class="filter-chip is-active" type="button">Últimos 30 dias</button>
+            <button class="filter-chip" type="button">comparado ao período anterior</button>
+            <button class="filter-chip" type="button">Diário</button>
+          </div>
+
+          <div class="dashboard-command-strip">
+            <div class="workspace-badge">
+              <span>Empresa ativa</span>
+              <strong data-dashboard-company>Carregando empresa</strong>
+              <small data-dashboard-context>Sincronizando contexto fiscal e financeiro.</small>
+            </div>
+            <div class="quick-actions" aria-label="Ações rápidas">
+              <button class="btn btn-light btn-sm" type="button" data-go-tab="tax">Comparar regimes</button>
+              <button class="btn btn-light btn-sm" type="button" data-go-tab="openfinance">Conectar banco</button>
+              <button class="btn btn-light btn-sm" type="button" data-go-tab="ai">Enviar documento</button>
+              <button class="btn btn-dark btn-sm" type="button" data-go-tab="diagnostics">Gerar diagnóstico</button>
+            </div>
+          </div>
+
+          <div class="dashboard-pulse" data-dashboard-pulse>
+            <span class="pulse-item skeleton skeleton-text"></span>
+            <span class="pulse-item skeleton skeleton-text"></span>
+            <span class="pulse-item skeleton skeleton-text"></span>
+          </div>
+
+          <div class="metric-grid executive-strip" data-executive-strip>
+            <button class="metric-card metric-button" type="button" data-go-tab="profile">
+              <span>Faturamento anual</span>
+              <strong data-exec="revenue" class="skeleton skeleton-text">R$ 0</strong>
+              <small data-exec-note="revenue">Dados do backend</small>
+            </button>
+            <button class="metric-card metric-button" type="button" data-go-tab="diagnostics">
+              <span>Economia fiscal</span>
+              <strong data-exec="savings" class="skeleton skeleton-text">R$ 0</strong>
+              <small data-exec-note="savings">Comparativo de regimes</small>
+            </button>
+            <button class="metric-card metric-button" type="button" data-go-tab="tax">
+              <span>Impostos estimados</span>
+              <strong data-exec="taxes" class="skeleton skeleton-text">R$ 0</strong>
+              <small data-exec-note="taxes">Melhor regime calculado</small>
+            </button>
+            <button class="metric-card metric-button" type="button" data-go-tab="openfinance">
+              <span>Saldo bancário</span>
+              <strong data-exec="bankBalance" class="skeleton skeleton-text">R$ 0</strong>
+              <small data-exec-note="bankBalance">Open Finance</small>
+            </button>
+          </div>
           <div class="tab-panel" data-panel="overview">
             <div class="metric-grid legacy-overview-metrics is-hidden" aria-hidden="true">
               <button class="metric-card metric-button" type="button" data-go-tab="profile">

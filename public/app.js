@@ -111,6 +111,7 @@ function updateSessionUi() {
   const logged = Boolean(state.token);
   const mainNav = $('[data-main-nav]');
   const navLinks = $$('[data-nav-link]');
+  document.body?.classList.toggle('app-session', logged);
   
   // Mostrar navegação apenas quando logado
   if (mainNav) {
@@ -131,7 +132,7 @@ function updateSessionUi() {
   
   $('[data-public-area]')?.classList.toggle('is-hidden', logged);
   $$('[data-open-login], [data-open-register]').forEach((el) => el.classList.toggle('is-hidden', logged));
-  $('[data-logout]')?.classList.toggle('is-hidden', !logged);
+  $$('[data-logout]').forEach((el) => el.classList.toggle('is-hidden', !logged));
   $('[data-dashboard]')?.classList.toggle('is-hidden', !logged);
   if (logged) $('[data-user-title]').textContent = `Dashboard ${state.authEmail || ''}`.trim();
   if (logged && location.hash !== '#dashboard') location.hash = '#dashboard';
@@ -187,6 +188,34 @@ function goToDashboardTab(tab) {
   setDashboardTab(tab);
   location.hash = '#dashboard';
   $('[data-dashboard]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function normalizeDashboardSearch(value = '') {
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function findDashboardTabByQuery(query) {
+  const normalized = normalizeDashboardSearch(query);
+  if (!normalized) return '';
+  const aliases = [
+    { tab: 'overview', terms: ['visao geral', 'resumo', 'inicio', 'home', 'overview'] },
+    { tab: 'financial', terms: ['financeiro', 'financas', 'fluxo', 'caixa', 'transacoes', 'movimentos'] },
+    { tab: 'statements', terms: ['dre', 'balanco', 'demonstrativos', 'ebitda'] },
+    { tab: 'tax', terms: ['tributario', 'tributos', 'impostos', 'regimes', 'simples', 'lucro'] },
+    { tab: 'diagnostics', terms: ['diagnostico', 'fiscal', 'economia'] },
+    { tab: 'ai', terms: ['ia', 'documento', 'documentos', 'upload', 'analise'] },
+    { tab: 'insights', terms: ['insights', 'prioridades', 'acoes', 'recomendacoes'] },
+    { tab: 'openfinance', terms: ['open finance', 'banco', 'bancos', 'saldo', 'conciliacao'] },
+    { tab: 'profile', terms: ['perfil', 'empresa', 'cadastro', 'cnpj'] }
+  ];
+  return aliases.find(({ tab, terms }) => (
+    normalizeDashboardSearch(DASHBOARD_TAB_LABELS[tab]).includes(normalized)
+    || terms.some((term) => term.includes(normalized) || normalized.includes(term))
+  ))?.tab || '';
 }
 
 function renderTaxRows(selector, regimes) {
@@ -1767,6 +1796,26 @@ function bindEvents() {
   $('[data-dashboard-tax-form]')?.addEventListener('input', () => runDashboardTaxSimulation());
   $('[data-copy-tax-to-diagnostic]')?.addEventListener('click', copyTaxToDiagnostic);
 
+  const dashboardSearch = $('[data-dashboard-search]');
+  const syncDashboardSearch = debounce((event) => {
+    const query = event.target.value;
+    if (query.trim().length < 3) return;
+    const tab = findDashboardTabByQuery(query);
+    if (tab) setDashboardTab(tab);
+  }, 280);
+  dashboardSearch?.addEventListener('input', syncDashboardSearch);
+  dashboardSearch?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const tab = findDashboardTabByQuery(event.currentTarget.value);
+    if (tab) {
+      setDashboardTab(tab);
+      showToast(`Seção aberta: ${DASHBOARD_TAB_LABELS[tab]}.`, 'success');
+    } else {
+      showToast('Nenhuma seção encontrada para essa busca.', 'error');
+    }
+  });
+
   // Simulator form input handlers
   const simulatorCnpjInput = $('[data-cnpj-input]');
   const simulatorFaturamentoInput = $('[data-currency-input]');
@@ -1849,7 +1898,7 @@ function bindEvents() {
     event.target.setAttribute('maxlength', '18');
   });
 
-  $('[data-theme-toggle]')?.addEventListener('click', toggleTheme);
+  $$('[data-theme-toggle]').forEach((button) => button.addEventListener('click', toggleTheme));
 
   $$('[data-select-plan]').forEach((button) => button.addEventListener('click', () => {
     state.pendingPlan = button.dataset.selectPlan;
@@ -1871,12 +1920,12 @@ function bindEvents() {
     if (deleteButton) deleteDiagnostic(deleteButton.dataset.deleteDiagnostic).catch((error) => showToast(error.message, 'error'));
   });
 
-  $('[data-logout]')?.addEventListener('click', () => {
+  $$('[data-logout]').forEach((button) => button.addEventListener('click', () => {
     const provider = state.provider;
     clearSession();
     if (provider === 'auth0') window.location.href = '/api/auth/auth0/logout';
     else showToast('Sessão encerrada.', 'success');
-  });
+  }));
 
   $('[data-auth-link]')?.addEventListener('click', (event) => {
     if (!state.token) {
