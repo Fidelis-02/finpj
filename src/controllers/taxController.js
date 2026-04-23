@@ -1,13 +1,12 @@
 const { salvarDiagnostico, obterUsuario, salvarUsuario } = require('../services/database');
 const { gerarAnaliseFinanceira } = require('../services/aiService');
 const { fetchNotasFiscais, calcularDasAutomatico } = require('../services/nfeService');
-const taxUtils = require('../tax/utils');
 const { getFiscalSimulation } = require('../services/fiscalCache');
+const { getScopedCompanyRecord, attachCompanyScope } = require('../services/companyContext');
+const taxUtils = require('../tax/utils');
 
-// Importações UMD do motor fiscal - carregar explicitamente
 const taxEngine = require('../tax/index');
 const verificarNcmMonofasico = taxEngine.verificarNcmMonofasico;
-const calcularImpactoMonofasico = taxEngine.calcularImpactoMonofasico;
 
 function inferActivity(setor = '') {
     return taxUtils.normalizeActivity(setor || 'comercio');
@@ -22,11 +21,11 @@ async function calcularDas(req, res) {
 
     let simulation;
     try {
-            simulation = getFiscalSimulation({
-                annualRevenue: fat,
-                margin: marg,
-                activity: inferActivity(atividade)
-            }).simulation;
+        simulation = getFiscalSimulation({
+            annualRevenue: fat,
+            margin: marg,
+            activity: inferActivity(atividade)
+        }).simulation;
     } catch (error) {
         return res.status(400).json({ erro: error.message });
     }
@@ -34,13 +33,13 @@ async function calcularDas(req, res) {
     const regimeKey = taxUtils.normalizeRegime(regime || 'simples') || 'simples';
     const selected = simulation.regimes.find((item) => item.key === regimeKey);
     if (!selected || selected.eligible === false) {
-        return res.status(400).json({ erro: selected?.reason || 'Regime não aplicável aos dados informados.' });
+        return res.status(400).json({ erro: selected?.reason || 'Regime nao aplicavel aos dados informados.' });
     }
 
     const hoje = new Date();
     const proxMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 20);
     const guia = selected.key === 'simples' ? 'DAS' : 'DARF';
-    res.json({
+    return res.json({
         sucesso: true,
         guia,
         valor: Math.round(selected.monthlyTax),
@@ -55,40 +54,48 @@ async function calcularDas(req, res) {
 
 function fiscalCalendar(req, res) {
     const hoje = new Date();
-    const anoSelecionado = parseInt(req.query.ano) || hoje.getFullYear();
+    const anoSelecionado = parseInt(req.query.ano, 10) || hoje.getFullYear();
     const eventos = [];
     const templateEventos = [
         { dia: 7, titulo: 'FGTS', desc: 'Recolhimento do FGTS', tipo: 'imposto' },
-        { dia: 10, titulo: 'GPS/INSS', desc: 'Guia da Previdência Social', tipo: 'imposto' },
-        { dia: 15, titulo: 'ISS', desc: 'Imposto Sobre Serviços (municipal)', tipo: 'imposto' },
-        { dia: 20, titulo: 'DAS', desc: 'Documento de Arrecadação do Simples Nacional', tipo: 'imposto' },
+        { dia: 10, titulo: 'GPS/INSS', desc: 'Guia da Previdencia Social', tipo: 'imposto' },
+        { dia: 15, titulo: 'ISS', desc: 'Imposto Sobre Servicos (municipal)', tipo: 'imposto' },
+        { dia: 20, titulo: 'DAS', desc: 'Documento de Arrecadacao do Simples Nacional', tipo: 'imposto' },
         { dia: 20, titulo: 'IRRF', desc: 'Imposto de Renda Retido na Fonte', tipo: 'imposto' },
-        { dia: 25, titulo: 'PIS/COFINS', desc: 'Contribuição PIS e COFINS', tipo: 'imposto' },
-        { dia: 25, titulo: 'ICMS', desc: 'Imposto sobre Circulação de Mercadorias', tipo: 'imposto' },
-        { dia: 28, titulo: 'CSLL', desc: 'Contribuição Social sobre o Lucro Líquido', tipo: 'imposto' },
+        { dia: 25, titulo: 'PIS/COFINS', desc: 'Contribuicao PIS e COFINS', tipo: 'imposto' },
+        { dia: 25, titulo: 'ICMS', desc: 'Imposto sobre Circulacao de Mercadorias', tipo: 'imposto' },
+        { dia: 28, titulo: 'CSLL', desc: 'Contribuicao Social sobre o Lucro Liquido', tipo: 'imposto' },
         { dia: 1, titulo: 'Folha', desc: 'Processamento da folha de pagamento', tipo: 'rh' },
-        { dia: 5, titulo: 'Pro-labore', desc: 'Pagamento de pro-labore aos sócios', tipo: 'rh' },
-        { dia: 30, titulo: 'Balanço', desc: 'Fechamento contábil mensal', tipo: 'contabil' },
+        { dia: 5, titulo: 'Pro-labore', desc: 'Pagamento de pro-labore aos socios', tipo: 'rh' },
+        { dia: 30, titulo: 'Balanco', desc: 'Fechamento contabil mensal', tipo: 'contabil' }
     ];
-    for (let m = 0; m < 12; m++) {
-        templateEventos.forEach(e => {
-            const dataEvento = new Date(anoSelecionado, m, e.dia);
+
+    for (let mes = 0; mes < 12; mes += 1) {
+        templateEventos.forEach((evento) => {
+            const dataEvento = new Date(anoSelecionado, mes, evento.dia);
             eventos.push({
-                ...e,
-                mes: m,
+                ...evento,
+                mes,
                 data: dataEvento.toISOString().slice(0, 10),
                 passado: dataEvento < hoje
             });
         });
     }
-    res.json({ sucesso: true, eventos, ano: anoSelecionado });
+
+    return res.json({ sucesso: true, eventos, ano: anoSelecionado });
 }
 
 async function postDiagnostico(req, res) {
     const { nome, cnpj, setor, regime, faturamento, margem, ncm } = req.body;
+    const usuario = req.userEmail ? await obterUsuario(req.userEmail) : null;
+    const scoped = usuario ? getScopedCompanyRecord(usuario, req.body?.companyId) : null;
+    const resolvedNome = nome || scoped?.snapshot?.fantasia || scoped?.snapshot?.nome || '';
+    const resolvedCnpj = String(cnpj || scoped?.snapshot?.cnpj || '').replace(/\D/g, '');
+    const resolvedSetor = setor || scoped?.snapshot?.setor || '';
+    const resolvedRegime = regime || scoped?.snapshot?.regime || '';
 
-    if (!nome || !cnpj) {
-        return res.status(400).json({ erro: 'Nome e CNPJ são obrigatórios' });
+    if (!resolvedNome || !resolvedCnpj) {
+        return res.status(400).json({ erro: 'Nome e CNPJ sao obrigatorios.' });
     }
 
     const fat = taxUtils.parseNumber(faturamento);
@@ -105,7 +112,7 @@ async function postDiagnostico(req, res) {
         simulation = getFiscalSimulation({
             annualRevenue: fat,
             margin: marg,
-            activity: inferActivity(setor)
+            activity: inferActivity(resolvedSetor)
         }).simulation;
     } catch (error) {
         return res.status(400).json({ erro: error.message });
@@ -113,21 +120,17 @@ async function postDiagnostico(req, res) {
 
     const best = simulation.bestRegime;
     const economia = simulation.savingsComparedToWorst?.annual || 0;
-    
-    // Cálculo PIS/COFINS Monofásico usando banco de dados real
     let creditosIdentificados = 0;
     let ncmInfo = null;
-    let alertasNcm = [];
-    
+    const alertasNcm = [];
+
     if (ncm && ncm.trim() !== '') {
-        // Verificar NCM individual
         ncmInfo = verificarNcmMonofasico(ncm);
-        
+
         if (ncmInfo && ncmInfo.isMonofasico) {
-            // Se for monofásico, calcular créditos não aproveitados
-            const parcelaMonofasica = fat * 0.3; // Estimativa de 30% do faturamento como monofásico
+            const parcelaMonofasica = fat * 0.3;
             creditosIdentificados = parcelaMonofasica * ncmInfo.aliquotas.total;
-            alertasNcm.push(`NCM ${ncmInfo.codigo} (${ncmInfo.categoriaDescricao}) possui tributação monofásica.`);
+            alertasNcm.push(`NCM ${ncmInfo.codigo} (${ncmInfo.categoriaDescricao}) possui tributacao monofasica.`);
         }
     }
 
@@ -136,13 +139,13 @@ async function postDiagnostico(req, res) {
         return acc;
     }, {});
 
-    const diagnostico = {
+    const diagnostico = attachCompanyScope({
         id: `diag_${Date.now()}`,
-        nome,
-        cnpj,
+        nome: resolvedNome,
+        cnpj: resolvedCnpj,
         ownerEmail: req.userEmail || null,
-        setor,
-        regime,
+        setor: resolvedSetor,
+        regime: resolvedRegime,
         ncm: ncm || '',
         faturamento: fat,
         margem: marg,
@@ -165,7 +168,7 @@ async function postDiagnostico(req, res) {
             regimes: simulation.regimes,
             premissas: simulation.assumptions
         }
-    };
+    }, scoped);
 
     const analise = await gerarAnaliseFinanceira(diagnostico);
     diagnostico.resultados = {
@@ -175,23 +178,18 @@ async function postDiagnostico(req, res) {
     };
 
     await salvarDiagnostico(diagnostico);
-
-    res.json({ sucesso: true, id: diagnostico.id, resultados: diagnostico.resultados });
+    return res.json({ sucesso: true, id: diagnostico.id, resultados: diagnostico.resultados });
 }
 
 async function gerarDasAutomatico(req, res) {
     const usuario = await obterUsuario(req.userEmail);
     if (!usuario || !usuario.cnpj) {
-        return res.status(400).json({ erro: 'Usuário sem CNPJ cadastrado para buscar notas fiscais.' });
+        return res.status(400).json({ erro: 'Usuario sem CNPJ cadastrado para buscar notas fiscais.' });
     }
 
-    // 1. Busca notas fiscais
     const dadosNfe = await fetchNotasFiscais(usuario.cnpj);
-    
-    // 2. Calcula o DAS
     const das = calcularDasAutomatico(dadosNfe.resumo.faturamento);
-    
-    // 3. Salva no usuário (mock)
+
     if (!usuario.impostosEmitidos) usuario.impostosEmitidos = [];
     usuario.impostosEmitidos.push({
         ...das,
@@ -200,10 +198,10 @@ async function gerarDasAutomatico(req, res) {
     });
     await salvarUsuario(usuario);
 
-    res.json({
+    return res.json({
         sucesso: true,
         nfe: dadosNfe,
-        das: das
+        das
     });
 }
 

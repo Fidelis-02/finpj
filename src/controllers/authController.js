@@ -4,6 +4,7 @@ const { obterUsuario, obterUsuarioPorCnpj, salvarUsuario, formatarEmail } = requ
 const { enviarEmailVerificacao } = require('../services/emailService');
 const { getFiscalSimulation } = require('../services/fiscalCache');
 const { buildDashboard } = require('../services/dashboardService');
+const { parseAnnualRevenueInput, parseMarginInput } = require('../services/companyContext');
 const taxUtils = require('../tax/utils');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -275,6 +276,9 @@ async function registerCnpj(req, res) {
     }
 
     const empresaData = empresa && typeof empresa === 'object' ? empresa : {};
+    const annualRevenue = parseAnnualRevenueInput(empresaData);
+    const margin = parseMarginInput(empresaData);
+    const now = new Date().toISOString();
     const usuario = {
         cnpj: cnpjNorm,
         passwordHash: await bcrypt.hash(password, 10),
@@ -284,9 +288,12 @@ async function registerCnpj(req, res) {
         setor: empresaData.cnae_fiscal_descricao || empresaData.atividade_principal || empresaData.setor || '',
         situacaoCadastral: empresaData.descricao_situacao_cadastral || empresaData.situacao || '',
         dadosCnpj: empresaData,
+        ...(annualRevenue ? { faturamento: annualRevenue } : {}),
+        ...(margin !== null ? { margem: margin } : {}),
         plano: planNorm,
         statusPagamento: 'pendente',
-        createdAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
         bankReports: gerarRelatorioBancario(emailSistema)
     };
 

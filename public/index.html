@@ -229,6 +229,7 @@
             <label class="company-switcher">
               <span>Empresa</span>
               <select data-company-switcher aria-label="Selecionar empresa"></select>
+              <button class="btn btn-light btn-sm" type="button" data-open-add-company title="Adicionar empresa">Adicionar</button>
             </label>
             <div class="dashboard-workbar-actions">
               <button class="btn btn-light btn-sm" type="button" data-refresh-dashboard>Atualizar</button>
@@ -631,7 +632,7 @@
       </div>
       <a class="auth0-btn" href="/api/auth/auth0/login" data-auth0-login>
         <span class="auth0-mark">A0</span>
-        Entrar com Auth0
+        Entrar com SSO
       </a>
       <p class="form-note" data-login-note></p>
     </form>
@@ -658,9 +659,33 @@
           <option value="enterprise">Enterprise</option>
         </select>
       </label>
-      <div class="company-preview" data-company-preview>Informe o CNPJ para criar a conta.</div>
+      <label>Faturamento mensal (R$)
+        <input data-register-faturamento name="faturamento" inputmode="decimal" placeholder="Ex.: 40.000,00" required>
+      </label>
+      <label>Margem estimada (%)
+        <input data-register-margem name="margem" inputmode="decimal" placeholder="Ex.: 12" required>
+      </label>
+      <div class="company-preview" data-company-preview>Informe o CNPJ e o faturamento mensal para criar a conta.</div>
       <button class="btn btn-dark full" type="submit">Criar conta</button>
       <p class="form-note" data-register-note></p>
+    </form>
+  </dialog>
+
+  <dialog class="modal" data-add-company-modal>
+    <form class="modal-shell" data-add-company-form>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">&times;</button>
+      <div class="modal-header">
+        <p class="eyebrow">Adicionar empresa</p>
+        <h2>Adicionar CNPJ</h2>
+      </div>
+      <label>CNPJ<input name="cnpj" data-add-cnpj inputmode="numeric" placeholder="00.000.000/0001-00" required></label>
+      <label>Nome da empresa (opcional)<input name="nome" data-add-nome autocomplete="organization"></label>
+      <div class="company-preview" data-add-company-preview>Digite o CNPJ para buscar os dados publicos da empresa.</div>
+      <label>Faturamento mensal (R$)<input name="faturamento" data-add-faturamento inputmode="decimal" placeholder="Ex.: 40.000,00" required></label>
+      <label>Margem estimada (%)<input name="margem" data-add-margem inputmode="decimal" placeholder="Ex.: 12" required></label>
+      <div class="form-note">Esses dados ativam uma visao inicial da empresa no dashboard.</div>
+      <button class="btn btn-dark full" type="submit">Adicionar empresa</button>
+      <p class="form-note" data-add-company-note></p>
     </form>
   </dialog>
 

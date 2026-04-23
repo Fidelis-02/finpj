@@ -1,18 +1,42 @@
 const { obterUsuario, salvarUsuario } = require('../services/database');
 const pluggyService = require('../services/pluggyService');
+const { clearDashboardCache } = require('../services/dashboardService');
+const {
+    getScopedCompanyRecord,
+    persistScopedCompanyRecord,
+    ensureCompanyBanks
+} = require('../services/companyContext');
+
+function requestedCompanyId(req = {}) {
+    return req.query?.companyId || req.body?.companyId || '';
+}
+
+function getScopedBankContext(usuario, companyId) {
+    const scoped = getScopedCompanyRecord(usuario, companyId);
+    const target = scoped.target || usuario;
+    const banks = ensureCompanyBanks(target);
+    return { scoped, target, banks };
+}
+
+function touchScopedCompany(usuario, scoped, target) {
+    const now = new Date().toISOString();
+    target.updatedAt = now;
+    persistScopedCompanyRecord(usuario, scoped, target);
+    usuario.updatedAt = now;
+}
 
 function gerarTransacoesMock(bankName) {
     const tipos = [
         { desc: 'PIX Recebido', tipo: 'entrada', cat: 'Receita' },
-        { desc: 'PIX Enviado', tipo: 'saida', cat: 'Transferência' },
+        { desc: 'PIX Enviado', tipo: 'saida', cat: 'Transferencia' },
         { desc: 'Boleto Pago', tipo: 'saida', cat: 'Fornecedor' },
         { desc: 'TED Recebida', tipo: 'entrada', cat: 'Receita' },
-        { desc: 'Tarifa Bancária', tipo: 'saida', cat: 'Taxa' },
+        { desc: 'Tarifa Bancaria', tipo: 'saida', cat: 'Taxa' },
         { desc: 'Pagamento Fornecedor', tipo: 'saida', cat: 'Fornecedor' },
         { desc: 'Recebimento Cliente', tipo: 'entrada', cat: 'Receita' },
         { desc: 'DAS Simples Nacional', tipo: 'saida', cat: 'Imposto' },
         { desc: 'Folha de Pagamento', tipo: 'saida', cat: 'RH' },
-        { desc: 'Venda Cartão', tipo: 'entrada', cat: 'Receita' }
+        { desc: 'Venda Cartao', tipo: 'entrada', cat: 'Receita' }
     ];
 
     const hoje = new Date();
@@ -58,6 +82,7 @@ function flattenBankTransactions(banks = []) {
         ...transaction,
         bankId: bank.bankId,
         bankName: bank.bankName || 'Banco',
+        companyId: bank.companyId || '',
         data: transaction.data || String(transaction.date || '').slice(0, 10),
         descricao: transaction.descricao || transaction.description || '-',
         categoria: transaction.categoria || transaction.category || 'Outros',
@@ -118,7 +143,7 @@ async function getPluggyToken(req, res) {
     }
 
     const body = {
-        erro: result.userMessage || 'A conexão bancária está temporariamente indisponível. Tente novamente mais tarde.'
+        erro: result.userMessage || 'A conexao bancaria esta temporariamente indisponivel. Tente novamente mais tarde.'
     };
     if (process.env.NODE_ENV !== 'production' && result.detail) {
         body.detalhe = result.detail;
@@ -128,54 +153,58 @@ async function getPluggyToken(req, res) {
 
 async function getBanks(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
-    return res.json({ sucesso: true, banks: usuario.connectedBanks || [] });
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    const { scoped, banks } = getScopedBankContext(usuario, requestedCompanyId(req));
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, banks });
 }
 
 async function getOpenFinanceSummary(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    const { scoped, banks } = getScopedBankContext(usuario, requestedCompanyId(req));
     return res.json({
         sucesso: true,
-        summary: summarizeOpenFinance(usuario.connectedBanks || [])
+        companyId: scoped.snapshot?.id || null,
+        summary: summarizeOpenFinance(banks)
     });
 }
 
 async function getOpenFinanceTransactions(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    const { scoped, banks } = getScopedBankContext(usuario, requestedCompanyId(req));
     const limit = Math.min(Number(req.query.limit || 50), 200);
-    const transactions = flattenBankTransactions(usuario.connectedBanks || [])
+    const transactions = flattenBankTransactions(banks)
         .sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0))
         .slice(0, limit);
-    return res.json({ sucesso: true, transactions });
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, transactions });
 }
 
 async function connectBank(req, res) {
     const { itemId } = req.body || {};
     if (!itemId) {
-        return res.status(400).json({ erro: 'itemId obrigatório para concluir a conexão.' });
+        return res.status(400).json({ erro: 'itemId obrigatorio para concluir a conexao.' });
     }
 
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
 
-    usuario.connectedBanks = usuario.connectedBanks || [];
-    if (usuario.connectedBanks.find((bank) => bank.bankId === itemId)) {
-        return res.status(400).json({ erro: 'Banco já conectado.' });
+    const { scoped, target, banks } = getScopedBankContext(usuario, requestedCompanyId(req));
+    if (banks.find((bank) => bank.bankId === itemId)) {
+        return res.status(400).json({ erro: 'Banco ja conectado.' });
     }
 
     const item = await pluggyService.getItemDetails(itemId);
     if (!item) {
-        return res.status(502).json({ erro: 'Falha ao recuperar dados da instituição financeira na Pluggy.' });
+        return res.status(502).json({ erro: 'Falha ao recuperar dados da instituicao financeira na Pluggy.' });
     }
 
-    const bankName = item.connector?.name || 'Instituição financeira';
+    const bankName = item.connector?.name || 'Instituicao financeira';
     const transactions = await carregarTransacoesPluggy(itemId, bankName);
-
     const bank = {
         bankId: itemId,
         bankName,
+        companyId: scoped.snapshot?.id || '',
         connectedAt: new Date().toISOString(),
         lastSync: new Date().toISOString(),
         status: item.status || 'connected',
@@ -183,50 +212,78 @@ async function connectBank(req, res) {
         transactions
     };
 
-    usuario.connectedBanks.push(bank);
+    banks.push(bank);
+    touchScopedCompany(usuario, scoped, target);
     await salvarUsuario(usuario);
-    return res.json({ sucesso: true, bank });
+    clearDashboardCache();
+
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank });
 }
 
 async function syncBank(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
 
-    const bank = (usuario.connectedBanks || []).find((item) => item.bankId === req.params.bankId);
-    if (!bank) return res.status(404).json({ erro: 'Banco não conectado.' });
+    const { scoped, target, banks } = getScopedBankContext(usuario, requestedCompanyId(req));
+    const bank = banks.find((item) => item.bankId === req.params.bankId);
+    if (!bank) return res.status(404).json({ erro: 'Banco nao conectado.' });
 
     bank.lastSync = new Date().toISOString();
     bank.transactions = await carregarTransacoesPluggy(bank.bankId, bank.bankName);
+    touchScopedCompany(usuario, scoped, target);
     await salvarUsuario(usuario);
-    return res.json({ sucesso: true, bank });
+    clearDashboardCache();
+
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank });
 }
 
 async function removeBank(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
 
-    usuario.connectedBanks = (usuario.connectedBanks || []).filter((bank) => bank.bankId !== req.params.bankId);
+    const { scoped, target, banks } = getScopedBankContext(usuario, requestedCompanyId(req));
+    target.connectedBanks = banks.filter((bank) => bank.bankId !== req.params.bankId);
+    touchScopedCompany(usuario, scoped, target);
     await salvarUsuario(usuario);
-    return res.json({ sucesso: true });
+    clearDashboardCache();
+
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null });
 }
 
 async function tagTransaction(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
 
     const { tag, nota } = req.body || {};
-    const banks = usuario.connectedBanks || [];
-    for (const bank of banks) {
-        const transaction = (bank.transactions || []).find((item) => item.id === req.params.txId);
-        if (transaction) {
-            transaction.tag = tag || transaction.tag;
-            transaction.nota = nota || transaction.nota;
-            break;
+    const companyId = requestedCompanyId(req);
+    const contexts = companyId
+        ? [getScopedBankContext(usuario, companyId)]
+        : [
+            getScopedBankContext(usuario, ''),
+            ...(Array.isArray(usuario.empresas)
+                ? usuario.empresas.map((company) => getScopedBankContext(usuario, company.id || company.cnpj || ''))
+                : [])
+        ];
+
+    for (const context of contexts) {
+        for (const bank of context.banks || []) {
+            const transaction = (bank.transactions || []).find((item) => item.id === req.params.txId);
+            if (transaction) {
+                transaction.tag = tag || transaction.tag;
+                transaction.nota = nota || transaction.nota;
+                if (context.target && context.scoped) {
+                    touchScopedCompany(usuario, context.scoped, context.target);
+                } else {
+                    usuario.updatedAt = new Date().toISOString();
+                }
+                await salvarUsuario(usuario);
+                clearDashboardCache();
+                return res.json({ sucesso: true });
+            }
         }
     }
 
-    await salvarUsuario(usuario);
-    return res.json({ sucesso: true });
+    return res.status(404).json({ erro: 'Transacao nao encontrada.' });
 }
 
 async function conciliar(req, res) {
@@ -248,7 +305,7 @@ async function conciliar(req, res) {
             usados.add(index);
             conciliados.push({ extrato: transacao, sistema: match, status: 'conciliado' });
         } else {
-            pendentes.push({ extrato: transacao, status: 'pendente', motivo: 'Não encontrado' });
+            pendentes.push({ extrato: transacao, status: 'pendente', motivo: 'Nao encontrado' });
         }
     });
 
@@ -267,7 +324,8 @@ async function conciliar(req, res) {
 
 async function cashflowProjection(req, res) {
     const usuario = await obterUsuario(req.userEmail);
-    const banks = usuario?.connectedBanks || [];
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    const { banks } = getScopedBankContext(usuario, requestedCompanyId(req));
     const allTransactions = banks.flatMap((bank) => bank.transactions || []);
     const entradas = allTransactions.filter((item) => item.tipo === 'entrada').reduce((sum, item) => sum + Math.abs(item.valor), 0);
     const saidas = allTransactions.filter((item) => item.tipo === 'saida').reduce((sum, item) => sum + Math.abs(item.valor), 0);

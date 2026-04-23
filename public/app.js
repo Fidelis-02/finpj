@@ -41,6 +41,7 @@ const DASHBOARD_CLIENT_CACHE_TTL_MS = 60 * 1000;
 const dashboardMemoryCache = new Map();
 let chartModulePromise = null;
 let chartObserver = null;
+let addCompanyPrompted = false;
 
 /* Service Worker */
 if ('serviceWorker' in navigator) {
@@ -96,6 +97,8 @@ function persistSession(token, email, provider = 'local') {
 }
 
 function clearSession() {
+  clearDashboardClientCache();
+  addCompanyPrompted = false;
   state.token = '';
   state.authEmail = '';
   state.provider = 'local';
@@ -205,6 +208,41 @@ function activeCompanyId() {
   return state.activeCompanyId || $('[data-company-switcher]')?.value || '';
 }
 
+function withCompanyQuery(path, companyId = activeCompanyId()) {
+  if (!companyId) return path;
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}companyId=${encodeURIComponent(companyId)}`;
+}
+
+function clearDashboardClientCache(companyId) {
+  const keys = companyId ? [dashboardCacheKey(companyId)] : [];
+  if (!keys.length) {
+    dashboardMemoryCache.clear();
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('finpj_dashboard_'))
+        .forEach((key) => sessionStorage.removeItem(key));
+    } catch {
+      // Session storage can be unavailable in private contexts.
+    }
+    return;
+  }
+
+  keys.forEach((key) => {
+    dashboardMemoryCache.delete(key);
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      // Session storage can be unavailable in private contexts.
+    }
+  });
+}
+
+function annualRevenueFromMonthlyInput(value) {
+  const monthlyRevenue = parseMoneyLike(value);
+  return monthlyRevenue ? Math.round(monthlyRevenue * 12) : 0;
+}
+
 function dashboardCacheKey(companyId = activeCompanyId()) {
   return `finpj_dashboard_${state.authEmail || 'session'}_${companyId || 'default'}`;
 }
@@ -247,6 +285,7 @@ function resetCompanyContext(companyId) {
   state.activeCompanyId = companyId || '';
   localStorage.setItem('finpj_active_company', state.activeCompanyId);
   state.dashboard = null;
+  state.profile = null;
   state.banks = [];
   state.openFinanceSummary = null;
   state.openFinanceTransactions = [];
@@ -932,27 +971,42 @@ function setKpi(name, value, note, options = {}) {
   }
 }
 
+function kpiSourceNote(source, fallback) {
+  if (source === 'real') return 'Importado do banco';
+  if (source === 'estimated') return 'Estimado pelo perfil';
+  return fallback;
+}
+
 function renderPrimaryKpis(metrics) {
+  const overviewKpis = metrics.overview?.kpis || {};
   setKpi(
     'monthlyRevenue',
     formatCurrency(metrics.monthlyRevenue || metrics.monthlyIncome || 0),
-    metrics.monthlyRevenue ? 'Periodo atual' : 'Informe faturamento ou conecte banco'
+    metrics.monthlyRevenue
+      ? kpiSourceNote(overviewKpis.monthlyRevenue?.source, 'Periodo atual')
+      : 'Informe faturamento ou conecte banco'
   );
   setKpi(
     'monthlyTaxes',
     formatCurrency(metrics.monthlyTax || metrics.taxPaid || 0),
-    metrics.monthlyTax || metrics.taxPaid ? 'Estimativa mensal' : 'Sem imposto identificado'
+    metrics.monthlyTax || metrics.taxPaid
+      ? kpiSourceNote(overviewKpis.monthlyTaxes?.source, 'Estimativa mensal')
+      : 'Sem imposto identificado'
   );
   setKpi(
     'profitMargin',
     formatPercent(metrics.margin || 0),
-    metrics.margin ? 'Base do perfil financeiro' : 'Margem nao informada',
+    metrics.margin
+      ? kpiSourceNote(overviewKpis.profitMargin?.source, 'Base do perfil financeiro')
+      : 'Margem nao informada',
     { tone: metrics.margin >= 0.15 ? 'positive' : (metrics.margin > 0 && metrics.margin < 0.1 ? 'negative' : '') }
   );
   setKpi(
     'taxSavings',
     formatCurrency(metrics.taxGap || 0),
-    metrics.taxGap ? 'Oportunidade anual estimada' : 'Sem economia calculada',
+    metrics.taxGap
+      ? kpiSourceNote(overviewKpis.taxSavings?.source, 'Oportunidade anual estimada')
+      : 'Sem economia calculada',
     { tone: metrics.taxGap > 0 ? 'positive' : '' }
   );
   setKpi(
@@ -1353,23 +1407,30 @@ function renderDashboard(payload) {
   if (user.email) state.authEmail = user.email;
   $('[data-user-title]').textContent = `Dashboard ${user.fantasia || user.nome || user.email || ''}`.trim();
   renderBusinessDashboards(state.dashboard);
+  if (!addCompanyPrompted && !dashboard.user?.cnpj && !(dashboard.companies || []).some((company) => company.cnpj)) {
+    addCompanyPrompted = true;
+    if ($('[data-add-company-preview]')) {
+      $('[data-add-company-preview]').textContent = 'Digite o CNPJ para buscar os dados publicos da empresa.';
+    }
+    openModal('[data-add-company-modal]');
+  }
 }
 
 async function loadDashboard(options = {}) {
   if (!state.token) return;
   const companyId = options.companyId ?? activeCompanyId();
+  if (options.force) clearDashboardClientCache(companyId);
   const cached = !options.force ? readCachedDashboard(companyId) : null;
   if (cached) renderDashboard(cached);
-  const query = companyId ? `?companyId=${encodeURIComponent(companyId)}` : '';
-  const data = await apiRequest(`/api/dashboard${query}`);
+  const data = await apiRequest(withCompanyQuery('/api/dashboard', companyId));
   if (data.dashboard) writeCachedDashboard(data.dashboard);
   setDashboardError('');
   renderDashboard(data);
 }
 
-async function loadProfile() {
+async function loadProfile(companyId = activeCompanyId()) {
   if (!state.token) return;
-  const data = await apiRequest('/api/profile');
+  const data = await apiRequest(withCompanyQuery('/api/profile', companyId));
   const profile = data.perfil || data.profile || data.usuario || {};
   state.profile = profile;
   const form = $('[data-profile-form]');
@@ -1398,6 +1459,21 @@ function fillCompanyFields(data) {
   $('[data-diag-setor]') && ($('[data-diag-setor]').value = data.cnae_fiscal_descricao || data.atividade_principal || data.setor || '');
 }
 
+function fillAddCompanyFields(data) {
+  if (!data) return;
+  const nome = data.razao_social || data.nome || data.nomeEmpresa || '';
+  const fantasia = data.nome_fantasia || data.fantasia || '';
+  const preview = $('[data-add-company-preview]');
+  if (preview) {
+    preview.textContent = nome
+      ? `${nome}${fantasia ? ` (${fantasia})` : ''}`
+      : 'CNPJ localizado nas bases publicas.';
+  }
+  if ($('[data-add-nome]') && !$('[data-add-nome]').value.trim()) {
+    $('[data-add-nome]').value = nome || fantasia;
+  }
+}
+
 async function lookupCnpj(cnpj) {
   const clean = onlyDigits(cnpj);
   if (clean.length !== 14) {
@@ -1407,6 +1483,19 @@ async function lookupCnpj(cnpj) {
   $('[data-cnpj-result]').textContent = 'Buscando dados públicos do CNPJ...';
   const data = await apiRequest(`/api/cnpj?cnpj=${encodeURIComponent(clean)}`);
   fillCompanyFields(data);
+}
+
+async function lookupAddCompanyCnpj(cnpj) {
+  const clean = onlyDigits(cnpj);
+  const preview = $('[data-add-company-preview]');
+  if (!preview) return;
+  if (clean.length !== 14) {
+    preview.textContent = 'Digite o CNPJ para buscar os dados publicos da empresa.';
+    return;
+  }
+  preview.textContent = 'Buscando dados publicos do CNPJ...';
+  const data = await apiRequest(`/api/cnpj?cnpj=${encodeURIComponent(clean)}`);
+  fillAddCompanyFields(data);
 }
 
 function renderAnalysisResult(targetSelector, payload) {
@@ -1559,9 +1648,9 @@ function renderAnalysesList() {
   });
 }
 
-async function loadAnalyses() {
+async function loadAnalyses(companyId = activeCompanyId()) {
   if (!state.token) return;
-  const data = await apiRequest('/api/analises');
+  const data = await apiRequest(withCompanyQuery('/api/analises', companyId));
   state.analyses = data.analises || [];
   renderAnalysesList();
   renderBusinessDashboards();
@@ -1593,9 +1682,9 @@ function renderDiagnosticsList() {
   });
 }
 
-async function loadDiagnostics() {
+async function loadDiagnostics(companyId = activeCompanyId()) {
   if (!state.token) return;
-  const data = await apiRequest('/api/diagnosticos');
+  const data = await apiRequest(withCompanyQuery('/api/diagnosticos', companyId));
   state.diagnostics = Array.isArray(data) ? data : (data.diagnosticos || []);
   renderDiagnosticsList();
   renderBusinessDashboards();
@@ -1608,12 +1697,12 @@ async function loadFiscalCalendar() {
   renderTaxCalendar();
 }
 
-async function loadBanks() {
+async function loadBanks(companyId = activeCompanyId()) {
   if (!state.token) return;
   const [banksResult, summaryResult, transactionsResult] = await Promise.allSettled([
-    apiRequest('/api/openfinance/banks'),
-    apiRequest('/api/openfinance/summary'),
-    apiRequest('/api/openfinance/transactions?limit=50')
+    apiRequest(withCompanyQuery('/api/openfinance/banks', companyId)),
+    apiRequest(withCompanyQuery('/api/openfinance/summary', companyId)),
+    apiRequest(withCompanyQuery('/api/openfinance/transactions?limit=50', companyId))
   ]);
   if (banksResult.status === 'rejected') throw banksResult.reason;
   state.banks = banksResult.value.banks || [];
@@ -1760,13 +1849,24 @@ async function register(event) {
   if (cnpj.length !== 14) throw new Error('Informe um CNPJ com 14 dígitos.');
   if (password.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
   if (password !== confirm) throw new Error('As senhas não conferem.');
+  if (!annualRevenueFromMonthlyInput($('[data-register-faturamento]')?.value)) throw new Error('Informe o faturamento mensal da empresa.');
+  if (!Number.isFinite(parsePercentLike($('[data-register-margem]')?.value))) throw new Error('Informe a margem estimada da empresa.');
 
   const button = $('button[type="submit"]', form);
   setLoading(button, true, 'Criando...');
   try {
+    const annualRevenue = annualRevenueFromMonthlyInput($('[data-register-faturamento]')?.value);
+    const margin = parsePercentLike($('[data-register-margem]')?.value);
+    const empresaPayload = {
+      ...(state.cnpjData || {}),
+      faturamento: annualRevenue || state.cnpjData?.faturamento,
+      monthlyRevenue: annualRevenue ? Math.round(annualRevenue / 12) : undefined,
+      margem: Number.isFinite(margin) ? margin : state.cnpjData?.margem
+    };
+
     await apiRequest('/api/auth/register-cnpj', {
       method: 'POST',
-      body: JSON.stringify({ cnpj, password, plan, empresa: state.cnpjData })
+      body: JSON.stringify({ cnpj, password, plan, empresa: empresaPayload })
     });
     const login = await apiRequest('/api/auth/login-cnpj', { method: 'POST', body: JSON.stringify({ cnpj, password }) });
     persistSession(login.token, login.email, 'cnpj');
@@ -1789,6 +1889,45 @@ async function redirectToCheckout(plan) {
   window.location.href = data.checkoutUrl;
 }
 
+async function addCompany(event) {
+  event.preventDefault();
+  if (!state.token) {
+    openModal('[data-login-modal]');
+    return;
+  }
+  const form = event.currentTarget;
+  const cnpj = onlyDigits(form.elements.cnpj?.value || form.querySelector('[data-add-cnpj]')?.value || '');
+  const nome = (form.elements.nome?.value || '').trim();
+  const faturamento = annualRevenueFromMonthlyInput(form.elements.faturamento?.value || '');
+  const margem = parsePercentLike(form.elements.margem?.value || '');
+  if (cnpj.length !== 14) throw new Error('Informe um CNPJ válido (14 dígitos).');
+  if (!faturamento) throw new Error('Informe o faturamento mensal da empresa.');
+  if (!Number.isFinite(margem) || margem < 0) throw new Error('Informe a margem estimada da empresa.');
+
+  const button = $('button[type="submit"]', form);
+  setLoading(button, true, 'Adicionando...');
+  try {
+    const payload = {
+      cnpj,
+      nome,
+      faturamento,
+      monthlyRevenue: Math.round(faturamento / 12),
+      margem
+    };
+    const data = await apiRequest('/api/companies', { method: 'POST', body: JSON.stringify(payload) });
+    const companyId = data?.company?.id || data?.companyId || (data?.company && data.company.id) || null;
+    closeModals();
+    if (companyId) {
+      state.activeCompanyId = companyId;
+      localStorage.setItem('finpj_active_company', companyId);
+    }
+    await loadWorkspaceData({ companyId: companyId || undefined, forceDashboard: true });
+    showToast('Empresa adicionada.', 'success');
+  } finally {
+    setLoading(button, false);
+  }
+}
+
 async function connectBank(button) {
   if (!state.token) {
     openModal('[data-login-modal]');
@@ -1809,8 +1948,15 @@ async function connectBank(button) {
           showToast('Banco conectado, mas a Pluggy não retornou itemId.', 'error');
           return;
         }
-        await apiRequest('/api/openfinance/connect', { method: 'POST', body: JSON.stringify({ itemId }) });
-        await loadBanks();
+        const companyId = activeCompanyId();
+        await apiRequest('/api/openfinance/connect', {
+          method: 'POST',
+          body: JSON.stringify({ itemId, companyId: companyId || undefined })
+        });
+        await Promise.all([
+          loadBanks(companyId),
+          loadDashboard({ companyId, force: true })
+        ]);
         showToast('Banco conectado com sucesso.', 'success');
       },
       onError: (error) => showToast(error?.message || 'Falha ao conectar banco.', 'error')
@@ -1835,6 +1981,7 @@ async function submitDiagnostic(event) {
     regime: form.elements.regime.value,
     faturamento,
     margem,
+    companyId: activeCompanyId() || undefined,
     ncm: form.elements.ncm ? form.elements.ncm.value.trim() : ''
   };
   const button = $('button[type="submit"]', form);
@@ -1842,7 +1989,7 @@ async function submitDiagnostic(event) {
   try {
     const data = await apiRequest('/api/diagnosticos', { method: 'POST', body: JSON.stringify(payload) });
     renderAnalysisResult('[data-diagnostic-result]', data.resultados || data);
-    await loadDiagnostics();
+    await loadDiagnostics(activeCompanyId());
     showToast('Diagnóstico gerado.', 'success');
   } finally {
     setLoading(button, false);
@@ -1862,13 +2009,14 @@ async function uploadAiDocument(event) {
   const button = $('button[type="submit"]', form);
   setLoading(button, true, 'Enviando...');
   try {
+    const companyId = activeCompanyId();
     let data;
     const useR2 = file.size > 4 * 1024 * 1024;
     if (useR2) {
       try {
         const urlRes = await apiRequest('/api/upload-url', {
           method: 'POST',
-          body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, companyId: companyId || undefined })
         });
         if (urlRes.sucesso && urlRes.uploadUrl) {
           setLoading(button, true, 'Enviando para storage...');
@@ -1881,7 +2029,7 @@ async function uploadAiDocument(event) {
           setLoading(button, true, 'Analisando...');
           data = await apiRequest('/api/process-document', {
             method: 'POST',
-            body: JSON.stringify({ key: urlRes.key, tipo, contexto, filename: file.name, size: file.size })
+            body: JSON.stringify({ key: urlRes.key, tipo, contexto, filename: file.name, size: file.size, companyId: companyId || undefined })
           });
         } else {
           throw new Error('R2 not available');
@@ -1892,6 +2040,7 @@ async function uploadAiDocument(event) {
         const body = new FormData();
         body.append('tipo', tipo);
         body.append('contexto', contexto);
+        if (companyId) body.append('companyId', companyId);
         body.append('arquivo', file);
         data = await apiRequest('/api/upload-documento', { method: 'POST', body });
       }
@@ -1900,11 +2049,12 @@ async function uploadAiDocument(event) {
       const body = new FormData();
       body.append('tipo', tipo);
       body.append('contexto', contexto);
+      if (companyId) body.append('companyId', companyId);
       body.append('arquivo', file);
       data = await apiRequest('/api/upload-documento', { method: 'POST', body });
     }
     renderAnalysisResult('[data-ai-result]', data);
-    await loadAnalyses();
+    await loadAnalyses(companyId);
     showToast('Análise concluída.', 'success');
   } finally {
     setLoading(button, false);
@@ -1912,14 +2062,22 @@ async function uploadAiDocument(event) {
 }
 
 async function syncBank(bankId) {
-  await apiRequest(`/api/openfinance/sync/${encodeURIComponent(bankId)}`, { method: 'POST' });
-  await loadBanks();
+  const companyId = activeCompanyId();
+  await apiRequest(withCompanyQuery(`/api/openfinance/sync/${encodeURIComponent(bankId)}`, companyId), { method: 'POST' });
+  await Promise.all([
+    loadBanks(companyId),
+    loadDashboard({ companyId, force: true })
+  ]);
   showToast('Banco sincronizado.', 'success');
 }
 
 async function removeBank(bankId) {
-  await apiRequest(`/api/openfinance/banks/${encodeURIComponent(bankId)}`, { method: 'DELETE' });
-  await loadBanks();
+  const companyId = activeCompanyId();
+  await apiRequest(withCompanyQuery(`/api/openfinance/banks/${encodeURIComponent(bankId)}`, companyId), { method: 'DELETE' });
+  await Promise.all([
+    loadBanks(companyId),
+    loadDashboard({ companyId, force: true })
+  ]);
   showToast('Banco removido.', 'success');
 }
 
@@ -1938,14 +2096,15 @@ function useDiagnostic(id) {
 }
 
 async function deleteDiagnostic(id) {
-  await apiRequest(`/api/diagnosticos/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  await loadDiagnostics();
+  await apiRequest(withCompanyQuery(`/api/diagnosticos/${encodeURIComponent(id)}`), { method: 'DELETE' });
+  await loadDiagnostics(activeCompanyId());
   showToast('Diagnóstico excluído.', 'success');
 }
 
 async function saveProfile(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  const companyId = activeCompanyId();
   const payload = {
     nome: form.elements.nome.value.trim(),
     fantasia: form.elements.fantasia.value.trim(),
@@ -1954,10 +2113,15 @@ async function saveProfile(event) {
     regime: form.elements.regime?.value || '',
     setor: form.elements.setor?.value.trim() || '',
     faturamento: parseMoneyLike(form.elements.faturamento?.value || ''),
-    margem: parsePercentLike(form.elements.margem?.value || '', 0)
+    margem: parsePercentLike(form.elements.margem?.value || '', 0),
+    companyId: companyId || undefined
   };
-  await apiRequest('/api/profile', { method: 'PUT', body: JSON.stringify(payload) });
-  await Promise.all([loadProfile(), loadDashboard()]);
+  clearDashboardClientCache(companyId);
+  await apiRequest(withCompanyQuery('/api/profile', companyId), { method: 'PUT', body: JSON.stringify(payload) });
+  await Promise.all([
+    loadProfile(companyId),
+    loadDashboard({ companyId, force: true })
+  ]);
   showToast('Perfil salvo.', 'success');
 }
 
@@ -1980,10 +2144,10 @@ async function loadWorkspaceData(options = {}) {
   const companyId = options.companyId ?? activeCompanyId();
   const tasks = [
     loadDashboard({ companyId, force: options.forceDashboard }),
-    loadBanks(),
-    loadProfile(),
-    loadAnalyses(),
-    loadDiagnostics(),
+    loadBanks(companyId),
+    loadProfile(companyId),
+    loadAnalyses(companyId),
+    loadDiagnostics(companyId),
     loadFiscalCalendar()
   ];
   const results = await Promise.allSettled(tasks);
@@ -2061,7 +2225,7 @@ function bindEvents() {
     if (!companyId || companyId === state.activeCompanyId) return;
     resetCompanyContext(companyId);
     showDashboardSkeletons();
-    loadDashboard({ companyId, force: true }).catch((error) => {
+    loadWorkspaceData({ companyId, forceDashboard: true }).catch((error) => {
       setDashboardError(error.message);
       showToast(error.message, 'error');
     });
@@ -2137,6 +2301,44 @@ function bindEvents() {
       ? `Conta será criada para o CNPJ ${formatCnpj(cnpj)}.`
       : 'Informe o CNPJ para criar a conta.';
     cnpjInputHandler(cnpj);
+  });
+  ['[data-register-faturamento]', '[data-add-faturamento]'].forEach((selector) => {
+    $(selector)?.addEventListener('input', (event) => {
+      const formatted = formatCurrencyInput(event.target.value);
+      if (formatted !== event.target.value) event.target.value = formatted;
+    });
+  });
+  ['[data-register-margem]', '[data-add-margem]'].forEach((selector) => {
+    $(selector)?.addEventListener('input', (event) => {
+      const formatted = formatPercentInput(event.target.value);
+      if (formatted !== event.target.value) event.target.value = formatted;
+    });
+  });
+
+  // Add Company modal handlers
+  const addCompanyCnpjHandler = debounce((cnpj) => {
+    if (cnpj.length !== 14) return;
+    lookupAddCompanyCnpj(cnpj).catch((error) => {
+      if ($('[data-add-company-preview]')) {
+        $('[data-add-company-preview]').textContent = error.message || 'Nao foi possivel consultar este CNPJ agora.';
+      }
+    });
+  }, 450);
+  $$('[data-open-add-company]').forEach((button) => button.addEventListener('click', () => {
+    if ($('[data-add-company-preview]')) {
+      $('[data-add-company-preview]').textContent = 'Digite o CNPJ para buscar os dados publicos da empresa.';
+    }
+    openModal('[data-add-company-modal]');
+  }));
+  $('[data-add-company-form]')?.addEventListener('submit', (event) => addCompany(event).catch((error) => showToast(error.message, 'error')));
+  $('[data-add-cnpj]')?.addEventListener('input', (event) => {
+    const cnpj = onlyDigits(event.target.value);
+    event.target.value = formatCnpj(cnpj);
+    event.target.setAttribute('maxlength', '18');
+    if ($('[data-add-company-preview]') && cnpj.length !== 14) {
+      $('[data-add-company-preview]').textContent = 'Digite o CNPJ para buscar os dados publicos da empresa.';
+    }
+    addCompanyCnpjHandler(cnpj);
   });
 
   $('[data-login-cnpj]')?.addEventListener('input', (event) => {

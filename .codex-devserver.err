@@ -1,0 +1,9 @@
+=3002 : O termo '=3002' n∆o Ç reconhecido como nome de cmdlet, funá∆o, arquivo de script ou programa oper†vel. 
+Verifique a grafia do nome ou, se um caminho tiver sido inclu°do, veja se o caminho est† correto e tente novamente.
+No linha:1 caractere:1
++ ='3002'; Set-Location 'D:\Projetos Devs\finpj'; node local-server.js
++ ~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (=3002:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+SSO Google: GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET n√£o definidos.

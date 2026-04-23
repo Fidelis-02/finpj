@@ -1,0 +1,7 @@
+◇ injected env (22) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+✅ Auth0 OAuth configured
+   Login:    https://finpj.vercel.app/api/auth/auth0/login
+   Callback: https://finpj.vercel.app/api/auth/auth0/callback
+   Logout:   https://finpj.vercel.app/api/auth/auth0/logout
+FinPJ em http://localhost:3001

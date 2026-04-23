@@ -2284,11 +2284,15 @@ body.app-session::before {
 }
 
 .company-switcher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   width: min(360px, 100%);
   gap: 6px;
+  align-items: end;
 }
 
 .company-switcher span {
+  grid-column: 1 / -1;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 900;

@@ -1,5 +1,6 @@
 const { salvarAnalise, obterAnalises, obterUsuario } = require('../services/database');
 const { analisarComGroq } = require('../services/aiService');
+const { getScopedCompanyRecord, attachCompanyScope, filterRecordsByCompany } = require('../services/companyContext');
 
 const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 16000);
 const MAX_ANALYSES_RETURNED = Number(process.env.MAX_ANALYSES_RETURNED || 20);
@@ -263,9 +264,11 @@ async function uploadDocumento(req, res) {
     texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
     console.log(`[uploadDocumento] trechoEnviadoIA=${texto.length} caracteres`);
 
+    const usuario = req.userEmail ? await obterUsuario(req.userEmail) : null;
+    const scoped = usuario ? getScopedCompanyRecord(usuario, req.body?.companyId) : null;
     const analise = await analisarComGroq(tipo, texto, contexto);
     const resultadoCompacto = compactarResultadoAnalise(analise.dados);
-    await salvarAnalise({
+    await salvarAnalise(attachCompanyScope({
         email: req.userEmail,
         tipo,
         nomeArquivo: req.file.originalname,
@@ -274,15 +277,20 @@ async function uploadDocumento(req, res) {
         resultado: resultadoCompacto,
         fonte: analise.fonte,
         confianca: analise.confianca
-    });
+    }, scoped));
 
     res.json({ sucesso: true, ...analise, dados: resultadoCompacto, nomeArquivo: req.file.originalname });
 }
 
 async function getAnalises(req, res) {
     try {
-        const analises = await obterAnalises(req.userEmail);
-        const compactas = analises.slice(0, MAX_ANALYSES_RETURNED).map((analise) => ({
+        const [usuario, analises] = await Promise.all([
+            obterUsuario(req.userEmail),
+            obterAnalises(req.userEmail)
+        ]);
+        const scoped = usuario ? getScopedCompanyRecord(usuario, req.query?.companyId) : null;
+        const filtered = scoped ? filterRecordsByCompany(analises, scoped) : analises;
+        const compactas = filtered.slice(0, MAX_ANALYSES_RETURNED).map((analise) => ({
             id: analise.id,
             tipo: analise.tipo,
             nomeArquivo: analise.nomeArquivo,
@@ -290,6 +298,7 @@ async function getAnalises(req, res) {
             data: analise.data,
             fonte: analise.fonte,
             confianca: analise.confianca,
+            companyId: analise.companyId || null,
             resultado: compactarResultadoAnalise(analise.resultado)
         }));
         res.json({ sucesso: true, analises: compactas });
@@ -300,13 +309,14 @@ async function getAnalises(req, res) {
 }
 
 async function postChat(req, res) {
-    const { message, context } = req.body;
+    const { message, context, companyId } = req.body;
     if (!message) return res.status(400).json({ erro: 'Mensagem obrigatória.' });
     const GROQ_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_KEY) return res.json({ sucesso: true, resposta: 'A análise por IA está temporariamente indisponível.', fonte: 'local' });
     try {
         const usuario = await obterUsuario(req.userEmail);
-        const banks = usuario?.connectedBanks || [];
+        const scoped = usuario ? getScopedCompanyRecord(usuario, companyId) : null;
+        const banks = scoped?.target?.connectedBanks || usuario?.connectedBanks || [];
         const txSummary = banks.flatMap(b => (b.transactions || []).slice(0, 5).map(t => `${t.data}: ${t.descricao} R$${t.valor}`)).join('\n');
         const sysPrompt = `Você é o assistente financeiro FinPJ para PMEs brasileiras. Responda de forma concisa e prática em português. Dados do usuário:\n- E-mail: ${req.userEmail}\n- Bancos conectados: ${banks.length}\n- Últimas transações:\n${txSummary || 'Nenhuma'}\n${context || ''}`;
         const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -355,7 +365,7 @@ async function getUploadUrl(req, res) {
 }
 
 async function processDocumentFromUrl(req, res) {
-    const { key, tipo = 'dre', contexto = '', filename, size } = req.body;
+    const { key, tipo = 'dre', contexto = '', filename, size, companyId } = req.body;
     if (!key) {
         return res.status(400).json({ erro: 'Chave do arquivo é obrigatória.' });
     }
@@ -413,9 +423,11 @@ async function processDocumentFromUrl(req, res) {
         }
         texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
         console.log(`[processDocumentFromUrl] trechoEnviadoIA=${texto.length} caracteres`);
+        const usuario = req.userEmail ? await obterUsuario(req.userEmail) : null;
+        const scoped = usuario ? getScopedCompanyRecord(usuario, companyId) : null;
         const analise = await analisarComGroq(tipo, texto, contexto);
         const resultadoCompacto = compactarResultadoAnalise(analise.dados);
-        await salvarAnalise({
+        await salvarAnalise(attachCompanyScope({
             email: req.userEmail,
             tipo,
             nomeArquivo: filename || key,
@@ -424,7 +436,7 @@ async function processDocumentFromUrl(req, res) {
             resultado: resultadoCompacto,
             fonte: analise.fonte,
             confianca: analise.confianca
-        });
+        }, scoped));
         await deleteObject(key).catch((e) => {
             console.warn('[processDocumentFromUrl] Falha ao deletar arquivo temporário:', e.message);
         });

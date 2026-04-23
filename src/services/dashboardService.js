@@ -352,25 +352,29 @@ function buildDashboard(usuario = {}, options = {}) {
                     label: 'Receita mensal',
                     value: monthlyRevenue,
                     drilldown: 'financial',
-                    empty: monthlyRevenue <= 0
+                    empty: monthlyRevenue <= 0,
+                    source: monthlyIncome ? 'real' : (company.faturamento ? 'estimated' : 'fallback')
                 },
                 monthlyTaxes: {
                     label: 'Impostos mensais',
                     value: monthlyTaxes,
                     drilldown: 'tax',
-                    empty: monthlyTaxes <= 0
+                    empty: monthlyTaxes <= 0,
+                    source: taxPaid ? 'real' : (fiscal.monthlyTax && company.faturamento ? 'estimated' : 'fallback')
                 },
                 profitMargin: {
                     label: 'Margem de lucro',
                     value: margin,
                     drilldown: 'statements',
-                    empty: margin <= 0
+                    empty: margin <= 0,
+                    source: (company.margem ?? company.margemEstimada) ? 'estimated' : (monthlyIncome ? 'real' : 'fallback')
                 },
                 taxSavings: {
                     label: 'Economia estimada',
                     value: fiscal.taxSavings,
                     drilldown: 'diagnostics',
-                    empty: fiscal.taxSavings <= 0
+                    empty: fiscal.taxSavings <= 0,
+                    source: fiscal.taxSavings ? 'estimated' : 'fallback'
                 },
                 alerts: {
                     label: 'Alertas',
@@ -422,5 +426,7 @@ module.exports = {
     buildDashboard,
     clearDashboardCache,
     generateBankReports,
-    DASHBOARD_CACHE_TTL_MS
+    DASHBOARD_CACHE_TTL_MS,
+    getCompanies,
+    resolveCompany
 };
