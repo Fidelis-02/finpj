@@ -12,8 +12,8 @@ const headerMarkup = `
     </button>
 
     <div class="landing-menu" id="landing-menu" data-mobile-menu>
-      <nav class="nav landing-nav" data-main-nav aria-label="Navegação principal">
-        <a href="#solucoes" data-nav-link>Soluções</a>
+      <nav class="nav landing-nav" data-main-nav aria-label="Navegacao principal">
+        <a href="#solucoes" data-nav-link>Solu&ccedil;&otilde;es</a>
         <a href="#recursos" data-nav-link>Recursos</a>
         <a href="#planos" data-nav-link>Planos</a>
         <a href="#sobre" data-nav-link>Sobre</a>
@@ -33,22 +33,22 @@ const publicAreaMarkup = `
   <section id="home" class="hero landing-hero">
     <div class="landing-hero-shell">
       <div class="landing-hero-copy" data-reveal>
-        <p class="landing-badge">INTELIGÊNCIA TRIBUTÁRIA E FINANCEIRA</p>
+        <p class="landing-badge">INTELIG&Ecirc;NCIA TRIBUT&Aacute;RIA E FINANCEIRA</p>
         <h1>Pague menos imposto e entenda seu financeiro em minutos</h1>
-        <p class="landing-hero-text">O FinPJ analisa sua empresa e mostra o melhor regime tributário e onde você está perdendo dinheiro.</p>
+        <p class="landing-hero-text">O FinPJ analisa sua empresa e mostra o melhor regime tribut&aacute;rio e onde voc&ecirc; est&aacute; perdendo dinheiro.</p>
 
         <div class="hero-actions landing-hero-actions">
-          <a class="btn btn-dark btn-lg landing-cta-primary" href="/cadastro" data-open-register>Analisar minha empresa grátis</a>
-          <a class="btn btn-light btn-lg landing-cta-secondary" href="#solucoes">Ver simulação</a>
+          <a class="btn btn-dark btn-lg landing-cta-primary" href="/cadastro" data-open-register>Analisar minha empresa gr&aacute;tis</a>
+          <a class="btn btn-light btn-lg landing-cta-secondary" href="#solucoes">Ver simula&ccedil;&atilde;o</a>
         </div>
 
         <div class="landing-trust-notes" aria-label="Diferenciais imediatos">
-          <span>Sem cartão de crédito</span>
+          <span>Sem cart&atilde;o de cr&eacute;dito</span>
           <span>Resultado imediato</span>
         </div>
       </div>
 
-      <aside class="landing-dashboard-showcase" aria-label="Prévia do dashboard FinPJ" data-reveal>
+      <aside class="landing-dashboard-showcase" aria-label="Previa do dashboard FinPJ" data-reveal>
         <div class="landing-dashboard-glow" aria-hidden="true"></div>
         <div class="landing-dashboard-frame">
           <div class="landing-dashboard-sidebar-preview">
@@ -56,12 +56,12 @@ const publicAreaMarkup = `
               <img src="/logo.svg" alt="FinPJ" width="108" height="30">
             </a>
             <nav class="landing-dashboard-menu" aria-label="Menu do dashboard">
-              <span class="is-active">Visão Geral</span>
-              <span>Simulações</span>
-              <span>Relatórios</span>
+              <span class="is-active">Vis&atilde;o Geral</span>
+              <span>Simula&ccedil;&otilde;es</span>
+              <span>Relat&oacute;rios</span>
               <span>Insights</span>
               <span>Documentos</span>
-              <span>Configurações</span>
+              <span>Configura&ccedil;&otilde;es</span>
             </nav>
           </div>
 
@@ -71,7 +71,7 @@ const publicAreaMarkup = `
                 <strong>Empresa Exemplo LTDA</strong>
                 <small>12.345.678/0001-90</small>
               </div>
-              <span class="landing-dashboard-chip">Análise atualizada</span>
+              <span class="landing-dashboard-chip">An&aacute;lise atualizada</span>
             </div>
 
             <div class="landing-dashboard-kpis">
@@ -97,13 +97,13 @@ const publicAreaMarkup = `
               <article class="landing-chart-card">
                 <div class="landing-chart-header">
                   <div>
-                    <strong>Comparativo tributário</strong>
+                    <strong>Comparativo tribut&aacute;rio</strong>
                     <small>12 meses</small>
                   </div>
                   <span class="landing-chart-pill">-38,4%</span>
                 </div>
                 <svg class="landing-line-chart" viewBox="0 0 420 180" role="img"
-                  aria-label="Gráfico comparativo entre imposto atual e novo imposto">
+                  aria-label="Grafico comparativo entre imposto atual e novo imposto">
                   <defs>
                     <linearGradient id="lineFillCurrent" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.28"></stop>
@@ -121,20 +121,20 @@ const publicAreaMarkup = `
                 </svg>
                 <div class="landing-chart-legend">
                   <span><i class="legend-current"></i>Imposto atual</span>
-                  <span><i class="legend-best"></i>Novo cenário</span>
+                  <span><i class="legend-best"></i>Novo cen&aacute;rio</span>
                 </div>
               </article>
 
               <article class="landing-chart-card landing-donut-card">
                 <div class="landing-chart-header">
                   <div>
-                    <strong>Distribuição fiscal</strong>
+                    <strong>Distribui&ccedil;&atilde;o fiscal</strong>
                     <small>Receita anual</small>
                   </div>
                 </div>
                 <div class="landing-donut-wrap">
                   <svg class="landing-donut-chart" viewBox="0 0 180 180" role="img"
-                    aria-label="Distribuição fiscal por categoria">
+                    aria-label="Distribuicao fiscal por categoria">
                     <circle cx="90" cy="90" r="54" class="landing-donut-track"></circle>
                     <circle cx="90" cy="90" r="54" class="landing-donut-segment landing-donut-primary"
                       stroke-dasharray="210 339" stroke-dashoffset="0"></circle>
@@ -151,7 +151,7 @@ const publicAreaMarkup = `
                 <div class="landing-donut-legend">
                   <span><i class="legend-current"></i>Tributos diretos</span>
                   <span><i class="legend-best"></i>Encargos financeiros</span>
-                  <span><i class="legend-neutral"></i>Operação</span>
+                  <span><i class="legend-neutral"></i>Opera&ccedil;&atilde;o</span>
                 </div>
               </article>
             </div>
@@ -173,7 +173,7 @@ const publicAreaMarkup = `
       </article>
       <article class="landing-stat-card">
         <strong>98%</strong>
-        <span>Precisão das análises</span>
+        <span>Precis&atilde;o das an&aacute;lises</span>
       </article>
       <article class="landing-stat-card">
         <strong>+15</strong>
@@ -185,45 +185,28 @@ const publicAreaMarkup = `
   <section id="solucoes" class="landing-section landing-product-section">
     <div class="landing-section-heading" data-reveal>
       <p class="eyebrow landing-eyebrow">Preview do produto</p>
-      <h2>Veja o FinPJ transformar dados dispersos em uma decisão clara</h2>
-      <p>Use o simulador público para testar o cenário da sua empresa e depois continue no dashboard completo com insights, comparativos e histórico fiscal.</p>
+      <h2>Simule o cen&aacute;rio da sua empresa antes de entrar</h2>
+      <p>Menos texto, mais sinal: simule regime, entenda impacto no caixa e veja oportunidades reais de economia.</p>
     </div>
 
     <div class="landing-product-grid">
       <article class="landing-product-card" data-reveal>
         <div class="landing-product-card-header">
-          <span class="landing-chip">Preview inteligente</span>
-          <h3>Contexto financeiro, tributário e operacional no mesmo fluxo</h3>
+          <span class="landing-chip">O que o FinPJ entrega</span>
+          <h3>Clareza tribut&aacute;ria e financeira para decidir r&aacute;pido</h3>
         </div>
         <div class="landing-product-feature-list">
           <div>
-            <strong>Diagnóstico tributário imediato</strong>
-            <p>Compare cenários antes de contratar e veja rapidamente onde existe ineficiência fiscal.</p>
+            <strong>Diagn&oacute;stico em minutos</strong>
+            <p>Veja o regime mais eficiente e o potencial de economia.</p>
           </div>
           <div>
-            <strong>Leitura executiva para PMEs</strong>
-            <p>Traduza números em indicadores acionáveis com visão de dono, financeiro e contador.</p>
+            <strong>Leitura executiva</strong>
+            <p>Entenda margem, press&atilde;o tribut&aacute;ria e impacto em caixa.</p>
           </div>
           <div>
-            <strong>Decisão guiada por simulação</strong>
-            <p>Entenda impacto em caixa, imposto e margem antes de tomar qualquer decisão de regime.</p>
-          </div>
-        </div>
-        <div class="landing-product-insight-grid">
-          <div class="landing-insight-tile">
-            <span>Eficiência fiscal</span>
-            <strong>+17,8%</strong>
-            <small>Oportunidade média identificada</small>
-          </div>
-          <div class="landing-insight-tile">
-            <span>Tempo de leitura</span>
-            <strong>3 min</strong>
-            <small>Para o primeiro diagnóstico</small>
-          </div>
-          <div class="landing-insight-tile">
-            <span>Regimes comparados</span>
-            <strong>3 cenários</strong>
-            <small>Simples, Presumido e Real</small>
+            <strong>Continuidade no dashboard</strong>
+            <p>Entre na plataforma e aprofunde a an&aacute;lise com hist&oacute;rico e insights.</p>
           </div>
         </div>
       </article>
@@ -231,7 +214,7 @@ const publicAreaMarkup = `
       <div class="simulator-grid landing-simulator-grid" data-reveal>
         <form class="simulator-card landing-simulator-form" data-public-diagnostic-form>
           <div class="landing-card-heading">
-            <span class="landing-chip">Simulação pública</span>
+            <span class="landing-chip">Simula&ccedil;&atilde;o p&uacute;blica</span>
             <h3>Teste a sua empresa antes de entrar</h3>
           </div>
 
@@ -240,7 +223,7 @@ const publicAreaMarkup = `
           </label>
 
           <div class="company-info" data-company-info style="display:none;">
-            <div class="info-row"><span>Razão Social</span><strong data-company-nome></strong></div>
+            <div class="info-row"><span>Raz&atilde;o Social</span><strong data-company-nome></strong></div>
             <div class="info-row"><span>CNAE Principal</span><strong data-company-cnae></strong></div>
             <div class="info-row"><span>Atividade Detectada</span><strong data-company-atividade></strong></div>
           </div>
@@ -257,7 +240,7 @@ const publicAreaMarkup = `
 
           <label>Regime atual (opcional)
             <select name="regime_atual">
-              <option value="">Não informado</option>
+              <option value="">N&atilde;o informado</option>
               <option value="simples">Simples Nacional</option>
               <option value="presumido">Lucro Presumido</option>
               <option value="real">Lucro Real</option>
@@ -265,17 +248,17 @@ const publicAreaMarkup = `
           </label>
 
           <button class="btn btn-dark full landing-simulate-button" type="submit" data-public-simulate-button
-            disabled>Gerar simulação agora</button>
+            disabled>Gerar simula&ccedil;&atilde;o agora</button>
         </form>
 
         <article class="simulator-card simulator-result landing-simulator-result">
           <div class="landing-card-heading">
-            <span class="landing-chip">Resultado da análise</span>
-            <h3>Melhor opção estimada</h3>
+            <span class="landing-chip">Resultado da an&aacute;lise</span>
+            <h3>Melhor op&ccedil;&atilde;o estimada</h3>
           </div>
           <strong data-public-best-regime>Aguardando CNPJ</strong>
-          <p data-public-diagnostic-copy>Preencha os dados para visualizar uma comparação tributária prévia.</p>
-          <small class="simulator-result-status" data-public-simulator-status>Digite o CNPJ para liberar a análise.</small>
+          <p data-public-diagnostic-copy>Preencha os dados para visualizar uma compara&ccedil;&atilde;o tribut&aacute;ria pr&eacute;via.</p>
+          <small class="simulator-result-status" data-public-simulator-status>Digite o CNPJ para liberar a an&aacute;lise.</small>
           <div class="simulator-readiness" data-public-simulator-checks>
             <span data-check="cnpj">CNPJ pendente</span>
             <span data-check="premissas">Premissas pendentes</span>
@@ -291,32 +274,32 @@ const publicAreaMarkup = `
     <div class="landing-section-heading" data-reveal>
       <p class="eyebrow landing-eyebrow">Como funciona</p>
       <h2>Como funciona o FinPJ</h2>
-      <p>Em 3 passos simples, você descobre onde economizar e como crescer com segurança.</p>
+      <p>Em 3 passos simples, voc&ecirc; descobre onde economizar e como crescer com seguran&ccedil;a.</p>
     </div>
 
     <div class="landing-steps-grid">
       <article class="landing-step-card" data-reveal>
         <span class="landing-step-number">1</span>
         <h3>Informe os dados</h3>
-        <p>Preencha os dados básicos da sua empresa com segurança.</p>
+        <p>Preencha os dados b&aacute;sicos da sua empresa com seguran&ccedil;a.</p>
       </article>
       <article class="landing-step-card" data-reveal>
         <span class="landing-step-number">2</span>
-        <h3>Análise inteligente</h3>
-        <p>Nossa IA analisa seu cenário tributário e financeiro.</p>
+        <h3>An&aacute;lise inteligente</h3>
+        <p>Nossa IA analisa seu cen&aacute;rio tribut&aacute;rio e financeiro.</p>
       </article>
       <article class="landing-step-card" data-reveal>
         <span class="landing-step-number">3</span>
         <h3>Receba insights</h3>
-        <p>Veja oportunidades, economias e recomendações personalizadas.</p>
+        <p>Veja oportunidades, economias e recomenda&ccedil;&otilde;es personalizadas.</p>
       </article>
     </div>
   </section>
 
   <section id="recursos" class="landing-section landing-benefits-section">
     <div class="landing-section-heading" data-reveal>
-      <p class="eyebrow landing-eyebrow">Benefícios</p>
-      <h2>Transforme dados fiscais em decisões estratégicas</h2>
+      <p class="eyebrow landing-eyebrow">Benef&iacute;cios</p>
+      <h2>Transforme dados fiscais em decis&otilde;es estrat&eacute;gicas</h2>
     </div>
 
     <div class="landing-benefits-grid">
@@ -329,12 +312,12 @@ const publicAreaMarkup = `
         <p>Veja onde sua empresa ganha, perde e pode melhorar.</p>
       </article>
       <article class="landing-benefit-card" data-reveal>
-        <h3>Automatize análises financeiras</h3>
-        <p>Reduza trabalho manual e ganhe velocidade na tomada de decisão.</p>
+        <h3>Automatize an&aacute;lises financeiras</h3>
+        <p>Reduza trabalho manual e ganhe velocidade na tomada de decis&atilde;o.</p>
       </article>
       <article class="landing-benefit-card" data-reveal>
-        <h3>Tenha visão de CFO</h3>
-        <p>Acesse indicadores que normalmente só empresas maiores possuem.</p>
+        <h3>Tenha vis&atilde;o de CFO</h3>
+        <p>Acesse indicadores que normalmente s&oacute; empresas maiores possuem.</p>
       </article>
     </div>
   </section>
@@ -347,24 +330,24 @@ const publicAreaMarkup = `
 
     <div class="landing-usecases-grid">
       <article class="landing-usecase-card" data-reveal>
-        <h3>Comércios</h3>
-        <p>Monitore margem, mix tributário e impacto de impostos sobre a operação do dia a dia.</p>
+        <h3>Com&eacute;rcios</h3>
+        <p>Mais clareza sobre margem, caixa e press&atilde;o tribut&aacute;ria da opera&ccedil;&atilde;o.</p>
       </article>
       <article class="landing-usecase-card" data-reveal>
-        <h3>Prestadores de serviço</h3>
-        <p>Compare cenários fiscais, acompanhe rentabilidade e reduza incerteza no regime escolhido.</p>
+        <h3>Prestadores de servi&ccedil;o</h3>
+        <p>Comparativos para escolher melhor o regime e proteger rentabilidade.</p>
       </article>
       <article class="landing-usecase-card" data-reveal>
-        <h3>Pequenas indústrias</h3>
-        <p>Entenda pressão tributária, efeito sobre caixa e margem operacional com leitura mais executiva.</p>
+        <h3>Pequenas ind&uacute;strias</h3>
+        <p>Leitura mais executiva do efeito tribut&aacute;rio sobre caixa e resultado.</p>
       </article>
       <article class="landing-usecase-card" data-reveal>
-        <h3>Escritórios contábeis</h3>
-        <p>Ganhe uma camada visual de simulação e diagnóstico para apoiar clientes com mais velocidade.</p>
+        <h3>Escrit&oacute;rios cont&aacute;beis</h3>
+        <p>Camada visual de simula&ccedil;&atilde;o e diagn&oacute;stico para apoiar clientes.</p>
       </article>
       <article class="landing-usecase-card" data-reveal>
-        <h3>Empresas com múltiplos CNPJs</h3>
-        <p>Centralize contexto, compare operações e mantenha visão consolidada entre empresas do mesmo grupo.</p>
+        <h3>M&uacute;ltiplos CNPJs</h3>
+        <p>Vis&atilde;o consolidada para grupos com mais de uma empresa.</p>
       </article>
     </div>
   </section>
@@ -372,8 +355,8 @@ const publicAreaMarkup = `
   <section id="planos" class="landing-section landing-pricing-section">
     <div class="landing-section-heading" data-reveal>
       <p class="eyebrow landing-eyebrow">Planos</p>
-      <h2>Planos para diferentes estágios de maturidade financeira</h2>
-      <p>Os preços abaixo reutilizam a configuração atual do projeto e mantêm o checkout existente.</p>
+      <h2>Planos para diferentes est&aacute;gios de maturidade financeira</h2>
+      <p>Os pre&ccedil;os abaixo reutilizam a configura&ccedil;&atilde;o atual do projeto e mant&ecirc;m o checkout existente.</p>
     </div>
 
     <div class="pricing-grid landing-pricing-grid">
@@ -393,7 +376,7 @@ const publicAreaMarkup = `
       <article class="price-card landing-price-card" data-plan-card="enterprise" data-reveal>
         <span class="landing-price-name">Enterprise</span>
         <strong>R$ 1.850</strong>
-        <p>Auditoria de créditos e valuation mensal.</p>
+        <p>Auditoria de cr&eacute;ditos e valuation mensal.</p>
         <button class="btn btn-light" type="button" data-select-plan="enterprise">Falar sobre Enterprise</button>
       </article>
     </div>
@@ -402,29 +385,29 @@ const publicAreaMarkup = `
   <section id="faq" class="landing-section landing-faq-section">
     <div class="landing-section-heading" data-reveal>
       <p class="eyebrow landing-eyebrow">FAQ</p>
-      <h2>Perguntas frequentes antes de começar</h2>
+      <h2>Perguntas frequentes antes de come&ccedil;ar</h2>
     </div>
 
     <div class="landing-faq-list">
       <details class="landing-faq-item" data-reveal>
         <summary>Preciso trocar de contador?</summary>
-        <p>Não. O FinPJ complementa o trabalho contábil, trazendo clareza financeira, simulações e inteligência para tomada de decisão.</p>
+        <p>N&atilde;o. O FinPJ complementa o trabalho cont&aacute;bil, trazendo clareza financeira, simula&ccedil;&otilde;es e intelig&ecirc;ncia para tomada de decis&atilde;o.</p>
       </details>
       <details class="landing-faq-item" data-reveal>
-        <summary>O FinPJ substitui uma consultoria tributária?</summary>
-        <p>Não substitui uma análise profissional específica, mas ajuda a identificar oportunidades e preparar decisões com muito mais informação.</p>
+        <summary>O FinPJ substitui uma consultoria tribut&aacute;ria?</summary>
+        <p>N&atilde;o substitui uma an&aacute;lise profissional espec&iacute;fica, mas ajuda a identificar oportunidades e preparar decis&otilde;es com muito mais informa&ccedil;&atilde;o.</p>
       </details>
       <details class="landing-faq-item" data-reveal>
         <summary>Meus dados ficam seguros?</summary>
-        <p>Sim. A plataforma deve seguir boas práticas de segurança, autenticação e proteção de dados.</p>
+        <p>Sim. A plataforma deve seguir boas pr&aacute;ticas de seguran&ccedil;a, autentica&ccedil;&atilde;o e prote&ccedil;&atilde;o de dados.</p>
       </details>
       <details class="landing-faq-item" data-reveal>
-        <summary>Funciona para qualquer regime tributário?</summary>
-        <p>O FinPJ deve comparar Simples Nacional, Lucro Presumido e Lucro Real conforme as regras já implementadas no sistema.</p>
+        <summary>Funciona para qualquer regime tribut&aacute;rio?</summary>
+        <p>O FinPJ compara Simples Nacional, Lucro Presumido e Lucro Real conforme as regras j&aacute; implementadas no sistema.</p>
       </details>
       <details class="landing-faq-item" data-reveal>
         <summary>Consigo usar com mais de uma empresa?</summary>
-        <p>Sim. A experiência deve considerar usuários com múltiplos CNPJs.</p>
+        <p>Sim. A experi&ecirc;ncia considera usu&aacute;rios com m&uacute;ltiplos CNPJs.</p>
       </details>
     </div>
   </section>
@@ -434,9 +417,9 @@ const publicAreaMarkup = `
       <div>
         <p class="eyebrow landing-eyebrow">Comece agora</p>
         <h2>Pronto para entender o verdadeiro potencial financeiro da sua empresa?</h2>
-        <p>Comece com uma análise gratuita e descubra se sua empresa está deixando dinheiro na mesa.</p>
+        <p>Comece com uma an&aacute;lise gratuita e descubra se sua empresa est&aacute; deixando dinheiro na mesa.</p>
       </div>
-      <a class="btn btn-dark btn-lg landing-cta-primary" href="/cadastro" data-open-register>Analisar minha empresa grátis</a>
+      <a class="btn btn-dark btn-lg landing-cta-primary" href="/cadastro" data-open-register>Analisar minha empresa gr&aacute;tis</a>
     </div>
   </section>
 
@@ -444,13 +427,13 @@ const publicAreaMarkup = `
     <div class="landing-footer-grid">
       <div id="sobre" class="landing-footer-brand">
         <img src="/logo.svg" alt="FinPJ" width="132" height="38">
-        <p>Inteligência financeira e tributária para PMEs brasileiras.</p>
+        <p>Intelig&ecirc;ncia financeira e tribut&aacute;ria para PMEs brasileiras.</p>
       </div>
 
       <div class="landing-footer-links">
         <a href="#solucoes">Produto</a>
         <a href="#planos">Planos</a>
-        <a href="#faq">Segurança</a>
+        <a href="#faq">Seguran&ccedil;a</a>
         <a href="#contato">Contato</a>
         <a href="#footer-legal">Termos</a>
         <a href="#footer-legal">Privacidade</a>
@@ -458,8 +441,7 @@ const publicAreaMarkup = `
     </div>
 
     <div id="footer-legal" class="landing-footer-bottom">
-      <span>© 2026 FinPJ. Todos os direitos reservados.</span>
-      <small>Uso sujeito às condições comerciais e políticas da conta contratada.</small>
+      <span>&copy; 2026 FinPJ. Todos os direitos reservados.</span>
     </div>
   </footer>
 `;
@@ -489,4 +471,6 @@ export function renderPublicExperience() {
     dashboardBrandImage.width = 112;
     dashboardBrandImage.height = 32;
   }
+
+  document.body?.classList.add('landing-hydrated');
 }
