@@ -226,151 +226,90 @@
 
         <div class="app-content">
           <div class="dashboard-workbar">
-            <label class="dashboard-search">
-              <span class="sr-only">Pesquisar no dashboard</span>
-              <input type="search" data-dashboard-search placeholder="Pesquisar" autocomplete="off">
+            <label class="company-switcher">
+              <span>Empresa</span>
+              <select data-company-switcher aria-label="Selecionar empresa"></select>
             </label>
             <div class="dashboard-workbar-actions">
-              <span class="mode-chip"><span>Modo teste</span><i aria-hidden="true"></i></span>
-              <button class="icon-button" type="button" data-theme-toggle aria-label="Alternar tema" title="Alternar tema">◐</button>
-              <button class="icon-button" type="button" data-go-tab="openfinance" aria-label="Conectar banco" title="Conectar banco">+</button>
-              <button class="icon-button" type="button" data-go-tab="profile" aria-label="Editar perfil" title="Editar perfil">⚙</button>
+              <button class="btn btn-light btn-sm" type="button" data-refresh-dashboard>Atualizar</button>
+              <button class="btn btn-light btn-sm" type="button" data-theme-toggle>Tema</button>
+              <button class="btn btn-light btn-sm" type="button" data-logout>Sair</button>
             </div>
           </div>
 
           <div class="dashboard-header">
             <div>
-              <p class="eyebrow">Área logada</p>
               <nav class="breadcrumb" aria-label="Caminho">
                 <span>FinPJ</span>
                 <span aria-hidden="true">/</span>
                 <strong data-current-section>Visão geral</strong>
               </nav>
-              <h2>Sua visão geral</h2>
+              <h2>Visão financeira</h2>
               <p class="dashboard-subtitle" data-user-title>Dashboard FinPJ</p>
             </div>
-            <div class="dashboard-tools">
-              <button class="btn btn-light" type="button" data-refresh-dashboard>Atualizar</button>
-              <button class="btn btn-dark" type="button" data-go-tab="diagnostics">Gerar diagnóstico</button>
-            </div>
-          </div>
-
-          <div class="dashboard-filter-row" aria-label="Filtros do dashboard">
-            <button class="filter-chip is-active" type="button">Últimos 30 dias</button>
-            <button class="filter-chip" type="button">comparado ao período anterior</button>
-            <button class="filter-chip" type="button">Diário</button>
-          </div>
-
-          <div class="dashboard-command-strip">
             <div class="workspace-badge">
               <span>Empresa ativa</span>
               <strong data-dashboard-company>Carregando empresa</strong>
-              <small data-dashboard-context>Sincronizando contexto fiscal e financeiro.</small>
-            </div>
-            <div class="quick-actions" aria-label="Ações rápidas">
-              <button class="btn btn-light btn-sm" type="button" data-go-tab="tax">Comparar regimes</button>
-              <button class="btn btn-light btn-sm" type="button" data-go-tab="openfinance">Conectar banco</button>
-              <button class="btn btn-light btn-sm" type="button" data-go-tab="ai">Enviar documento</button>
-              <button class="btn btn-dark btn-sm" type="button" data-go-tab="diagnostics">Gerar diagnóstico</button>
+              <small data-dashboard-context>Sincronizando contexto financeiro.</small>
             </div>
           </div>
 
-          <div class="dashboard-pulse" data-dashboard-pulse>
-            <span class="pulse-item skeleton skeleton-text"></span>
-            <span class="pulse-item skeleton skeleton-text"></span>
-            <span class="pulse-item skeleton skeleton-text"></span>
-          </div>
-
-          <div class="metric-grid executive-strip" data-executive-strip>
-            <button class="metric-card metric-button" type="button" data-go-tab="profile">
-              <span>Faturamento anual</span>
-              <strong data-exec="revenue" class="skeleton skeleton-text">R$ 0</strong>
-              <small data-exec-note="revenue">Dados do backend</small>
-            </button>
-            <button class="metric-card metric-button" type="button" data-go-tab="diagnostics">
-              <span>Economia fiscal</span>
-              <strong data-exec="savings" class="skeleton skeleton-text">R$ 0</strong>
-              <small data-exec-note="savings">Comparativo de regimes</small>
-            </button>
-            <button class="metric-card metric-button" type="button" data-go-tab="tax">
-              <span>Impostos estimados</span>
-              <strong data-exec="taxes" class="skeleton skeleton-text">R$ 0</strong>
-              <small data-exec-note="taxes">Melhor regime calculado</small>
-            </button>
-            <button class="metric-card metric-button" type="button" data-go-tab="openfinance">
-              <span>Saldo bancário</span>
-              <strong data-exec="bankBalance" class="skeleton skeleton-text">R$ 0</strong>
-              <small data-exec-note="bankBalance">Open Finance</small>
-            </button>
-          </div>
+          <div class="dashboard-state-message is-hidden" data-dashboard-error></div>
           <div class="tab-panel" data-panel="overview">
-            <div class="metric-grid legacy-overview-metrics is-hidden" aria-hidden="true">
-              <button class="metric-card metric-button" type="button" data-go-tab="profile">
-                <span>Faturamento estimado</span>
-                <strong data-exec="revenue" class="skeleton skeleton-text skeleton-card">R$ 0</strong>
-                <small>Atualizar perfil</small>
+            <div class="kpi-grid" data-primary-kpis>
+              <button class="kpi-card" type="button" data-go-tab="financial" data-kpi-card="monthlyRevenue">
+                <span>Receita mensal</span>
+                <strong data-kpi="monthlyRevenue" class="skeleton skeleton-text">R$ 0</strong>
+                <small data-kpi-note="monthlyRevenue">Carregando</small>
               </button>
-              <button class="metric-card metric-button" type="button" data-go-tab="ai">
-                <span>Margem operacional</span>
-                <strong data-exec="margin" class="skeleton skeleton-text skeleton-card">0%</strong>
-                <small>Enviar DRE</small>
+              <button class="kpi-card" type="button" data-go-tab="tax" data-kpi-card="monthlyTaxes">
+                <span>Impostos mensais</span>
+                <strong data-kpi="monthlyTaxes" class="skeleton skeleton-text">R$ 0</strong>
+                <small data-kpi-note="monthlyTaxes">Carregando</small>
               </button>
-              <button class="metric-card metric-button" type="button" data-go-tab="tax">
-                <span>Regime tributário</span>
-                <strong data-exec="regime" class="skeleton skeleton-text skeleton-card">Não informado</strong>
-                <small>Comparar regimes</small>
+              <button class="kpi-card" type="button" data-go-tab="statements" data-kpi-card="profitMargin">
+                <span>Margem de lucro</span>
+                <strong data-kpi="profitMargin" class="skeleton skeleton-text">0%</strong>
+                <small data-kpi-note="profitMargin">Carregando</small>
+              </button>
+              <button class="kpi-card" type="button" data-go-tab="diagnostics" data-kpi-card="taxSavings">
+                <span>Economia tributária</span>
+                <strong data-kpi="taxSavings" class="skeleton skeleton-text">R$ 0</strong>
+                <small data-kpi-note="taxSavings">Carregando</small>
+              </button>
+              <button class="kpi-card" type="button" data-go-tab="insights" data-kpi-card="alerts">
+                <span>Alertas</span>
+                <strong data-kpi="alerts" class="skeleton skeleton-text">0</strong>
+                <small data-kpi-note="alerts">Carregando</small>
               </button>
             </div>
 
-            <section class="decision-panel">
-              <div>
-                <p class="eyebrow">CFO digital</p>
-                <h3 data-decision-title class="skeleton skeleton-title">Prioridade do mês</h3>
-                <p data-decision-summary class="skeleton skeleton-text">Carregando recomendações da empresa.</p>
+            <section class="trend-panel" data-chart-section>
+              <div class="minimal-section-header">
+                <div>
+                  <h3>Receita vs impostos</h3>
+                  <p data-trend-summary>Comparativo mensal para decisão rápida.</p>
+                </div>
+                <button class="btn btn-light btn-sm" type="button" data-go-tab="financial">Detalhar</button>
               </div>
-              <div class="decision-actions" data-decision-actions>
-                <div class="action-card skeleton skeleton-card" style="min-height:100px"></div>
-                <div class="action-card skeleton skeleton-card" style="min-height:100px"></div>
-                <div class="action-card skeleton skeleton-card" style="min-height:100px"></div>
-              </div>
-            </section>
-
-            <section class="setup-progress">
-              <div class="table-header">
-                <h3>Roteiro de implantação</h3>
-                <span class="score-pill" data-readiness-score>0%</span>
-              </div>
-              <div class="setup-steps" data-setup-steps>
-                <div class="setup-step skeleton skeleton-card"></div>
-                <div class="setup-step skeleton skeleton-card"></div>
-                <div class="setup-step skeleton skeleton-card"></div>
-                <div class="setup-step skeleton skeleton-card"></div>
-                <div class="setup-step skeleton skeleton-card"></div>
+              <div class="chart-shell skeleton skeleton-card" data-dashboard-chart aria-live="polite">
+                Carregando tendência.
               </div>
             </section>
 
-            <div class="dashboard-grid">
-              <article class="table-card panel-card">
-                <div class="table-header">
-                  <h3>Resumo executivo</h3>
+            <section class="insights-panel">
+              <div class="minimal-section-header">
+                <div>
+                  <h3>Insights e alertas</h3>
+                  <p>Somente o que pede ação.</p>
                 </div>
-                <div class="insight-list" data-executive-summary>
-                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
-                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
-                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
-                </div>
-              </article>
-              <article class="table-card panel-card">
-                <div class="table-header">
-                  <h3>Alertas principais</h3>
-                </div>
-                <div class="insight-list" data-main-alerts>
-                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
-                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
-                  <div class="insight-item skeleton skeleton-text" style="height:60px"></div>
-                </div>
-              </article>
-            </div>
+                <button class="btn btn-light btn-sm" type="button" data-go-tab="insights">Ver tudo</button>
+              </div>
+              <div class="decision-list" data-dashboard-alerts>
+                <div class="decision-row skeleton skeleton-card"></div>
+                <div class="decision-row skeleton skeleton-card"></div>
+              </div>
+            </section>
           </div>
 
           <div class="tab-panel is-hidden" data-panel="financial">

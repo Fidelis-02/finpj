@@ -15,6 +15,7 @@ module.exports = async function handler(req, res) {
         return res.status(404).json({ erro: 'Usuário não encontrado.' });
     }
 
-    const dashboard = mountDashboard(user);
+    const dashboard = mountDashboard(user, { companyId: req.query?.companyId });
+    res.setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
     return res.status(200).json({ sucesso: true, dashboard });
 };

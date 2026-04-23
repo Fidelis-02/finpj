@@ -7,6 +7,7 @@ const {
     salvarUsuario,
     formatarEmail
 } = require('../../src/services/database');
+const { buildDashboard } = require('../../src/services/dashboardService');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
@@ -37,25 +38,13 @@ function gerarRelatorioBancario(email) {
     });
 }
 
-function montarDashboard(usuario) {
-    const safeUser = {
-        email: usuario.email,
-        createdAt: usuario.createdAt,
-        lastLogin: usuario.lastLogin || usuario.createdAt
-    };
-    const reports = usuario.bankReports && usuario.bankReports.length ? usuario.bankReports : gerarRelatorioBancario(usuario.email);
-    usuario.bankReports = reports;
-    salvarUsuario(usuario);
-    const totalMovimentado = reports.reduce((sum, item) => sum + item.amount, 0);
-    return {
-        user: safeUser,
-        summary: {
-            reportsCount: reports.length,
-            totalMovimentado,
-            pendencias: reports.filter(r => r.status !== 'Concluído').length
-        },
-        reports
-    };
+function montarDashboard(usuario, options = {}) {
+    const dashboard = buildDashboard(usuario, options);
+    if ((!usuario.bankReports || !usuario.bankReports.length) && dashboard.reports?.length) {
+        usuario.bankReports = dashboard.reports;
+        salvarUsuario(usuario);
+    }
+    return dashboard;
 }
 
 function generateCode() {

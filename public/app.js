@@ -37,6 +37,11 @@ const DASHBOARD_TAB_LABELS = {
   profile: 'Perfil'
 };
 
+const DASHBOARD_CLIENT_CACHE_TTL_MS = 60 * 1000;
+const dashboardMemoryCache = new Map();
+let chartModulePromise = null;
+let chartObserver = null;
+
 /* Service Worker */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -101,9 +106,11 @@ function clearSession() {
   state.openFinanceTransactions = [];
   state.analyses = [];
   state.diagnostics = [];
+  state.activeCompanyId = '';
   localStorage.removeItem('finpj_token');
   localStorage.removeItem('finpj_email');
   localStorage.removeItem('finpj_provider');
+  localStorage.removeItem('finpj_active_company');
   updateSessionUi();
 }
 
@@ -177,7 +184,11 @@ function setDashboardTab(tab) {
   if (tab === 'ai') loadAnalyses().catch((error) => showToast(error.message, 'error'));
   if (tab === 'diagnostics') loadDiagnostics().catch((error) => showToast(error.message, 'error'));
   if (tab === 'tax') loadFiscalCalendar().catch((error) => showToast(error.message, 'error'));
-  if (tab === 'financial') renderFinancialDeepDive();
+  if (tab === 'financial') {
+    const metrics = buildMetrics();
+    renderReportsTable(metrics.reports);
+    renderFinancialDeepDive(metrics);
+  }
 }
 
 function goToDashboardTab(tab) {
@@ -188,6 +199,59 @@ function goToDashboardTab(tab) {
   setDashboardTab(tab);
   location.hash = '#dashboard';
   $('[data-dashboard]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function activeCompanyId() {
+  return state.activeCompanyId || $('[data-company-switcher]')?.value || '';
+}
+
+function dashboardCacheKey(companyId = activeCompanyId()) {
+  return `finpj_dashboard_${state.authEmail || 'session'}_${companyId || 'default'}`;
+}
+
+function readCachedDashboard(companyId = activeCompanyId()) {
+  const key = dashboardCacheKey(companyId);
+  const memory = dashboardMemoryCache.get(key);
+  if (memory && memory.expiresAt > Date.now()) return memory.dashboard;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!cached?.dashboard || cached.expiresAt <= Date.now()) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    dashboardMemoryCache.set(key, cached);
+    return cached.dashboard;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedDashboard(dashboard) {
+  const companyId = dashboard?.currentCompanyId || dashboard?.user?.companyId || activeCompanyId();
+  const key = dashboardCacheKey(companyId);
+  const cached = {
+    dashboard,
+    expiresAt: Date.now() + DASHBOARD_CLIENT_CACHE_TTL_MS
+  };
+  dashboardMemoryCache.set(key, cached);
+  try {
+    sessionStorage.setItem(key, JSON.stringify(cached));
+  } catch {
+    // Session storage can be unavailable in private contexts.
+  }
+}
+
+function resetCompanyContext(companyId) {
+  state.activeCompanyId = companyId || '';
+  localStorage.setItem('finpj_active_company', state.activeCompanyId);
+  state.dashboard = null;
+  state.banks = [];
+  state.openFinanceSummary = null;
+  state.openFinanceTransactions = [];
+  state.analyses = [];
+  state.diagnostics = [];
 }
 
 function normalizeDashboardSearch(value = '') {
@@ -539,46 +603,53 @@ function buildMetrics(dashboard = state.dashboard || {}) {
   const summary = dashboard.summary || {};
   const backendMetrics = dashboard.metrics || {};
   const backendFiscal = backendMetrics.fiscal || {};
+  const overview = dashboard.overview || {};
+  const overviewKpis = overview.kpis || {};
   const openFinanceSummary = state.openFinanceSummary || summary.openFinance || {};
   const transactions = getBankTransactions();
-  const monthlyIncome = transactions
+  const importedMonthlyIncome = transactions
     .filter((item) => Number(item.valor) > 0 || item.tipo === 'entrada')
-    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0)
-    || finiteNumber(backendMetrics.monthlyIncome ?? openFinanceSummary.monthlyIncome);
-  const monthlyExpenses = transactions
+    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0);
+  const importedMonthlyExpenses = transactions
     .filter((item) => Number(item.valor) < 0 || item.tipo === 'saida')
-    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0)
-    || finiteNumber(backendMetrics.monthlyExpenses ?? openFinanceSummary.monthlyExpenses);
+    .reduce((sum, item) => sum + Math.abs(Number(item.valor) || 0), 0);
+  const monthlyIncome = finiteNumber(backendMetrics.monthlyIncome ?? backendMetrics.monthlyRevenue ?? overviewKpis.monthlyRevenue?.value)
+    || importedMonthlyIncome
+    || finiteNumber(openFinanceSummary.monthlyIncome);
+  const monthlyExpenses = finiteNumber(backendMetrics.monthlyExpenses)
+    || importedMonthlyExpenses
+    || finiteNumber(openFinanceSummary.monthlyExpenses);
 
   const totalMovimentado = Number(summary.totalMovimentado || 0);
   const annualRevenue = finiteNumber(backendMetrics.annualRevenue)
     || Number(user.faturamento || user.faturamentoAnual || 0)
+    || finiteNumber(overviewKpis.monthlyRevenue?.value) * 12
     || (monthlyIncome ? Math.round(monthlyIncome * 12) : Math.round(totalMovimentado));
   const informedMargin = finiteNumber(backendMetrics.margin, NaN);
-  const marginSource = Number.isFinite(informedMargin) ? informedMargin : Number(user.margem || user.margemEstimada || 0);
+  const marginSource = Number.isFinite(informedMargin) ? informedMargin : finiteNumber(overviewKpis.profitMargin?.value, Number(user.margem || user.margemEstimada || 0));
   const margin = marginSource > 1 ? marginSource / 100 : marginSource || 0;
   const profit = finiteNumber(backendMetrics.profit) || Math.round(annualRevenue * margin);
   const expenses = finiteNumber(backendMetrics.expenses) || Math.max(0, annualRevenue - profit);
   const activity = inferActivity(user.setor);
-  let regimes = [];
+  let regimes = Array.isArray(backendFiscal.regimes) ? backendFiscal.regimes.map(normalizeRegimeResult) : [];
   let bestRegime = normalizeRegimeResult(backendFiscal.bestRegime || { name: 'Nao calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 });
   try {
-    regimes = annualRevenue && margin > 0
+    regimes = !backendFiscal.bestRegime && annualRevenue && margin > 0
       ? calculatePublicRegime({ faturamento: annualRevenue, margem: margin, atividade: activity })
-      : [];
+      : regimes;
     bestRegime = backendFiscal.bestRegime ? normalizeRegimeResult(backendFiscal.bestRegime) : (regimes[0] || bestRegime);
   } catch {
-    regimes = [];
+    regimes = regimes || [];
   }
   const currentRegime = formatRegime(user.regime || '');
   const currentRegimeItem = regimes.find((regime) => regime.name === currentRegime);
   const calculatedTaxGap = regimes.length
     ? (currentRegimeItem ? Math.max(0, currentRegimeItem.tax - bestRegime.tax) : Math.max(0, regimes[regimes.length - 1].tax - bestRegime.tax))
     : 0;
-  const taxGap = finiteNumber(backendFiscal.taxSavings) || calculatedTaxGap;
-  const annualTax = finiteNumber(backendFiscal.annualTax ?? bestRegime.annualTax ?? bestRegime.tax);
-  const monthlyTax = finiteNumber(backendFiscal.monthlyTax ?? bestRegime.monthlyTax ?? bestRegime.monthly);
-  const taxPaid = finiteNumber(backendMetrics.taxPaid ?? openFinanceSummary.taxPaid);
+  const taxGap = finiteNumber(backendFiscal.taxSavings ?? overviewKpis.taxSavings?.value) || calculatedTaxGap;
+  const annualTax = finiteNumber(backendFiscal.annualTax ?? bestRegime.annualTax ?? bestRegime.tax ?? (overviewKpis.monthlyTaxes?.value * 12));
+  const monthlyTax = finiteNumber(backendFiscal.monthlyTax ?? overviewKpis.monthlyTaxes?.value ?? bestRegime.monthlyTax ?? bestRegime.monthly);
+  const taxPaid = finiteNumber(backendMetrics.taxPaid ?? overviewKpis.monthlyTaxes?.value ?? openFinanceSummary.taxPaid);
   const bankBalance = finiteNumber(backendMetrics.bankBalance ?? openFinanceSummary.bankBalance, monthlyIncome - monthlyExpenses);
 
   return {
@@ -601,7 +672,11 @@ function buildMetrics(dashboard = state.dashboard || {}) {
     regimes,
     bestRegime,
     currentRegime,
-    taxGap
+    taxGap,
+    monthlyRevenue: finiteNumber(backendMetrics.monthlyRevenue ?? overviewKpis.monthlyRevenue?.value ?? monthlyIncome),
+    alertsCount: finiteNumber(overviewKpis.alerts?.value ?? backendMetrics.pendingItems ?? summary.pendencias),
+    connectedBanks: finiteNumber(backendMetrics.connectedBanks),
+    overview
   };
 }
 
@@ -670,8 +745,8 @@ function getReadinessItems(metrics) {
     },
     {
       title: 'Open Finance',
-      text: state.banks.length ? `${state.banks.length} banco(s) conectado(s).` : 'Conectar pelo menos uma conta PJ.',
-      done: state.banks.length > 0,
+      text: metrics.connectedBanks ? `${metrics.connectedBanks} banco(s) conectado(s).` : 'Conectar pelo menos uma conta PJ.',
+      done: metrics.connectedBanks > 0,
       tab: 'openfinance'
     },
     {
@@ -725,7 +800,7 @@ function buildRecommendedActions(metrics) {
       tone: 'warning'
     });
   }
-  if (!state.banks.length) {
+  if (!metrics.connectedBanks) {
     actions.push({
       label: 'Open Finance',
       title: 'Conectar conta PJ',
@@ -784,6 +859,7 @@ function renderDashboardContext(metrics) {
   if (contextEl) {
     contextEl.textContent = `${cnpj} | ${regime} | Plano ${user.plano || 'starter'}`;
   }
+  renderCompanySwitcher(state.dashboard);
 
   const readinessItems = getReadinessItems(metrics);
   const done = readinessItems.filter((item) => item.done).length;
@@ -804,8 +880,8 @@ function renderDashboardContext(metrics) {
     },
     {
       label: 'Bancos',
-      value: state.banks.length ? `${state.banks.length} conectado(s)` : 'Sem conexao',
-      tone: state.banks.length ? 'success' : 'warning'
+      value: metrics.connectedBanks ? `${metrics.connectedBanks} conectado(s)` : 'Sem conexao',
+      tone: metrics.connectedBanks ? 'success' : 'warning'
     },
     {
       label: 'Diagnosticos',
@@ -818,6 +894,147 @@ function renderDashboardContext(metrics) {
     el.innerHTML = `<strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.value)}</small>`;
     pulse.appendChild(el);
   });
+}
+
+function renderCompanySwitcher(dashboard = state.dashboard) {
+  const select = $('[data-company-switcher]');
+  if (!select || !dashboard) return;
+  const companies = dashboard.companies?.length
+    ? dashboard.companies
+    : [{
+      id: dashboard.currentCompanyId || dashboard.user?.companyId || dashboard.user?.cnpj || 'default',
+      name: dashboard.user?.fantasia || dashboard.user?.nome || dashboard.user?.email || 'Empresa atual',
+      cnpj: dashboard.user?.cnpj || ''
+    }];
+  const currentId = dashboard.currentCompanyId || companies.find((company) => company.active)?.id || companies[0]?.id || '';
+  select.innerHTML = companies.map((company) => {
+    const cnpj = company.cnpj ? ` - ${formatCnpj(company.cnpj)}` : '';
+    return `<option value="${escapeHtml(company.id)}">${escapeHtml(company.name || 'Empresa sem nome')}${escapeHtml(cnpj)}</option>`;
+  }).join('');
+  select.value = currentId;
+  state.activeCompanyId = currentId;
+  localStorage.setItem('finpj_active_company', currentId);
+}
+
+function setKpi(name, value, note, options = {}) {
+  const valueEl = $(`[data-kpi="${name}"]`);
+  const noteEl = $(`[data-kpi-note="${name}"]`);
+  const card = $(`[data-kpi-card="${name}"]`);
+  if (valueEl) {
+    valueEl.textContent = value;
+    removeSkeletons(valueEl);
+  }
+  if (noteEl) noteEl.textContent = note || '';
+  if (card) {
+    card.classList.toggle('is-positive', options.tone === 'positive');
+    card.classList.toggle('is-negative', options.tone === 'negative');
+    removeSkeletons(card);
+  }
+}
+
+function renderPrimaryKpis(metrics) {
+  setKpi(
+    'monthlyRevenue',
+    formatCurrency(metrics.monthlyRevenue || metrics.monthlyIncome || 0),
+    metrics.monthlyRevenue ? 'Periodo atual' : 'Informe faturamento ou conecte banco'
+  );
+  setKpi(
+    'monthlyTaxes',
+    formatCurrency(metrics.monthlyTax || metrics.taxPaid || 0),
+    metrics.monthlyTax || metrics.taxPaid ? 'Estimativa mensal' : 'Sem imposto identificado'
+  );
+  setKpi(
+    'profitMargin',
+    formatPercent(metrics.margin || 0),
+    metrics.margin ? 'Base do perfil financeiro' : 'Margem nao informada',
+    { tone: metrics.margin >= 0.15 ? 'positive' : (metrics.margin > 0 && metrics.margin < 0.1 ? 'negative' : '') }
+  );
+  setKpi(
+    'taxSavings',
+    formatCurrency(metrics.taxGap || 0),
+    metrics.taxGap ? 'Oportunidade anual estimada' : 'Sem economia calculada',
+    { tone: metrics.taxGap > 0 ? 'positive' : '' }
+  );
+  setKpi(
+    'alerts',
+    String(metrics.alertsCount || 0),
+    metrics.alertsCount ? 'Pede acao' : 'Sem alertas criticos',
+    { tone: metrics.alertsCount ? 'negative' : 'positive' }
+  );
+}
+
+function renderOverviewInsights(metrics) {
+  const target = $('[data-dashboard-alerts]');
+  if (!target) return;
+  const insights = metrics.overview?.insights?.length ? metrics.overview.insights : [
+    {
+      severity: 'success',
+      title: 'Operacao sem alerta critico',
+      text: 'Os dados atuais nao exigem acao imediata.',
+      actionTab: 'financial',
+      actionLabel: 'Ver detalhes'
+    }
+  ];
+  target.innerHTML = '';
+  insights.forEach((item) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = `decision-row ${item.severity === 'success' ? 'is-positive' : ''} ${item.severity === 'danger' ? 'is-negative' : ''}`;
+    row.dataset.goTab = item.actionTab || 'insights';
+    row.innerHTML = `
+      <div>
+        <strong>${escapeHtml(item.title || 'Insight')}</strong>
+        <span>${escapeHtml(item.text || '')}</span>
+      </div>
+      <small>${escapeHtml(item.actionLabel || 'Abrir')}</small>
+    `;
+    target.appendChild(row);
+  });
+}
+
+function lazyRenderTrendChart(trend) {
+  const container = $('[data-dashboard-chart]');
+  if (!container) return;
+  const render = async () => {
+    chartModulePromise = chartModulePromise || import('./js/dashboardChart.js');
+    const chart = await chartModulePromise;
+    chart.renderRevenueTaxTrend(container, trend);
+  };
+
+  if (!('IntersectionObserver' in window)) {
+    render().catch(() => {
+      container.textContent = 'Nao foi possivel carregar o grafico.';
+    });
+    return;
+  }
+
+  if (chartObserver) chartObserver.disconnect();
+  chartObserver = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    chartObserver.disconnect();
+    render().catch(() => {
+      container.textContent = 'Nao foi possivel carregar o grafico.';
+    });
+  }, { rootMargin: '160px' });
+  chartObserver.observe(container);
+}
+
+function renderTrendSummary(metrics) {
+  const summary = $('[data-trend-summary]');
+  if (!summary) return;
+  const trend = metrics.overview?.trend;
+  if (!trend || trend.empty) {
+    summary.textContent = 'Sem historico suficiente para comparar tendencia.';
+    return;
+  }
+  summary.textContent = `Ultimo periodo: receita ${formatCurrency(metrics.monthlyRevenue || 0)} e impostos ${formatCurrency(metrics.monthlyTax || 0)}.`;
+}
+
+function setDashboardError(message = '') {
+  const target = $('[data-dashboard-error]');
+  if (!target) return;
+  target.textContent = message;
+  target.classList.toggle('is-hidden', !message);
 }
 
 function renderSummaryRows(selector, rows) {
@@ -1008,10 +1225,23 @@ function setDashboardMetric(name, value, note) {
 }
 
 function showDashboardSkeletons() {
-  $$('[data-exec], [data-financial]').forEach((el) => {
+  $$('[data-kpi], [data-exec], [data-financial]').forEach((el) => {
     el.textContent = '';
     el.classList.add('skeleton', 'skeleton-text');
   });
+  $$('[data-kpi-note]').forEach((el) => {
+    el.textContent = 'Carregando';
+  });
+  const chart = $('[data-dashboard-chart]');
+  if (chart) {
+    chart.classList.add('skeleton', 'skeleton-card');
+    chart.textContent = 'Carregando tendencia.';
+  }
+  const alerts = $('[data-dashboard-alerts]');
+  if (alerts) {
+    alerts.innerHTML = '<div class="decision-row skeleton skeleton-card"></div><div class="decision-row skeleton skeleton-card"></div>';
+  }
+  setDashboardError('');
   const pulse = $('[data-dashboard-pulse]');
   if (pulse) {
     pulse.innerHTML = '<span class="pulse-item skeleton skeleton-text"></span><span class="pulse-item skeleton skeleton-text"></span><span class="pulse-item skeleton skeleton-text"></span>';
@@ -1038,10 +1268,14 @@ function renderBusinessDashboards(dashboard = state.dashboard) {
   const user = metrics.user;
 
   renderDashboardContext(metrics);
+  renderPrimaryKpis(metrics);
+  renderOverviewInsights(metrics);
+  renderTrendSummary(metrics);
+  lazyRenderTrendChart(metrics.overview?.trend || {});
   setDashboardMetric(
     'revenue',
-    formatCurrency(metrics.annualRevenue),
-    user.faturamento || user.faturamentoAnual ? 'Perfil empresarial' : (metrics.monthlyIncome ? 'Anualizado pelo Open Finance' : 'Sem fonte financeira')
+    formatCurrency(metrics.monthlyRevenue || metrics.monthlyIncome),
+    user.faturamento || user.faturamentoAnual ? 'Mensal pelo perfil empresarial' : (metrics.monthlyIncome ? 'Open Finance' : 'Sem fonte financeira')
   );
   setDashboardMetric(
     'savings',
@@ -1056,21 +1290,19 @@ function renderBusinessDashboards(dashboard = state.dashboard) {
   setDashboardMetric(
     'bankBalance',
     formatCurrency(metrics.bankBalance),
-    state.banks.length ? `${state.banks.length} banco(s) conectado(s)` : 'Aguardando Open Finance'
+    metrics.connectedBanks ? `${metrics.connectedBanks} banco(s) conectado(s)` : 'Aguardando Open Finance'
   );
   const incomeEl = $('[data-financial="income"]');
-  if (incomeEl) { incomeEl.textContent = formatCurrency(metrics.annualRevenue); removeSkeletons(incomeEl.parentElement); }
+  if (incomeEl) { incomeEl.textContent = formatCurrency(metrics.monthlyRevenue || metrics.monthlyIncome); removeSkeletons(incomeEl.parentElement); }
   const expensesEl = $('[data-financial="expenses"]');
-  if (expensesEl) { expensesEl.textContent = formatCurrency(metrics.expenses); removeSkeletons(expensesEl.parentElement); }
+  if (expensesEl) { expensesEl.textContent = formatCurrency(metrics.monthlyExpenses); removeSkeletons(expensesEl.parentElement); }
   const profitEl = $('[data-financial="profit"]');
-  if (profitEl) { profitEl.textContent = formatCurrency(metrics.profit); removeSkeletons(profitEl.parentElement); }
+  if (profitEl) { profitEl.textContent = formatCurrency((metrics.monthlyRevenue || metrics.monthlyIncome) * metrics.margin); removeSkeletons(profitEl.parentElement); }
 
   syncDashboardForms(user);
   renderDecisionCenter(metrics);
   renderSetupProgress(metrics);
   renderReportsTable(metrics.reports);
-  renderFinancialDeepDive(metrics);
-  runDashboardTaxSimulation();
   renderTaxCalendar();
 
   renderInsightList('[data-executive-summary]', [
@@ -1080,7 +1312,7 @@ function renderBusinessDashboards(dashboard = state.dashboard) {
   ]);
   renderInsightList('[data-main-alerts]', [
     { title: 'Pendências operacionais', text: `${metrics.pendencias} item(ns) exigem revisão no resumo financeiro.`, actionLabel: 'Ver finanças', actionTab: 'financial' },
-    { title: 'Dados bancários', text: state.banks.length ? `${state.banks.length} banco(s) conectado(s) ao Open Finance.` : 'Nenhum banco conectado para conciliação automática.', actionLabel: 'Conectar banco', actionTab: 'openfinance' },
+    { title: 'Dados bancários', text: metrics.connectedBanks ? `${metrics.connectedBanks} banco(s) conectado(s) ao Open Finance.` : 'Nenhum banco conectado para conciliação automática.', actionLabel: 'Conectar banco', actionTab: 'openfinance' },
     { title: 'Economia tributária', text: metrics.taxGap ? `Há até ${formatCurrency(metrics.taxGap)} de diferença anual entre cenários.` : 'Nenhuma diferença relevante estimada com os dados atuais.', actionLabel: 'Gerar diagnóstico', actionTab: 'diagnostics' }
   ]);
   renderInsightList('[data-balance-reading]', [
@@ -1099,7 +1331,7 @@ function renderBusinessDashboards(dashboard = state.dashboard) {
     { title: 'Créditos e oportunidades', text: 'O diagnóstico fiscal aprofunda créditos, anomalias e economia por regime.', actionLabel: 'Gerar diagnóstico', actionTab: 'diagnostics' }
   ]);
   renderInsightList('[data-action-insights]', [
-    { title: 'Open Finance', text: state.banks.length ? 'Sincronize bancos para manter transações atualizadas.' : 'Conecte a conta PJ para automatizar fluxo de caixa.', actionLabel: 'Abrir Open Finance', actionTab: 'openfinance' },
+    { title: 'Open Finance', text: metrics.connectedBanks ? 'Sincronize bancos para manter transações atualizadas.' : 'Conecte a conta PJ para automatizar fluxo de caixa.', actionLabel: 'Abrir Open Finance', actionTab: 'openfinance' },
     { title: 'DRE e balanço', text: state.analyses.length ? 'Revise o histórico de análises e compare evolução mensal.' : 'Envie demonstrativos para ativar leitura de EBITDA e liquidez.', actionLabel: 'Abrir IA', actionTab: 'ai' },
     { title: 'Tributos', text: 'Use o comparador e salve diagnósticos para acompanhar oportunidades fiscais.', actionLabel: 'Abrir fiscal', actionTab: 'tax' }
   ]);
@@ -1123,9 +1355,15 @@ function renderDashboard(payload) {
   renderBusinessDashboards(state.dashboard);
 }
 
-async function loadDashboard() {
+async function loadDashboard(options = {}) {
   if (!state.token) return;
-  const data = await apiRequest('/api/dashboard');
+  const companyId = options.companyId ?? activeCompanyId();
+  const cached = !options.force ? readCachedDashboard(companyId) : null;
+  if (cached) renderDashboard(cached);
+  const query = companyId ? `?companyId=${encodeURIComponent(companyId)}` : '';
+  const data = await apiRequest(`/api/dashboard${query}`);
+  if (data.dashboard) writeCachedDashboard(data.dashboard);
+  setDashboardError('');
   renderDashboard(data);
 }
 
@@ -1736,11 +1974,12 @@ function handleAuth0Redirect() {
   return true;
 }
 
-async function loadWorkspaceData() {
+async function loadWorkspaceData(options = {}) {
   if (!state.token) return;
   showDashboardSkeletons();
+  const companyId = options.companyId ?? activeCompanyId();
   const tasks = [
-    loadDashboard(),
+    loadDashboard({ companyId, force: options.forceDashboard }),
     loadBanks(),
     loadProfile(),
     loadAnalyses(),
@@ -1751,6 +1990,7 @@ async function loadWorkspaceData() {
   const failed = results.find((result) => result.status === 'rejected');
   if (failed) {
     const message = failed.reason?.message || 'Não foi possível carregar todos os dados.';
+    setDashboardError(message);
     showToast(message, 'error');
     if (/token|jwt|unauthorized|401/i.test(message)) clearSession();
   }
@@ -1814,6 +2054,17 @@ function bindEvents() {
     } else {
       showToast('Nenhuma seção encontrada para essa busca.', 'error');
     }
+  });
+
+  $('[data-company-switcher]')?.addEventListener('change', (event) => {
+    const companyId = event.currentTarget.value;
+    if (!companyId || companyId === state.activeCompanyId) return;
+    resetCompanyContext(companyId);
+    showDashboardSkeletons();
+    loadDashboard({ companyId, force: true }).catch((error) => {
+      setDashboardError(error.message);
+      showToast(error.message, 'error');
+    });
   });
 
   // Simulator form input handlers

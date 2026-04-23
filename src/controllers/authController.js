@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { obterUsuario, obterUsuarioPorCnpj, salvarUsuario, formatarEmail } = require('../services/database');
 const { enviarEmailVerificacao } = require('../services/emailService');
 const { getFiscalSimulation } = require('../services/fiscalCache');
+const { buildDashboard } = require('../services/dashboardService');
 const taxUtils = require('../tax/utils');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -136,39 +137,13 @@ function buildDashboardMetrics(usuario, reports, totalMovimentado) {
     };
 }
 
-function montarDashboard(usuario) {
-    const safeUser = {
-        email: usuario.email,
-        cnpj: usuario.cnpj || '',
-        createdAt: usuario.createdAt,
-        lastLogin: usuario.lastLogin || usuario.createdAt,
-        fantasia: usuario.fantasia || usuario.nome || '',
-        nome: usuario.nome || '',
-        regime: usuario.regime || '',
-        setor: usuario.setor || '',
-        faturamento: usuario.faturamento || usuario.faturamentoAnual || null,
-        margem: usuario.margem || usuario.margemEstimada || null,
-        plano: usuario.plano || null,
-        statusPagamento: usuario.statusPagamento || null,
-        planAtivadoEm: usuario.planAtivadoEm || null
-    };
-
-    const reports = usuario.bankReports && usuario.bankReports.length ? usuario.bankReports : gerarRelatorioBancario(usuario.email);
-    usuario.bankReports = reports;
-    salvarUsuario(usuario);
-
-    const totalMovimentado = reports.reduce((sum, item) => sum + item.amount, 0);
-    const metrics = buildDashboardMetrics(usuario, reports, totalMovimentado);
-    return {
-        user: safeUser,
-        summary: {
-            reportsCount: reports.length,
-            totalMovimentado,
-            pendencias: metrics.pendingItems
-        },
-        metrics,
-        reports
-    };
+function montarDashboard(usuario, options = {}) {
+    const dashboard = buildDashboard(usuario, options);
+    if ((!usuario.bankReports || !usuario.bankReports.length) && dashboard.reports?.length) {
+        usuario.bankReports = dashboard.reports;
+        salvarUsuario(usuario);
+    }
+    return dashboard;
 }
 
 async function sendCode(req, res) {
@@ -325,7 +300,8 @@ async function getDashboard(req, res) {
         return res.status(404).json({ erro: 'Usuário não encontrado.' });
     }
 
-    return res.json({ sucesso: true, dashboard: montarDashboard(usuario) });
+    res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    return res.json({ sucesso: true, dashboard: montarDashboard(usuario, { companyId: req.query?.companyId }) });
 }
 
 async function getSession(req, res) {
