@@ -7,7 +7,8 @@
     "start": "node local-server.js",
     "dev": "node local-server.js",
     "build": "echo 'Build controlled by vercel.json'",
-    "start:api": "node server.js"
+    "start:api": "node server.js",
+    "test": "node --test --test-isolation=none tests/authTokens.test.js tests/onboardingService.test.js tests/oauthService.test.js"
   },
   "keywords": [
     "finpj",

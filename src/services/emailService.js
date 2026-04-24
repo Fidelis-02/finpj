@@ -56,6 +56,97 @@ async function enviarEmailVerificacao(email, code) {
     }
 }
 
+function buildHtmlShell({ title, intro, ctaLabel, ctaUrl, fallbackUrl, secondaryCopy = '' }) {
+    return `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; color: #0f172a;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%); padding: 28px 24px; border-radius: 16px 16px 0 0;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 24px;">FinPJ</h1>
+                <p style="margin: 8px 0 0; color: #cbd5e1; font-size: 14px;">Inteligência financeira e tributária para PMEs</p>
+            </div>
+            <div style="background: #ffffff; padding: 28px 24px 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 16px 16px;">
+                <h2 style="margin: 0 0 16px; color: #0f172a; font-size: 22px;">${title}</h2>
+                <p style="margin: 0 0 20px; color: #475569; line-height: 1.6;">${intro}</p>
+                <a href="${ctaUrl}" style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none; padding: 14px 20px; border-radius: 12px; font-weight: 600;">${ctaLabel}</a>
+                <p style="margin: 20px 0 8px; color: #475569; line-height: 1.6;">Se o botão não funcionar, copie e cole este link no navegador:</p>
+                <p style="margin: 0 0 16px; word-break: break-all; color: #1d4ed8;">${fallbackUrl}</p>
+                ${secondaryCopy ? `<p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.6;">${secondaryCopy}</p>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+async function enviarEmailVerificacaoCadastro(email, verificationUrl) {
+    const transport = criarTransportadorEmail();
+    const mailOptions = {
+        from: MAIL_FROM,
+        to: email,
+        subject: 'Confirme seu e-mail na FinPJ',
+        text: [
+            'Confirme seu e-mail para continuar o cadastro na FinPJ.',
+            '',
+            `Abra este link: ${verificationUrl}`,
+            '',
+            'Se você não criou uma conta, ignore este e-mail.'
+        ].join('\n'),
+        html: buildHtmlShell({
+            title: 'Confirme seu e-mail',
+            intro: 'Falta só um passo para ativar sua conta e continuar o onboarding na FinPJ.',
+            ctaLabel: 'Confirmar e-mail',
+            ctaUrl: verificationUrl,
+            fallbackUrl: verificationUrl,
+            secondaryCopy: 'Este link expira automaticamente por segurança.'
+        })
+    };
+
+    try {
+        return await transport.sendMail(mailOptions);
+    } catch (error) {
+        console.error('Erro ao enviar e-mail de verificação de cadastro:', error.message);
+        if (process.env.NODE_ENV === 'production') {
+            throw error;
+        }
+        console.log(`LINK DE VERIFICACAO PARA ${email}: ${verificationUrl}`);
+        return null;
+    }
+}
+
+async function enviarEmailRecuperacaoSenha(email, resetUrl) {
+    const transport = criarTransportadorEmail();
+    const mailOptions = {
+        from: MAIL_FROM,
+        to: email,
+        subject: 'Redefina sua senha da FinPJ',
+        text: [
+            'Recebemos um pedido para redefinir sua senha da FinPJ.',
+            '',
+            `Abra este link: ${resetUrl}`,
+            '',
+            'Se você não fez esse pedido, ignore este e-mail.'
+        ].join('\n'),
+        html: buildHtmlShell({
+            title: 'Redefina sua senha',
+            intro: 'Use o link abaixo para criar uma nova senha e retomar o acesso à sua conta.',
+            ctaLabel: 'Criar nova senha',
+            ctaUrl: resetUrl,
+            fallbackUrl: resetUrl,
+            secondaryCopy: 'Se você não pediu a redefinição, ignore este e-mail. Sua senha atual continuará válida.'
+        })
+    };
+
+    try {
+        return await transport.sendMail(mailOptions);
+    } catch (error) {
+        console.error('Erro ao enviar e-mail de recuperação de senha:', error.message);
+        if (process.env.NODE_ENV === 'production') {
+            throw error;
+        }
+        console.log(`LINK DE RESET PARA ${email}: ${resetUrl}`);
+        return null;
+    }
+}
+
 module.exports = {
-    enviarEmailVerificacao
+    enviarEmailVerificacao,
+    enviarEmailVerificacaoCadastro,
+    enviarEmailRecuperacaoSenha
 };

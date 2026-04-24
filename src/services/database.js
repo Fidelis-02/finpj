@@ -27,6 +27,13 @@ async function conectarDB() {
             await db.collection('usuarios').createIndex({ email: 1 }, { unique: true });
             await db.collection('diagnosticos').createIndex({ ownerEmail: 1, createdAt: -1 });
             await db.collection('analises').createIndex({ email: 1, createdAt: -1 });
+            await db.collection('users').createIndex({ email: 1 }, { unique: true });
+            await db.collection('users').createIndex({ id: 1 }, { unique: true });
+            await db.collection('sessions').createIndex({ id: 1 }, { unique: true });
+            await db.collection('sessions').createIndex({ userId: 1, issuedAt: -1 });
+            await db.collection('sessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+            await db.collection('onboarding_state').createIndex({ userId: 1 }, { unique: true });
+            await db.collection('onboarding_state').createIndex({ email: 1 });
         } catch (e) {
             // Índices já existem.
         }

@@ -17,6 +17,7 @@ const wrap = (handler) => (req, res, next) => Promise.resolve(handler(req, res, 
 const { verificarTokenMiddleware } = require('../middlewares/auth');
 
 const authController = require('../controllers/authController');
+const accountAuthController = require('../controllers/accountAuthController');
 const cnpjController = require('../controllers/cnpjController');
 const financeController = require('../controllers/financeController');
 const taxController = require('../controllers/taxController');
@@ -59,11 +60,39 @@ const otpLimiter = rateLimit({
     message: { erro: 'Muitas solicitacoes. Tente novamente mais tarde.' }
 });
 
+const authWriteLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { erro: 'Muitas tentativas de autenticação. Aguarde um pouco e tente novamente.' }
+});
+
+const passwordRecoveryLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 8,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { erro: 'Muitas solicitações para recuperação de senha. Tente novamente mais tarde.' }
+});
+
+router.post('/auth/register', authWriteLimiter, wrap(accountAuthController.register));
+router.post('/auth/login', authWriteLimiter, wrap(accountAuthController.login));
+router.post('/auth/verify-email', authWriteLimiter, wrap(accountAuthController.verifyEmail));
+router.post('/auth/resend-verification', authWriteLimiter, wrap(accountAuthController.resendVerification));
+router.post('/auth/forgot-password', passwordRecoveryLimiter, wrap(accountAuthController.forgotPassword));
+router.post('/auth/reset-password', passwordRecoveryLimiter, wrap(accountAuthController.resetPassword));
 router.post('/auth/send-code', otpLimiter, wrap(authController.sendCode));
 router.post('/auth/verify-code', wrap(authController.verifyCode));
 router.post('/auth/login-cnpj', wrap(authController.loginCnpj));
 router.post('/auth/register-cnpj', wrap(authController.registerCnpj));
-router.get('/auth/session', verificarTokenMiddleware, wrap(authController.getSession));
+router.post('/auth/logout', verificarTokenMiddleware, wrap(accountAuthController.logout));
+router.get('/auth/session', verificarTokenMiddleware, wrap(accountAuthController.getSession));
+router.get('/auth/oauth/:provider/start', wrap(accountAuthController.startOAuth));
+router.get('/auth/oauth/:provider/callback', wrap(accountAuthController.oauthCallback));
+router.get('/onboarding/state', verificarTokenMiddleware, wrap(accountAuthController.getOnboardingState));
+router.put('/onboarding/state', verificarTokenMiddleware, wrap(accountAuthController.saveOnboardingState));
+router.post('/onboarding/complete-step', verificarTokenMiddleware, wrap(accountAuthController.completeOnboardingStep));
 router.get('/dashboard', verificarTokenMiddleware, wrap(authController.getDashboard));
 router.get('/cnpj', wrap(cnpjController.consultarCnpj));
 

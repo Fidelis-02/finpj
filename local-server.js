@@ -13,7 +13,22 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-['/login', '/cadastro', '/signup', '/dashboard'].forEach((routePath) => {
+[
+    '/login',
+    '/cadastro',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/dashboard',
+    '/onboarding/verificar-email',
+    '/onboarding/perfil',
+    '/onboarding/plano',
+    '/onboarding/template',
+    '/onboarding/checklist',
+    '/onboarding/primeiro-valor',
+    '/auth/callback/google',
+    '/auth/callback/github'
+].forEach((routePath) => {
     app.get(routePath, (req, res) => {
         res.sendFile(path.join(__dirname, 'public', 'index.html'));
     });
