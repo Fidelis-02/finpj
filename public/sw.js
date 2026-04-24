@@ -1,9 +1,12 @@
-const CACHE_NAME = 'finpj-v2';
+const CACHE_NAME = 'finpj-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
+  '/landing.css',
   '/app.js',
+  '/js/main.js',
+  '/js/publicLanding.js',
   '/favicon.svg',
   '/logo.svg',
   '/manifest.json',

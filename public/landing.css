@@ -99,6 +99,7 @@ body:not(.app-session) summary:focus-visible {
 }
 
 .landing-header {
+  display: block;
   position: sticky;
   top: 0;
   z-index: 30;
@@ -220,6 +221,9 @@ body:not(.app-session) summary:focus-visible {
 }
 
 .landing-hero {
+  display: block;
+  min-height: 0;
+  max-width: 1280px;
   padding: 2rem 0 1rem;
 }
 
@@ -291,6 +295,9 @@ body:not(.app-session) summary:focus-visible {
 }
 
 .landing-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.85rem;
   margin-top: 1.8rem;
 }

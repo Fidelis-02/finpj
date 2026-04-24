@@ -30,7 +30,7 @@ const headerMarkup = `
 `;
 
 const publicAreaMarkup = `
-  <section id="home" class="hero landing-hero">
+  <section id="home" class="landing-hero">
     <div class="landing-hero-shell">
       <div class="landing-hero-copy" data-reveal>
         <p class="landing-badge">INTELIG&Ecirc;NCIA TRIBUT&Aacute;RIA E FINANCEIRA</p>
