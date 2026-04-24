@@ -44,10 +44,37 @@ let chartModulePromise = null;
 let chartObserver = null;
 let landingRevealObserver = null;
 let addCompanyPrompted = false;
-const PUBLIC_MODAL_ROUTES = {
-  '/login': '[data-login-modal]',
-  '/cadastro': '[data-register-modal]',
-  '/signup': '[data-register-modal]'
+const AUTH_ENTRY_PATHS = new Set([
+  '/login',
+  '/cadastro',
+  '/signup',
+  '/forgot-password',
+  '/reset-password'
+]);
+const ONBOARDING_ROUTE_PATHS = new Set([
+  '/onboarding/verificar-email',
+  '/onboarding/perfil',
+  '/onboarding/plano',
+  '/onboarding/template',
+  '/onboarding/checklist',
+  '/onboarding/primeiro-valor'
+]);
+const PUBLIC_CALLBACK_PATHS = new Set([
+  '/auth/callback/google',
+  '/auth/callback/github'
+]);
+const DEDICATED_PUBLIC_PATHS = new Set([
+  ...AUTH_ENTRY_PATHS,
+  ...ONBOARDING_ROUTE_PATHS,
+  ...PUBLIC_CALLBACK_PATHS
+]);
+const ONBOARDING_ROUTE_META = {
+  '/onboarding/verificar-email': { step: 'verify-email', path: '/onboarding/verificar-email' },
+  '/onboarding/perfil': { step: 'profile', path: '/onboarding/perfil' },
+  '/onboarding/plano': { step: 'plan', path: '/onboarding/plano' },
+  '/onboarding/template': { step: 'template', path: '/onboarding/template' },
+  '/onboarding/checklist': { step: 'checklist', path: '/onboarding/checklist' },
+  '/onboarding/primeiro-valor': { step: 'first-value', path: '/onboarding/primeiro-valor' }
 };
 
 /* Service Worker */
@@ -98,8 +125,48 @@ function currentPublicPath() {
   return normalized || '/';
 }
 
+function isDedicatedPublicPath(path = currentPublicPath()) {
+  return DEDICATED_PUBLIC_PATHS.has(path);
+}
+
+function isOnboardingPath(path = currentPublicPath()) {
+  return ONBOARDING_ROUTE_PATHS.has(path);
+}
+
+function isAuthEntryPath(path = currentPublicPath()) {
+  return AUTH_ENTRY_PATHS.has(path);
+}
+
 function currentPublicModalSelector() {
-  return PUBLIC_MODAL_ROUTES[currentPublicPath()] || '';
+  return '';
+}
+
+function sanitizeClientPath(path = '') {
+  const value = String(path || '').trim();
+  if (!value.startsWith('/')) return '/dashboard';
+  if (value.startsWith('/api/')) return '/dashboard';
+  if (value === '/dashboard') return value;
+  if (ONBOARDING_ROUTE_PATHS.has(value)) return value;
+  if (AUTH_ENTRY_PATHS.has(value)) return value;
+  if (PUBLIC_CALLBACK_PATHS.has(value)) return value;
+  return '/dashboard';
+}
+
+function navigateToPath(path, { replace = false } = {}) {
+  const nextPath = sanitizeClientPath(path);
+  if (nextPath === currentPublicPath()) return;
+  const action = replace ? 'replace' : 'assign';
+  window.location[action](nextPath);
+}
+
+function goToAppDashboard({ replace = false } = {}) {
+  if (currentPublicPath() !== '/dashboard') {
+    navigateToPath('/dashboard', { replace });
+    return;
+  }
+  updateSessionUi();
+  if (location.hash !== '#dashboard') location.hash = '#dashboard';
+  $('[data-dashboard]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function setMobileMenuOpen(open) {
@@ -116,7 +183,7 @@ function closeMobileMenu() {
 }
 
 function clearPublicModalRoute() {
-  if (!currentPublicModalSelector()) return;
+  if (currentPublicPath() !== '/') return;
   history.replaceState(null, '', '/');
 }
 
@@ -132,23 +199,16 @@ function closeAuthModals() {
 
 function openPublicAuthRoute(selector, path) {
   if (state.token) {
-    location.hash = '#dashboard';
+    goToAppDashboard();
     return;
   }
-  if (currentPublicPath() !== path) history.pushState(null, '', path);
   closeMobileMenu();
-  openModal(selector);
+  navigateToPath(path);
 }
 
 function syncPublicRouteModal() {
-  if (state.token) {
-    closeAuthModals();
-    closeMobileMenu();
-    return;
-  }
-  const selector = currentPublicModalSelector();
-  if (selector) openModal(selector);
-  else closeAuthModals();
+  closeAuthModals();
+  if (state.token) closeMobileMenu();
 }
 
 function initLandingReveal() {
@@ -185,6 +245,9 @@ function clearSession() {
   state.token = '';
   state.authEmail = '';
   state.provider = 'local';
+  state.authUser = null;
+  state.authSession = null;
+  state.onboarding = null;
   state.dashboard = null;
   state.profile = null;
   state.banks = [];
@@ -204,26 +267,28 @@ function updateSessionUi() {
   const logged = Boolean(state.token);
   const mainNav = $('[data-main-nav]');
   const navLinks = $$('[data-nav-link]');
-  document.body?.classList.toggle('app-session', logged);
+  const dedicatedPublicRoute = isDedicatedPublicPath();
+  const showPublicArea = !logged || dedicatedPublicRoute;
+  const showDashboardArea = logged && !dedicatedPublicRoute;
+  document.body?.classList.toggle('app-session', showDashboardArea);
   
   // Mostrar navegação apenas quando logado
   if (mainNav) {
-    mainNav.classList.toggle('is-hidden', logged);
+    mainNav.classList.toggle('is-hidden', showDashboardArea);
   }
   
   // Controlar links individuais: Dashboard só aparece logado, Recursos/Planos escondidos quando logado
   navLinks.forEach((link) => {
-    link.classList.toggle('is-hidden', logged && link.hasAttribute('data-auth-only'));
+    link.classList.toggle('is-hidden', showDashboardArea && link.hasAttribute('data-auth-only'));
   });
   
-  $('[data-public-area]')?.classList.toggle('is-hidden', logged);
-  $$('[data-open-login], [data-open-register]').forEach((el) => el.classList.toggle('is-hidden', logged));
+  $('[data-public-area]')?.classList.toggle('is-hidden', !showPublicArea);
+  $$('[data-open-login], [data-open-register]').forEach((el) => el.classList.toggle('is-hidden', showDashboardArea));
   $$('[data-logout]').forEach((el) => el.classList.toggle('is-hidden', !logged));
-  $('[data-dashboard]')?.classList.toggle('is-hidden', !logged);
+  $('[data-dashboard]')?.classList.toggle('is-hidden', !showDashboardArea);
   if (logged) $('[data-user-title]').textContent = `Dashboard ${state.authEmail || ''}`.trim();
-  if (logged && currentPublicModalSelector()) history.replaceState(null, '', '/');
   if (logged) closeMobileMenu();
-  if (logged && location.hash !== '#dashboard') location.hash = '#dashboard';
+  if (showDashboardArea && location.hash !== '#dashboard') location.hash = '#dashboard';
 }
 
 function openModal(selector) {
@@ -245,6 +310,210 @@ function closeModals() {
 }
 
 export { openModal, closeModals, toggleTheme };
+
+async function requestJsonWithMeta(path, options = {}) {
+  try {
+    const headers = { ...(options.headers || {}) };
+    if (!(options.body instanceof FormData)) headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    if (state.token) headers.Authorization = `Bearer ${state.token}`;
+    const response = await fetch(path, { ...options, headers });
+    const contentType = response.headers.get('content-type') || '';
+    const body = contentType.includes('application/json') ? await response.json() : await response.text();
+    return { ok: response.ok, status: response.status, body };
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      body: { erro: 'Sem conexao com a internet. Verifique sua rede e tente novamente.' }
+    };
+  }
+}
+
+function responseMessage(result, fallback = 'Nao foi possivel concluir a operacao.') {
+  const body = result?.body;
+  return typeof body === 'object'
+    ? body?.erro || body?.error || body?.mensagem || body?.message || fallback
+    : String(body || fallback);
+}
+
+function queryParams() {
+  return new URLSearchParams(window.location.search);
+}
+
+function setInlineNote(selector, message = '', type = 'info') {
+  const target = $(selector);
+  if (!target) return;
+  target.textContent = message || '';
+  target.dataset.state = type;
+}
+
+function prefillEmailFields() {
+  const email = queryParams().get('email') || state.authEmail || '';
+  if (!email) return;
+  [
+    '[data-route-login-email]',
+    '[data-route-code-email]',
+    '[data-route-register-email]',
+    '[data-route-forgot-email]'
+  ].forEach((selector) => {
+    const input = $(selector);
+    if (input && !input.value) input.value = email;
+  });
+  const currentEmail = $('[data-verify-email-address]');
+  if (currentEmail) currentEmail.textContent = email;
+}
+
+function setActiveChoice(attribute, value) {
+  $$(`[${attribute}]`).forEach((button) => {
+    button.classList.toggle('is-active', button.getAttribute(attribute) === value);
+  });
+}
+
+function onboardingPathFromStep(step = '') {
+  const entry = Object.values(ONBOARDING_ROUTE_META).find((meta) => meta.step === step);
+  return entry?.path || '/dashboard';
+}
+
+async function fetchAuthSessionState() {
+  if (!state.token) return null;
+  const result = await requestJsonWithMeta('/api/auth/session');
+  if (!result.ok) {
+    if (result.status === 401) clearSession();
+    throw new Error(responseMessage(result, 'Nao foi possivel validar a sessao.'));
+  }
+  state.authSession = result.body?.session || null;
+  state.authUser = result.body?.user || null;
+  state.onboarding = result.body?.onboarding || null;
+  return result.body;
+}
+
+function renderOnboardingChecklist(onboarding = state.onboarding) {
+  const target = $('[data-onboarding-checklist-items]');
+  if (!target) return;
+  const completed = new Set(onboarding?.completedSteps || []);
+  const items = [
+    {
+      key: 'verify-email',
+      title: 'Email confirmado',
+      text: 'Liberar acesso sem depender de link manual toda vez.'
+    },
+    {
+      key: 'profile',
+      title: 'Perfil personalizado',
+      text: 'Ajustar linguagem e contexto do workspace.'
+    },
+    {
+      key: 'plan',
+      title: 'Plano escolhido',
+      text: 'Definir o nivel de acompanhamento sem bloquear o primeiro valor.'
+    },
+    {
+      key: 'template',
+      title: 'Caso de uso inicial',
+      text: 'Evitar dashboard vazio na primeira sessao.'
+    },
+    {
+      key: 'open-finance-optional',
+      title: 'Open Finance opcional',
+      text: 'Conectar bancos depois e valido; o diagnostico inicial nao depende disso.',
+      optional: true,
+      done: false
+    },
+    {
+      key: 'first-value',
+      title: 'Primeiro diagnostico',
+      text: 'Gerar a comparacao de regime e salvar o primeiro CNPJ no workspace.'
+    }
+  ];
+
+  target.innerHTML = '';
+  items.forEach((item) => {
+    const done = item.optional ? Boolean(item.done) : completed.has(item.key);
+    const row = document.createElement('div');
+    row.className = 'landing-checklist-item';
+    row.innerHTML = `
+      <div>
+        <strong>${escapeHtml(item.title)}</strong>
+        <small>${escapeHtml(item.text)}</small>
+      </div>
+      <span class="landing-checklist-status ${done ? 'is-done' : ''}">${done ? 'Concluido' : (item.optional ? 'Opcional' : 'Pendente')}</span>
+    `;
+    target.appendChild(row);
+  });
+}
+
+function fillProfileOnboardingForm(user = state.authUser || {}) {
+  const form = $('[data-onboarding-profile-form]');
+  if (!form) return;
+  if ($('[data-onboarding-name]')) $('[data-onboarding-name]').value = user.name || user.profile?.name || '';
+  if ($('[data-onboarding-avatar]')) $('[data-onboarding-avatar]').value = user.avatarUrl || user.profile?.avatarUrl || '';
+  const usageType = user.usageType || user.profile?.usageType || state.onboarding?.data?.profile?.usageType || '';
+  if (usageType) {
+    const radio = form.querySelector(`input[name="usageType"][value="${usageType}"]`);
+    if (radio) radio.checked = true;
+  }
+}
+
+function fillVerifyEmailRoute() {
+  const email = queryParams().get('email') || state.authEmail || state.authUser?.email || '';
+  const target = $('[data-verify-email-address]');
+  if (target) target.textContent = email || 'nao informado';
+}
+
+function applyOnboardingSelections() {
+  const plan = state.authUser?.plan || state.onboarding?.data?.plan?.plan || '';
+  const templateKey = state.authUser?.templateKey || state.onboarding?.data?.template?.templateKey || '';
+  if (plan) setActiveChoice('data-onboarding-plan', plan);
+  if (templateKey) setActiveChoice('data-onboarding-template', templateKey);
+}
+
+function setGoogleButtonsState(enabled, message = '') {
+  $$('[data-oauth-button="google"]').forEach((button) => {
+    button.disabled = !enabled;
+    if (!enabled) button.textContent = 'Google em configuracao';
+  });
+  if (message) setInlineNote('[data-route-oauth-note]', message, enabled ? 'info' : 'error');
+}
+
+async function loadGoogleAuthAvailability() {
+  if (!$$('[data-oauth-button="google"]').length) return;
+  const result = await requestJsonWithMeta('/api/auth/google/status');
+  const enabled = Boolean(result.ok && result.body?.enabled);
+  state.oauthAvailability.google = enabled;
+  if (!enabled) {
+    setGoogleButtonsState(false, 'Google SSO indisponivel no momento. Use email, CNPJ, codigo ou Auth0.');
+  }
+}
+
+async function startOAuthFlow(provider, mode = 'login') {
+  const result = await requestJsonWithMeta('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      provider,
+      mode,
+      returnTo: '/dashboard'
+    })
+  });
+
+  if (!result.ok) {
+    const message = responseMessage(result, `Nao foi possivel iniciar o login com ${provider}.`);
+    if (provider === 'google') {
+      state.oauthAvailability.google = false;
+      setGoogleButtonsState(false, message);
+    } else {
+      setInlineNote('[data-route-oauth-note]', message, 'error');
+    }
+    return;
+  }
+
+  const redirectUrl = result.body?.redirectUrl;
+  if (!redirectUrl) {
+    setInlineNote('[data-route-oauth-note]', `O provedor ${provider} nao retornou URL de autenticacao.`, 'error');
+    return;
+  }
+
+  window.location.href = redirectUrl;
+}
 
 function setAuthTab(tab) {
   $$('[data-auth-tab]').forEach((button) => button.classList.toggle('is-active', button.dataset.authTab === tab));
@@ -451,6 +720,12 @@ function setPublicSimulatorCheck(name, done, text) {
   item.textContent = text;
 }
 
+function updateFirstValueCompletionButton(enabled = false, message = '') {
+  const button = $('[data-complete-first-value]');
+  if (button) button.disabled = !enabled;
+  if (message) setInlineNote('[data-first-value-note]', message, enabled ? 'success' : 'info');
+}
+
 function resetPublicDiagnostic(message = 'Digite o CNPJ para liberar a análise do melhor regime.', title = 'Aguardando CNPJ') {
   const titleEl = $('[data-public-best-regime]');
   const copyEl = $('[data-public-diagnostic-copy]');
@@ -461,6 +736,7 @@ function resetPublicDiagnostic(message = 'Digite o CNPJ para liberar a análise 
   if (statusEl) statusEl.textContent = message;
   resultCard?.classList.remove('has-result');
   renderTaxRows('[data-regime-comparison]', []);
+  updateFirstValueCompletionButton(false);
 }
 
 function updatePublicSimulatorReadyState() {
@@ -528,6 +804,7 @@ function renderPublicDiagnostic(regimes, annualRevenue) {
   if (statusEl) statusEl.textContent = 'Comparação atualizada com os dados informados.';
   $('.simulator-result')?.classList.add('has-result');
   renderTaxRows('[data-regime-comparison]', normalized);
+  updateFirstValueCompletionButton(true, 'Comparacao pronta. Agora voce pode salvar esse primeiro diagnostico no workspace.');
   updatePublicSimulatorReadyState();
 }
 
@@ -694,6 +971,7 @@ function runPublicDiagnostic(event) {
     if (statusEl) statusEl.textContent = 'Revise as premissas para recalcular.';
     $('.simulator-result')?.classList.remove('has-result');
     renderTaxRows('[data-regime-comparison]', []);
+    updateFirstValueCompletionButton(false);
   }
 }
 
@@ -1870,6 +2148,521 @@ function renderBanks() {
   renderOpenFinanceSummary();
 }
 
+function updateStateFromAuthPayload(payload = {}) {
+  state.authSession = payload.session || state.authSession;
+  state.authUser = payload.user || state.authUser;
+  state.onboarding = payload.onboarding || state.onboarding;
+  if (payload.user?.email) state.authEmail = payload.user.email;
+}
+
+function redirectAfterAuthPayload(payload = {}, fallback = '/dashboard') {
+  const nextPath = sanitizeClientPath(payload.redirectTo || fallback);
+  if (nextPath === '/dashboard') {
+    goToAppDashboard({ replace: true });
+    return;
+  }
+  navigateToPath(nextPath, { replace: true });
+}
+
+async function loginWithPasswordRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const email = $('[data-route-login-email]')?.value.trim();
+  const password = $('[data-route-login-password]')?.value || '';
+  if (!email || !password) throw new Error('Informe e-mail e senha.');
+
+  setLoading(button, true, 'Entrando...');
+  setInlineNote('[data-login-password-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    if (!result.ok) {
+      const message = responseMessage(result, 'Nao foi possivel entrar.');
+      setInlineNote('[data-login-password-note]', message, 'error');
+      if (result.body?.verificationRequired || result.status === 403) {
+        navigateToPath(`/onboarding/verificar-email?email=${encodeURIComponent(email)}`);
+      }
+      return;
+    }
+
+    updateStateFromAuthPayload(result.body);
+    persistSession(result.body?.token, result.body?.user?.email || email, result.body?.session?.provider || 'password');
+    showToast(result.body?.mensagem || 'Login realizado.', 'success');
+    redirectAfterAuthPayload(result.body);
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function sendCodeRoute(button) {
+  const email = $('[data-route-code-email]')?.value.trim();
+  if (!email) throw new Error('Informe o e-mail.');
+  setLoading(button, true, 'Enviando...');
+  setInlineNote('[data-route-code-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/send-code', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+    const message = responseMessage(result, 'Nao foi possivel enviar o codigo.');
+    setInlineNote('[data-route-code-note]', message, result.ok ? 'success' : 'error');
+    if (result.ok && result.body?._devCode && $('[data-route-code-input]')) {
+      $('[data-route-code-input]').value = result.body._devCode;
+    }
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function verifyCodeRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const email = $('[data-route-code-email]')?.value.trim();
+  const code = $('[data-route-code-input]')?.value.trim();
+  if (!email || !code) throw new Error('Informe e-mail e codigo.');
+
+  setLoading(button, true, 'Validando...');
+  setInlineNote('[data-route-code-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code })
+    });
+    if (!result.ok) {
+      setInlineNote('[data-route-code-note]', responseMessage(result, 'Nao foi possivel validar o codigo.'), 'error');
+      return;
+    }
+
+    persistSession(result.body?.token, email, 'email');
+    showToast('Login realizado.', 'success');
+    goToAppDashboard({ replace: true });
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function loginCnpjRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const cnpj = onlyDigits($('[data-route-login-cnpj]')?.value);
+  const password = $('[data-route-login-cnpj-password]')?.value || '';
+  if (cnpj.length !== 14 || !password) throw new Error('Informe CNPJ e senha.');
+
+  setLoading(button, true, 'Entrando...');
+  setInlineNote('[data-route-cnpj-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/login-cnpj', {
+      method: 'POST',
+      body: JSON.stringify({ cnpj, password })
+    });
+    if (!result.ok) {
+      setInlineNote('[data-route-cnpj-note]', responseMessage(result, 'Nao foi possivel entrar com CNPJ.'), 'error');
+      return;
+    }
+    persistSession(result.body?.token, result.body?.email, 'cnpj');
+    showToast('Login realizado.', 'success');
+    goToAppDashboard({ replace: true });
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function registerAccountRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const name = $('[data-route-register-name]')?.value.trim() || '';
+  const email = $('[data-route-register-email]')?.value.trim();
+  const password = $('[data-route-register-password]')?.value || '';
+  const confirm = $('[data-route-register-confirm]')?.value || '';
+  const usageType = $('[data-route-register-usage]')?.value || '';
+  const consent = Boolean($('[data-route-register-consent]')?.checked);
+  if (!email) throw new Error('Informe o e-mail.');
+  if (password.length < 8) throw new Error('A senha precisa ter no minimo 8 caracteres.');
+  if (password !== confirm) throw new Error('As senhas nao conferem.');
+  if (!consent) throw new Error('Confirme o consentimento LGPD para continuar.');
+
+  setLoading(button, true, 'Criando conta...');
+  setInlineNote('[data-register-account-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name, usageType })
+    });
+    const message = responseMessage(result, 'Nao foi possivel criar a conta.');
+    if (!result.ok) {
+      setInlineNote('[data-register-account-note]', message, 'error');
+      return;
+    }
+    updateStateFromAuthPayload(result.body);
+    setInlineNote('[data-register-account-note]', message, 'success');
+    navigateToPath(`/onboarding/verificar-email?email=${encodeURIComponent(email)}`, { replace: true });
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function registerLegacyRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const cnpj = onlyDigits($('[data-route-register-cnpj]')?.value);
+  const password = $('[data-route-register-legacy-password]')?.value || '';
+  const confirm = $('[data-route-register-legacy-confirm]')?.value || '';
+  const plan = $('[data-route-register-plan]')?.value || 'starter';
+  const consent = Boolean($('[data-route-register-legacy-consent]')?.checked);
+  const annualRevenue = annualRevenueFromMonthlyInput($('[data-route-register-faturamento]')?.value);
+  const margin = parsePercentLike($('[data-route-register-margem]')?.value);
+  if (cnpj.length !== 14) throw new Error('Informe um CNPJ com 14 digitos.');
+  if (password.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
+  if (password !== confirm) throw new Error('As senhas nao conferem.');
+  if (!annualRevenue) throw new Error('Informe o faturamento mensal da empresa.');
+  if (!Number.isFinite(margin)) throw new Error('Informe a margem estimada.');
+  if (!consent) throw new Error('Confirme o consentimento para continuar.');
+
+  setLoading(button, true, 'Criando conta...');
+  setInlineNote('[data-register-legacy-note]', '');
+  try {
+    const empresaPayload = {
+      ...(state.cnpjData || {}),
+      faturamento: annualRevenue || state.cnpjData?.faturamento,
+      monthlyRevenue: annualRevenue ? Math.round(annualRevenue / 12) : undefined,
+      margem: Number.isFinite(margin) ? margin : state.cnpjData?.margem
+    };
+
+    const registerResult = await requestJsonWithMeta('/api/auth/register-cnpj', {
+      method: 'POST',
+      body: JSON.stringify({ cnpj, password, plan, empresa: empresaPayload })
+    });
+    if (!registerResult.ok) {
+      setInlineNote('[data-register-legacy-note]', responseMessage(registerResult, 'Nao foi possivel criar a conta pelo fluxo rapido.'), 'error');
+      return;
+    }
+
+    const loginResult = await requestJsonWithMeta('/api/auth/login-cnpj', {
+      method: 'POST',
+      body: JSON.stringify({ cnpj, password })
+    });
+    if (!loginResult.ok) {
+      setInlineNote('[data-register-legacy-note]', responseMessage(loginResult, 'Conta criada, mas o login falhou.'), 'error');
+      return;
+    }
+
+    persistSession(loginResult.body?.token, loginResult.body?.email, 'cnpj');
+    setInlineNote('[data-register-legacy-note]', 'Conta criada. Redirecionando para checkout...', 'success');
+    showToast('Conta criada. Redirecionando para pagamento...', 'success');
+    await redirectToCheckout(plan);
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function forgotPasswordRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const email = $('[data-route-forgot-email]')?.value.trim();
+  if (!email) throw new Error('Informe o e-mail.');
+
+  setLoading(button, true, 'Enviando...');
+  setInlineNote('[data-forgot-password-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+    setInlineNote('[data-forgot-password-note]', responseMessage(result, 'Nao foi possivel solicitar o reset.'), result.ok ? 'success' : 'error');
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function resetPasswordRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const token = queryParams().get('token') || '';
+  const password = $('[data-route-reset-password]')?.value || '';
+  const confirm = $('[data-route-reset-confirm]')?.value || '';
+  if (!token) throw new Error('Link de redefinicao invalido. Solicite um novo.');
+  if (password.length < 8) throw new Error('A senha precisa ter no minimo 8 caracteres.');
+  if (password !== confirm) throw new Error('As senhas nao conferem.');
+
+  setLoading(button, true, 'Salvando...');
+  setInlineNote('[data-reset-password-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password })
+    });
+    if (!result.ok) {
+      setInlineNote('[data-reset-password-note]', responseMessage(result, 'Nao foi possivel redefinir a senha.'), 'error');
+      return;
+    }
+    updateStateFromAuthPayload(result.body);
+    persistSession(result.body?.token, result.body?.user?.email, result.body?.session?.provider || 'password');
+    showToast('Senha redefinida com sucesso.', 'success');
+    redirectAfterAuthPayload(result.body);
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+let resendCountdownTimer = null;
+
+function startResendCountdown(seconds = 0) {
+  const target = $('[data-resend-countdown]');
+  if (!target) return;
+  clearInterval(resendCountdownTimer);
+  const endAt = Date.now() + (seconds * 1000);
+  const tick = () => {
+    const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    target.textContent = remaining > 0 ? `Voce podera reenviar em ${remaining}s.` : '';
+    if (remaining <= 0) clearInterval(resendCountdownTimer);
+  };
+  tick();
+  if (seconds > 0) resendCountdownTimer = setInterval(tick, 1000);
+}
+
+async function resendVerificationRoute() {
+  const button = $('[data-resend-verification]');
+  const email = queryParams().get('email') || state.authEmail || state.authUser?.email || '';
+  if (!email) throw new Error('Nao encontramos o e-mail desta conta.');
+  setLoading(button, true, 'Reenviando...');
+  setInlineNote('[data-verify-email-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+    const message = responseMessage(result, 'Nao foi possivel reenviar o e-mail.');
+    setInlineNote('[data-verify-email-note]', message, result.ok ? 'success' : 'error');
+    if (result.status === 429) startResendCountdown(Number(result.body?.retryAfter || 60));
+    if (result.ok) startResendCountdown(60);
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function verifyEmailFromQuery() {
+  const token = queryParams().get('token');
+  if (!token || !currentPublicPath().includes('/onboarding/verificar-email')) return false;
+  const statusEl = $('[data-verify-email-status]');
+  if (statusEl) statusEl.textContent = 'Validando link de verificacao...';
+  const result = await requestJsonWithMeta('/api/auth/verify-email', {
+    method: 'POST',
+    body: JSON.stringify({ token })
+  });
+  if (!result.ok) {
+    setInlineNote('[data-verify-email-note]', responseMessage(result, 'Nao foi possivel validar o link.'), 'error');
+    if (statusEl) statusEl.textContent = 'Link invalido ou expirado.';
+    return false;
+  }
+
+  updateStateFromAuthPayload(result.body);
+  persistSession(result.body?.token, result.body?.user?.email || state.authEmail, result.body?.session?.provider || 'email-verification');
+  showToast(result.body?.mensagem || 'E-mail verificado com sucesso.', 'success');
+  redirectAfterAuthPayload(result.body);
+  return true;
+}
+
+async function saveOnboardingProfileRoute(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('button[type="submit"]', form);
+  const name = $('[data-onboarding-name]')?.value.trim();
+  const avatarUrl = $('[data-onboarding-avatar]')?.value.trim() || '';
+  const usageType = form.querySelector('input[name="usageType"]:checked')?.value || '';
+  if (!name) throw new Error('Informe como devemos te chamar.');
+  if (!usageType) throw new Error('Escolha um tipo de uso.');
+
+  setLoading(button, true, 'Salvando...');
+  setInlineNote('[data-onboarding-profile-note]', '');
+  try {
+    const result = await requestJsonWithMeta('/api/onboarding/state', {
+      method: 'PUT',
+      body: JSON.stringify({
+        step: 'profile',
+        data: { name, avatarUrl, usageType },
+        completed: true
+      })
+    });
+    if (!result.ok) {
+      setInlineNote('[data-onboarding-profile-note]', responseMessage(result, 'Nao foi possivel salvar o perfil.'), 'error');
+      return;
+    }
+    updateStateFromAuthPayload(result.body);
+    showToast('Perfil salvo.', 'success');
+    redirectAfterAuthPayload(result.body);
+  } finally {
+    setLoading(button, false);
+  }
+}
+
+async function saveOnboardingPlanRoute(plan) {
+  const result = await requestJsonWithMeta('/api/onboarding/state', {
+    method: 'PUT',
+    body: JSON.stringify({
+      step: 'plan',
+      data: { plan },
+      completed: true
+    })
+  });
+  if (!result.ok) throw new Error(responseMessage(result, 'Nao foi possivel salvar o plano.'));
+  updateStateFromAuthPayload(result.body);
+  setActiveChoice('data-onboarding-plan', plan);
+  showToast('Plano salvo.', 'success');
+  redirectAfterAuthPayload(result.body);
+}
+
+async function saveOnboardingTemplateRoute(templateKey) {
+  const result = await requestJsonWithMeta('/api/onboarding/state', {
+    method: 'PUT',
+    body: JSON.stringify({
+      step: 'template',
+      data: { templateKey },
+      completed: true
+    })
+  });
+  if (!result.ok) throw new Error(responseMessage(result, 'Nao foi possivel salvar o template.'));
+  updateStateFromAuthPayload(result.body);
+  setActiveChoice('data-onboarding-template', templateKey);
+  showToast('Template salvo.', 'success');
+  redirectAfterAuthPayload(result.body);
+}
+
+async function continueChecklistRoute() {
+  const result = await requestJsonWithMeta('/api/onboarding/complete-step', {
+    method: 'POST',
+    body: JSON.stringify({
+      step: 'checklist',
+      data: { acknowledgedAt: new Date().toISOString() }
+    })
+  });
+  if (!result.ok) throw new Error(responseMessage(result, 'Nao foi possivel concluir o checklist.'));
+  updateStateFromAuthPayload(result.body);
+  showToast('Checklist concluido.', 'success');
+  redirectAfterAuthPayload(result.body);
+}
+
+async function completeFirstValueRoute() {
+  const form = $('[data-public-diagnostic-form]');
+  const consent = Boolean($('[data-first-value-consent]')?.checked);
+  const cnpj = onlyDigits(form?.elements?.cnpj?.value || '');
+  const faturamento = parseMoneyLike(form?.elements?.faturamento?.value || '');
+  const margem = parsePercentLike(form?.elements?.margem?.value || '');
+  const regimeAtual = form?.elements?.regime_atual?.value || '';
+  const bestRegime = $('[data-public-best-regime]')?.textContent?.trim() || '';
+  if (!consent) throw new Error('Confirme o consentimento LGPD para salvar o diagnostico.');
+  if (cnpj.length !== 14 || !faturamento || !Number.isFinite(margem)) {
+    throw new Error('Complete o CNPJ e as premissas antes de salvar.');
+  }
+
+  const companyPayload = {
+    cnpj,
+    nome: state.cnpjData?.nome || state.cnpjData?.razao_social || '',
+    fantasia: state.cnpjData?.nome_fantasia || state.cnpjData?.fantasia || '',
+    setor: state.cnpjData?.cnae_descricao || state.cnpjData?.cnae_fiscal_descricao || '',
+    regime: regimeAtual,
+    faturamento,
+    monthlyRevenue: Math.round(faturamento / 12),
+    margem
+  };
+
+  try {
+    const companyResult = await requestJsonWithMeta('/api/companies', {
+      method: 'POST',
+      body: JSON.stringify(companyPayload)
+    });
+    if (companyResult.ok && companyResult.body?.company?.id) {
+      state.activeCompanyId = companyResult.body.company.id;
+      localStorage.setItem('finpj_active_company', state.activeCompanyId);
+    } else if (!companyResult.ok && !/ja cadastrada/i.test(responseMessage(companyResult))) {
+      throw new Error(responseMessage(companyResult, 'Nao foi possivel salvar a empresa no workspace.'));
+    }
+
+    const onboardingResult = await requestJsonWithMeta('/api/onboarding/complete-step', {
+      method: 'POST',
+      body: JSON.stringify({
+        step: 'first-value',
+        data: {
+          cnpj,
+          faturamento,
+          margem,
+          regimeAtual,
+          bestRegime
+        }
+      })
+    });
+    if (!onboardingResult.ok) throw new Error(responseMessage(onboardingResult, 'Nao foi possivel concluir o primeiro valor.'));
+    updateStateFromAuthPayload(onboardingResult.body);
+    showToast('Primeiro diagnostico salvo.', 'success');
+    goToAppDashboard({ replace: true });
+  } catch (error) {
+    setInlineNote('[data-first-value-note]', error.message, 'error');
+  }
+}
+
+async function hydrateAuthenticatedRoute() {
+  const sessionData = await fetchAuthSessionState();
+  const redirectTo = sanitizeClientPath(sessionData?.redirectTo || '/dashboard');
+
+  if (isAuthEntryPath()) {
+    navigateToPath(redirectTo, { replace: true });
+    return;
+  }
+
+  if (isOnboardingPath()) {
+    if (redirectTo === '/dashboard') {
+      goToAppDashboard({ replace: true });
+      return;
+    }
+    if (currentPublicPath() !== redirectTo) {
+      navigateToPath(redirectTo, { replace: true });
+      return;
+    }
+  }
+
+  if (!isOnboardingPath() && redirectTo !== '/dashboard') {
+    navigateToPath(redirectTo, { replace: true });
+    return;
+  }
+
+  fillVerifyEmailRoute();
+  fillProfileOnboardingForm(sessionData?.user || {});
+  applyOnboardingSelections();
+  renderOnboardingChecklist(sessionData?.onboarding);
+}
+
+async function hydratePublicRoute() {
+  prefillEmailFields();
+  try {
+    const pendingPlan = sessionStorage.getItem('finpj_pending_plan');
+    if (pendingPlan && $('[data-route-register-plan]')) $('[data-route-register-plan]').value = pendingPlan;
+  } catch {
+    // Session storage can be unavailable in private contexts.
+  }
+  const oauthError = queryParams().get('oauth_error');
+  if (oauthError) setInlineNote('[data-route-oauth-note]', oauthError, 'error');
+  if (isAuthEntryPath()) await loadGoogleAuthAvailability();
+  if (currentPublicPath() === '/onboarding/verificar-email') {
+    fillVerifyEmailRoute();
+    const verified = await verifyEmailFromQuery();
+    if (verified) return;
+  }
+  if (state.token) {
+    await hydrateAuthenticatedRoute();
+  }
+  if (currentPublicPath() === '/dashboard' && !state.token) {
+    closeAuthModals();
+  }
+}
+
 async function sendCode(button) {
   const email = $('[data-login-email]').value.trim();
   if (!email) throw new Error('Informe o e-mail.');
@@ -2205,16 +2998,23 @@ async function saveProfile(event) {
   showToast('Perfil salvo.', 'success');
 }
 
-function handleAuth0Redirect() {
+function handleAuthRedirect() {
   let params = new URLSearchParams(window.location.search);
   if (!params.get('token') && window.location.hash.includes('?')) {
     params = new URLSearchParams(window.location.hash.split('?')[1]);
   }
+  const oauthError = params.get('oauth_error');
+  if (!params.get('token') && oauthError && currentPublicPath() === '/') {
+    navigateToPath(`/login?oauth_error=${encodeURIComponent(oauthError)}&provider=${encodeURIComponent(params.get('provider') || '')}`, { replace: true });
+    return true;
+  }
   const token = params.get('token');
   if (!token) return false;
-  persistSession(token, params.get('email') || state.authEmail || 'auth0', 'auth0');
-  history.replaceState(null, '', '/#dashboard');
-  loadWorkspaceData().catch((error) => showToast(error.message, 'error'));
+  const provider = params.get('provider') || 'auth0';
+  const next = sanitizeClientPath(params.get('next') || '/dashboard');
+  persistSession(token, params.get('email') || state.authEmail || provider, provider);
+  if (next === '/dashboard') goToAppDashboard({ replace: true });
+  else navigateToPath(next, { replace: true });
   return true;
 }
 
@@ -2274,6 +3074,99 @@ function bindEvents() {
     if (!goButton) return;
     event.preventDefault();
     goToDashboardTab(goButton.dataset.goTab);
+  });
+
+  document.addEventListener('click', (event) => {
+    const oauthButton = event.target.closest('[data-oauth-button]');
+    if (oauthButton) {
+      event.preventDefault();
+      startOAuthFlow(oauthButton.dataset.oauthButton, oauthButton.dataset.oauthMode || 'login').catch((error) => {
+        setInlineNote('[data-route-oauth-note]', error.message, 'error');
+      });
+      return;
+    }
+
+    const resendButton = event.target.closest('[data-resend-verification]');
+    if (resendButton) {
+      event.preventDefault();
+      resendVerificationRoute().catch((error) => setInlineNote('[data-verify-email-note]', error.message, 'error'));
+      return;
+    }
+
+    const planButton = event.target.closest('[data-onboarding-plan]');
+    if (planButton) {
+      event.preventDefault();
+      saveOnboardingPlanRoute(planButton.dataset.onboardingPlan).catch((error) => {
+        setInlineNote('[data-onboarding-plan-note]', error.message, 'error');
+      });
+      return;
+    }
+
+    const templateButton = event.target.closest('[data-onboarding-template]');
+    if (templateButton) {
+      event.preventDefault();
+      saveOnboardingTemplateRoute(templateButton.dataset.onboardingTemplate).catch((error) => {
+        setInlineNote('[data-onboarding-template-note]', error.message, 'error');
+      });
+      return;
+    }
+
+    const checklistButton = event.target.closest('[data-checklist-continue]');
+    if (checklistButton) {
+      event.preventDefault();
+      continueChecklistRoute().catch((error) => setInlineNote('[data-onboarding-checklist-note]', error.message, 'error'));
+      return;
+    }
+
+    const firstValueButton = event.target.closest('[data-complete-first-value]');
+    if (firstValueButton) {
+      event.preventDefault();
+      completeFirstValueRoute().catch((error) => setInlineNote('[data-first-value-note]', error.message, 'error'));
+      return;
+    }
+
+    const routeSendCodeButton = event.target.closest('[data-route-send-code]');
+    if (routeSendCodeButton) {
+      event.preventDefault();
+      sendCodeRoute(routeSendCodeButton).catch((error) => setInlineNote('[data-route-code-note]', error.message, 'error'));
+    }
+  });
+
+  document.addEventListener('submit', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLFormElement)) return;
+    if (target.matches('[data-login-password-form]')) {
+      loginWithPasswordRoute(event).catch((error) => setInlineNote('[data-login-password-note]', error.message, 'error'));
+      return;
+    }
+    if (target.matches('[data-route-code-form]')) {
+      verifyCodeRoute(event).catch((error) => setInlineNote('[data-route-code-note]', error.message, 'error'));
+      return;
+    }
+    if (target.matches('[data-route-cnpj-form]')) {
+      loginCnpjRoute(event).catch((error) => setInlineNote('[data-route-cnpj-note]', error.message, 'error'));
+      return;
+    }
+    if (target.matches('[data-register-account-form]')) {
+      registerAccountRoute(event).catch((error) => setInlineNote('[data-register-account-note]', error.message, 'error'));
+      return;
+    }
+    if (target.matches('[data-register-legacy-form]')) {
+      registerLegacyRoute(event).catch((error) => setInlineNote('[data-register-legacy-note]', error.message, 'error'));
+      return;
+    }
+    if (target.matches('[data-forgot-password-form]')) {
+      forgotPasswordRoute(event).catch((error) => setInlineNote('[data-forgot-password-note]', error.message, 'error'));
+      return;
+    }
+    if (target.matches('[data-reset-password-form]')) {
+      resetPasswordRoute(event).catch((error) => setInlineNote('[data-reset-password-note]', error.message, 'error'));
+      return;
+    }
+    if (target.matches('[data-onboarding-profile-form]')) {
+      saveOnboardingProfileRoute(event).catch((error) => setInlineNote('[data-onboarding-profile-note]', error.message, 'error'));
+      return;
+    }
   });
 
   $('[data-send-code]')?.addEventListener('click', (event) => sendCode(event.currentTarget).catch((error) => showToast(error.message, 'error')));
@@ -2451,7 +3344,13 @@ function bindEvents() {
 
   $$('[data-select-plan]').forEach((button) => button.addEventListener('click', () => {
     state.pendingPlan = button.dataset.selectPlan;
-    $('[data-register-plan]').value = state.pendingPlan;
+    try {
+      sessionStorage.setItem('finpj_pending_plan', state.pendingPlan);
+    } catch {
+      // Session storage can be unavailable in private contexts.
+    }
+    if ($('[data-register-plan]')) $('[data-register-plan]').value = state.pendingPlan;
+    if ($('[data-route-register-plan]')) $('[data-route-register-plan]').value = state.pendingPlan;
     openPublicAuthRoute('[data-register-modal]', '/cadastro');
   }));
 
@@ -2490,10 +3389,12 @@ function initApp() {
   initLandingReveal();
   resetPublicDiagnostic();
   updatePublicSimulatorReadyState();
-  const handledRedirect = handleAuth0Redirect();
+  const handledRedirect = handleAuthRedirect();
+  if (handledRedirect) return;
   updateSessionUi();
   syncPublicRouteModal();
-  if (state.token && !handledRedirect) {
+  hydratePublicRoute().catch((error) => showToast(error.message, 'error'));
+  if (state.token && !handledRedirect && !isDedicatedPublicPath()) {
     loadWorkspaceData().catch((error) => {
       showToast(error.message, 'error');
       if (/token|jwt|unauthorized|401/i.test(error.message)) clearSession();
