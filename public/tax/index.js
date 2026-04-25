@@ -183,7 +183,7 @@
         return {
             erro: 'Módulo NCM não disponível',
             produtosMonofasicos: 0,
-            creditosNaoAproveitados: 0
+            creditosNãoAproveitados: 0
         };
     }
 

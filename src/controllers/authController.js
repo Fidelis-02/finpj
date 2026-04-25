@@ -150,7 +150,7 @@ function montarDashboard(usuario, options = {}) {
 async function sendCode(req, res) {
     const { email } = req.body;
     if (!validarEmail(email)) {
-        return res.status(400).json({ erro: 'E-mail inválido.' });
+        return res.status(401).json({ erro: 'Credenciais inválidas.' });
     }
 
     const emailNorm = formatarEmail(email);
@@ -192,13 +192,13 @@ async function sendCode(req, res) {
 async function verifyCode(req, res) {
     const { email, code } = req.body;
     if (!validarEmail(email) || !code || String(code).trim().length === 0) {
-        return res.status(400).json({ erro: 'E-mail e código são obrigatórios.' });
+        return res.status(401).json({ erro: 'Credenciais inválidas.' });
     }
 
     const emailNorm = formatarEmail(email);
     const usuario = await obterUsuario(emailNorm);
     if (!usuario || !usuario.verificationCodeHash) {
-        return res.status(400).json({ erro: 'Código de verificação incorreto ou expirado.' });
+        return res.status(401).json({ erro: 'Código incorreto ou expirado.' });
     }
     if (Date.now() > usuario.codeExpiresAt) {
         return res.status(400).json({ erro: 'O código expirou. Solicite um novo código.' });

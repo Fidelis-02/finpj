@@ -204,9 +204,9 @@ Exemplo: {"receita_bruta":1250000.00,"deducoes":25000.00,"receita_liquida":12250
         balanco: `Você é analista financeiro especialista em PMEs brasileiras. Analise o Balanço Patrimonial e extraia os valores numéricos. Formato: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos, rodapés.
 
 Retorne EXCLUSIVAMENTE JSON:
-{"ativo_total": number, "ativo_circulante": number, "ativo_nao_circulante": number, "passivo_total": number, "passivo_circulante": number, "patrimonio_liquido": number, "liquidez_corrente": number, "endividamento_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
+{"ativo_total": number, "ativo_circulante": number, "ativo_não_circulante": number, "passivo_total": number, "passivo_circulante": number, "patrimonio_liquido": number, "liquidez_corrente": number, "endividamento_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
 
-Exemplo: {"ativo_total":2500000.00,"ativo_circulante":1250000.00,"ativo_nao_circulante":1250000.00,"passivo_total":1500000.00,"passivo_circulante":875000.00,"patrimonio_liquido":1000000.00,"liquidez_corrente":1.43,"endividamento_pct":0.60,"alertas":["Endividamento alto"],"recomendacoes":["Reduzir passivo circulante"],"resumo":"Liquidez 1,43 OK, mas endividamento 60% preocupante."}`,
+Exemplo: {"ativo_total":2500000.00,"ativo_circulante":1250000.00,"ativo_não_circulante":1250000.00,"passivo_total":1500000.00,"passivo_circulante":875000.00,"patrimonio_liquido":1000000.00,"liquidez_corrente":1.43,"endividamento_pct":0.60,"alertas":["Endividamento alto"],"recomendacoes":["Reduzir passivo circulante"],"resumo":"Liquidez 1,43 OK, mas endividamento 60% preocupante."}`,
         extrato: `Você é especialista em conciliação bancária. Analise o extrato e extraia totais e padrões. Formato: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos.
 
 Retorne EXCLUSIVAMENTE JSON:
@@ -350,7 +350,7 @@ function analisarLocalmente(tipoDoc, texto) {
     if (tipoDoc === 'balanco') {
         const ativoTotal = buscarValorPorRotulos(texto, ['Ativo Total', 'TOTAL DO ATIVO']);
         const ativoCirculante = buscarValorPorRotulos(texto, ['Ativo Circulante', 'Circulante']);
-        const ativoNaoCirculante = buscarValorPorRotulos(texto, ['Ativo Não Circulante', 'Ativo Realizável a Longo Prazo', 'Imobilizado', 'Intangível']);
+        const ativoNãoCirculante = buscarValorPorRotulos(texto, ['Ativo Não Circulante', 'Ativo Realizável a Longo Prazo', 'Imobilizado', 'Intangível']);
         const passivoTotal = buscarValorPorRotulos(texto, ['Passivo Total', 'TOTAL DO PASSIVO']);
         const passivoCirculante = buscarValorPorRotulos(texto, ['Passivo Circulante', 'Exigivel a Curto Prazo']);
         const patrimonioLiquido = buscarValorPorRotulos(texto, ['Patrimônio Líquido', 'Patrimônio Líquido Consolidado', 'PL']);
@@ -364,7 +364,7 @@ function analisarLocalmente(tipoDoc, texto) {
             dados: {
                 ativo_total: ativoBase,
                 ativo_circulante: ativoCirculante || ativoBase * 0.55,
-                ativo_nao_circulante: ativoNaoCirculante || ativoBase * 0.45,
+                ativo_não_circulante: ativoNãoCirculante || ativoBase * 0.45,
                 passivo_total: passivoTotal || ativoBase - plBase,
                 passivo_circulante: pcBase,
                 patrimonio_liquido: plBase,

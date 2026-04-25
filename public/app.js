@@ -350,7 +350,7 @@ function initialsFromText(value = '') {
 function getSidebarIdentity(user = getCurrentUser()) {
   const companyName = user.fantasia || user.nomeEmpresa || user.nome || user.email || state.authEmail || 'Workspace FinPJ';
   const personName = user.profile?.name || user.name || user.nome || user.email || state.authEmail || 'Equipe FinPJ';
-  const email = user.email || state.authEmail || 'Sessao ativa';
+  const email = user.email || state.authEmail || 'Sessão ativa';
   const cnpj = user.cnpj ? formatCnpj(user.cnpj) : '';
   const regime = user.regime ? formatRegime(user.regime) : '';
   return {
@@ -448,7 +448,7 @@ async function requestJsonWithMeta(path, options = {}) {
   }
 }
 
-function responseMessage(result, fallback = 'Nao foi possivel concluir a operacao.') {
+function responseMessage(result, fallback = 'Não foi possível concluir a operação.') {
   const body = result?.body;
   return typeof body === 'object'
     ? body?.erro || body?.error || body?.mensagem || body?.message || fallback
@@ -498,7 +498,7 @@ async function fetchAuthSessionState() {
   const result = await requestJsonWithMeta('/api/auth/session');
   if (!result.ok) {
     if (result.status === 401) clearSession();
-    throw new Error(responseMessage(result, 'Nao foi possivel validar a sessao.'));
+    throw new Error(responseMessage(result, 'Não foi possível validar a sessão.'));
   }
   state.authSession = result.body?.session || null;
   state.authUser = result.body?.user || null;
@@ -511,7 +511,7 @@ async function logoutCurrentSession() {
   try {
     await requestJsonWithMeta('/api/auth/logout', { method: 'POST' });
   } catch {
-    // Logout local deve prosseguir mesmo se a sessao ja expirou ou a rede falhar.
+    // Logout local deve prosseguir mesmo se a sessão já expirou ou a rede falhar.
   }
 }
 
@@ -538,19 +538,19 @@ function renderOnboardingChecklist(onboarding = state.onboarding) {
     {
       key: 'template',
       title: 'Caso de uso inicial',
-      text: 'Evitar dashboard vazio na primeira sessao.'
+      text: 'Evitar dashboard vazio na primeira sessão.'
     },
     {
       key: 'open-finance-optional',
       title: 'Open Finance opcional',
-      text: 'Conectar bancos depois e valido; o diagnostico inicial nao depende disso.',
+      text: 'Conectar bancos depois é válido; o diagnóstico inicial não depende disso.',
       optional: true,
       done: false
     },
     {
       key: 'first-value',
-      title: 'Primeiro diagnostico',
-      text: 'Gerar a comparacao de regime e salvar o primeiro CNPJ no workspace.'
+      title: 'Primeiro diagnóstico',
+      text: 'Gerar a comparação de regime e salvar o primeiro CNPJ no workspace.'
     }
   ];
 
@@ -585,7 +585,7 @@ function fillProfileOnboardingForm(user = state.authUser || {}) {
 function fillVerifyEmailRoute() {
   const email = queryParams().get('email') || state.authEmail || state.authUser?.email || '';
   const target = $('[data-verify-email-address]');
-  if (target) target.textContent = email || 'nao informado';
+  if (target) target.textContent = email || 'não informado';
 }
 
 function prepareResetPasswordRoute() {
@@ -639,7 +639,7 @@ async function startOAuthFlow(provider, mode = 'login') {
   });
 
   if (!result.ok) {
-    const message = responseMessage(result, `Nao foi possivel iniciar o login com ${provider}.`);
+    const message = responseMessage(result, `Não foi possível iniciar o login com ${provider}.`);
     if (provider === 'google') {
       state.oauthAvailability.google = false;
       setGoogleButtonsState(false, message);
@@ -651,7 +651,7 @@ async function startOAuthFlow(provider, mode = 'login') {
 
   const redirectUrl = result.body?.redirectUrl;
   if (!redirectUrl) {
-    setInlineNote('[data-route-oauth-note]', `O provedor ${provider} nao retornou URL de autenticacao.`, 'error');
+    setInlineNote('[data-route-oauth-note]', `O provedor ${provider} não retornou URL de autenticação.`, 'error');
     return;
   }
 
@@ -801,7 +801,7 @@ function findDashboardTabByQuery(query) {
     { tab: 'financial', terms: ['financeiro', 'financas', 'fluxo', 'caixa', 'transacoes', 'movimentos'] },
     { tab: 'statements', terms: ['dre', 'balanco', 'demonstrativos', 'ebitda'] },
     { tab: 'tax', terms: ['tributario', 'tributos', 'impostos', 'regimes', 'simples', 'lucro'] },
-    { tab: 'diagnostics', terms: ['diagnostico', 'fiscal', 'economia'] },
+    { tab: 'diagnostics', terms: ['diagnóstico', 'fiscal', 'economia'] },
     { tab: 'ai', terms: ['ia', 'documento', 'documentos', 'upload', 'analise'] },
     { tab: 'insights', terms: ['insights', 'prioridades', 'acoes', 'recomendacoes'] },
     { tab: 'openfinance', terms: ['open finance', 'banco', 'bancos', 'saldo', 'conciliacao'] },
@@ -947,7 +947,7 @@ function renderPublicDiagnostic(regimes, annualRevenue) {
   if (statusEl) statusEl.textContent = 'Comparação atualizada com os dados informados.';
   $('.simulator-result')?.classList.add('has-result');
   renderTaxRows('[data-regime-comparison]', normalized);
-  updateFirstValueCompletionButton(true, 'Comparacao pronta. Agora voce pode salvar esse primeiro diagnostico no workspace.');
+  updateFirstValueCompletionButton(true, 'Comparação pronta. Agora você pode salvar esse primeiro diagnóstico no workspace.');
   updatePublicSimulatorReadyState();
 }
 
@@ -1172,7 +1172,7 @@ function buildMetrics(dashboard = state.dashboard || {}) {
   const expenses = finiteNumber(backendMetrics.expenses) || Math.max(0, annualRevenue - profit);
   const activity = inferActivity(user.setor);
   let regimes = Array.isArray(backendFiscal.regimes) ? backendFiscal.regimes.map(normalizeRegimeResult) : [];
-  let bestRegime = normalizeRegimeResult(backendFiscal.bestRegime || { name: 'Nao calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 });
+  let bestRegime = normalizeRegimeResult(backendFiscal.bestRegime || { name: 'Não calculado', tax: 0, annualTax: 0, monthly: 0, monthlyTax: 0, effectiveRate: 0 });
   try {
     regimes = !backendFiscal.bestRegime && annualRevenue && margin > 0
       ? calculatePublicRegime({ faturamento: annualRevenue, margem: margin, atividade: activity })
@@ -1391,7 +1391,7 @@ function renderDecisionCenter(metrics) {
 function renderDashboardContext(metrics) {
   const user = metrics.user || {};
   const companyName = user.fantasia || user.nome || user.nomeEmpresa || user.email || 'Empresa sem nome';
-  const cnpj = user.cnpj ? formatCnpj(user.cnpj) : 'CNPJ nao informado';
+  const cnpj = user.cnpj ? formatCnpj(user.cnpj) : 'CNPJ não informado';
   const regime = formatRegime(user.regime || '');
   const companyEl = $('[data-dashboard-company]');
   const contextEl = $('[data-dashboard-context]');
@@ -1425,7 +1425,7 @@ function renderDashboardContext(metrics) {
       tone: metrics.connectedBanks ? 'success' : 'warning'
     },
     {
-      label: 'Diagnosticos',
+      label: 'Diagnósticos',
       value: state.diagnostics.length ? `${state.diagnostics.length} salvo(s)` : 'Nenhum salvo',
       tone: state.diagnostics.length ? 'success' : ''
     }
@@ -1500,7 +1500,7 @@ function renderPrimaryKpis(metrics) {
     formatPercent(metrics.margin || 0),
     metrics.margin
       ? kpiSourceNote(overviewKpis.profitMargin?.source, 'Base do perfil financeiro')
-      : 'Margem nao informada',
+      : 'Margem não informada',
     { tone: metrics.margin >= 0.15 ? 'positive' : (metrics.margin > 0 && metrics.margin < 0.1 ? 'negative' : '') }
   );
   setKpi(
@@ -1526,7 +1526,7 @@ function renderOverviewInsights(metrics) {
     {
       severity: 'success',
       title: 'Operacao sem alerta critico',
-      text: 'Os dados atuais nao exigem acao imediata.',
+      text: 'Os dados atuais não exigem ação imediata.',
       actionTab: 'financial',
       actionLabel: 'Ver detalhes'
     }
@@ -1559,7 +1559,7 @@ function lazyRenderTrendChart(trend) {
 
   if (!('IntersectionObserver' in window)) {
     render().catch(() => {
-      container.textContent = 'Nao foi possivel carregar o grafico.';
+      container.textContent = 'Não foi possível carregar o gráfico.';
     });
     return;
   }
@@ -1569,7 +1569,7 @@ function lazyRenderTrendChart(trend) {
     if (!entries.some((entry) => entry.isIntersecting)) return;
     chartObserver.disconnect();
     render().catch(() => {
-      container.textContent = 'Nao foi possivel carregar o grafico.';
+      container.textContent = 'Não foi possível carregar o gráfico.';
     });
   }, { rootMargin: '160px' });
   chartObserver.observe(container);
@@ -2324,7 +2324,7 @@ async function loginWithPasswordRoute(event) {
       body: JSON.stringify({ email, password })
     });
     if (!result.ok) {
-      const message = responseMessage(result, 'Nao foi possivel entrar.');
+      const message = responseMessage(result, 'Não foi possível entrar.');
       setInlineNote('[data-login-password-note]', message, 'error');
       if (result.body?.verificationRequired || result.status === 403) {
         navigateToPath(`/onboarding/verificar-email?email=${encodeURIComponent(email)}`);
@@ -2351,7 +2351,7 @@ async function sendCodeRoute(button) {
       method: 'POST',
       body: JSON.stringify({ email })
     });
-    const message = responseMessage(result, 'Nao foi possivel enviar o codigo.');
+    const message = responseMessage(result, 'Não foi possível enviar o código.');
     setInlineNote('[data-route-code-note]', message, result.ok ? 'success' : 'error');
     if (result.ok && result.body?._devCode && $('[data-route-code-input]')) {
       $('[data-route-code-input]').value = result.body._devCode;
@@ -2377,7 +2377,7 @@ async function verifyCodeRoute(event) {
       body: JSON.stringify({ email, code })
     });
     if (!result.ok) {
-      setInlineNote('[data-route-code-note]', responseMessage(result, 'Nao foi possivel validar o codigo.'), 'error');
+      setInlineNote('[data-route-code-note]', responseMessage(result, 'Não foi possível validar o código.'), 'error');
       return;
     }
 
@@ -2405,7 +2405,7 @@ async function loginCnpjRoute(event) {
       body: JSON.stringify({ cnpj, password })
     });
     if (!result.ok) {
-      setInlineNote('[data-route-cnpj-note]', responseMessage(result, 'Nao foi possivel entrar com CNPJ.'), 'error');
+      setInlineNote('[data-route-cnpj-note]', responseMessage(result, 'Não foi possível entrar com CNPJ.'), 'error');
       return;
     }
     persistSession(result.body?.token, result.body?.email, 'cnpj');
@@ -2438,7 +2438,7 @@ async function registerAccountRoute(event) {
       method: 'POST',
       body: JSON.stringify({ email, password, name, usageType })
     });
-    const message = responseMessage(result, 'Nao foi possivel criar a conta.');
+    const message = responseMessage(result, 'Não foi possível criar a conta.');
     if (!result.ok) {
       setInlineNote('[data-register-account-note]', message, 'error');
       return;
@@ -2484,7 +2484,7 @@ async function registerLegacyRoute(event) {
       body: JSON.stringify({ cnpj, password, plan, empresa: empresaPayload })
     });
     if (!registerResult.ok) {
-      setInlineNote('[data-register-legacy-note]', responseMessage(registerResult, 'Nao foi possivel criar a conta pelo fluxo rapido.'), 'error');
+      setInlineNote('[data-register-legacy-note]', responseMessage(registerResult, 'Não foi possível criar a conta pelo fluxo rápido.'), 'error');
       return;
     }
 
@@ -2520,7 +2520,7 @@ async function forgotPasswordRoute(event) {
       method: 'POST',
       body: JSON.stringify({ email })
     });
-    setInlineNote('[data-forgot-password-note]', responseMessage(result, 'Nao foi possivel solicitar o reset.'), result.ok ? 'success' : 'error');
+    setInlineNote('[data-forgot-password-note]', responseMessage(result, 'Não foi possível solicitar o reset.'), result.ok ? 'success' : 'error');
   } finally {
     setLoading(button, false);
   }
@@ -2545,7 +2545,7 @@ async function resetPasswordRoute(event) {
       body: JSON.stringify({ token, password })
     });
     if (!result.ok) {
-      setInlineNote('[data-reset-password-note]', responseMessage(result, 'Nao foi possivel redefinir a senha.'), 'error');
+      setInlineNote('[data-reset-password-note]', responseMessage(result, 'Não foi possível redefinir a senha.'), 'error');
       return;
     }
     updateStateFromAuthPayload(result.body);

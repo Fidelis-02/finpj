@@ -273,7 +273,7 @@
                 produtosMonofasicos: 0,
                 valorMonofasico: 0,
                 percentualMonofasico: 0,
-                creditosNaoAproveitados: 0,
+                creditosNãoAproveitados: 0,
                 detalhamento: [],
                 alertas: []
             };
@@ -296,7 +296,7 @@
                 valorMonofasico += valor;
                 
                 // Calcular créditos que não serão aproveitados (se fosse não-cumulativo)
-                const creditosNaoAproveitados = valor * ncmInfo.aliquotas.total;
+                const creditosNãoAproveitados = valor * ncmInfo.aliquotas.total;
                 
                 detalhamento.push({
                     ncm: produto.ncm,
@@ -305,7 +305,7 @@
                     isMonofasico: true,
                     categoria: ncmInfo.categoria,
                     aliquotaTotal: ncmInfo.aliquotas.total,
-                    creditosNaoAproveitados: Math.round(creditosNaoAproveitados * 100) / 100
+                    creditosNãoAproveitados: Math.round(creditosNãoAproveitados * 100) / 100
                 });
             } else {
                 detalhamento.push({
@@ -315,23 +315,23 @@
                     isMonofasico: false,
                     categoria: null,
                     aliquotaTotal: 0,
-                    creditosNaoAproveitados: 0
+                    creditosNãoAproveitados: 0
                 });
             }
         }
 
         const percentualMonofasico = valorTotal > 0 ? (valorMonofasico / valorTotal) : 0;
-        const creditosNaoAproveitados = detalhamento
+        const creditosNãoAproveitados = detalhamento
             .filter(d => d.isMonofasico)
-            .reduce((sum, d) => sum + d.creditosNaoAproveitados, 0);
+            .reduce((sum, d) => sum + d.creditosNãoAproveitados, 0);
 
         // Gerar alertas
         if (percentualMonofasico > 0.5) {
             alertas.push(`Mais de 50% do faturamento (${(percentualMonofasico * 100).toFixed(1)}%) é de produtos monofásicos. Considere revisar o regime tributário.`);
         }
         
-        if (produtosMonofasicos > 0 && creditosNaoAproveitados > 10000) {
-            alertas.push(`Créditos de PIS/COFINS não aproveitados estimados em R$ ${creditosNaoAproveitados.toLocaleString('pt-BR', {minimumFractionDigits: 2})}. Análise a viabilidade do regime.`);
+        if (produtosMonofasicos > 0 && creditosNãoAproveitados > 10000) {
+            alertas.push(`Créditos de PIS/COFINS não aproveitados estimados em R$ ${creditosNãoAproveitados.toLocaleString('pt-BR', {minimumFractionDigits: 2})}. Análise a viabilidade do regime.`);
         }
 
         return {
@@ -340,7 +340,7 @@
             valorTotal: Math.round(valorTotal * 100) / 100,
             valorMonofasico: Math.round(valorMonofasico * 100) / 100,
             percentualMonofasico: Math.round(percentualMonofasico * 10000) / 10000,
-            creditosNaoAproveitados: Math.round(creditosNaoAproveitados * 100) / 100,
+            creditosNãoAproveitados: Math.round(creditosNãoAproveitados * 100) / 100,
             detalhamento,
             alertas,
             recomendacao: percentualMonofasico > 0.3 

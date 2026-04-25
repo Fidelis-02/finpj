@@ -57,7 +57,7 @@ const upload = multer({
         if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|xlsx|xls|csv|txt|ods|jpe?g|png|webp|bmp|tiff)$/i)) {
             cb(null, true);
         } else {
-            cb(new Error('Formato nao suportado. Use PDF, Excel, CSV, TXT ou imagem (JPG/PNG).'));
+            cb(new Error('Formato não suportado. Use PDF, Excel, CSV, TXT ou imagem (JPG/PNG).'));
         }
     }
 });
@@ -140,7 +140,7 @@ router.get('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, res) 
             obterUsuario(req.userEmail),
             obterDiagnostico(req.params.id, req.userEmail)
         ]);
-        if (!diag) return res.status(404).json({ erro: 'Nao encontrado.' });
+        if (!diag) return res.status(404).json({ erro: 'Não encontrado.' });
         const scoped = usuario ? getScopedCompanyRecord(usuario, req.query?.companyId) : null;
         if (scoped && !recordMatchesCompany(diag, scoped, { includeUnscoped: scoped.isPrimary })) {
             return res.status(404).json({ erro: 'Nao encontrado.' });
@@ -157,13 +157,13 @@ router.delete('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, re
             obterUsuario(req.userEmail),
             obterDiagnostico(req.params.id, req.userEmail)
         ]);
-        if (!diag) return res.status(404).json({ erro: 'Nao encontrado.' });
+        if (!diag) return res.status(404).json({ erro: 'Não encontrado.' });
         const scoped = usuario ? getScopedCompanyRecord(usuario, req.query?.companyId) : null;
         if (scoped && !recordMatchesCompany(diag, scoped, { includeUnscoped: scoped.isPrimary })) {
             return res.status(404).json({ erro: 'Nao encontrado.' });
         }
         const deletado = await deletarDiagnostico(req.params.id, req.userEmail);
-        if (!deletado) return res.status(404).json({ erro: 'Nao encontrado.' });
+        if (!deletado) return res.status(404).json({ erro: 'Não encontrado.' });
         return res.json({ sucesso: true });
     } catch (erro) {
         console.error('Erro ao excluir diagnostico:', erro);
