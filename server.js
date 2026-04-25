@@ -5,6 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const session = require('express-session');
+const helmet = require('helmet');
 
 const { conectarDB } = require('./src/services/database');
 const apiRoutes = require('./src/routes');
@@ -24,20 +25,46 @@ if (process.env.BASE_URL && !allowedOrigins.includes(process.env.BASE_URL)) {
     allowedOrigins.push(process.env.BASE_URL);
 }
 
+// Security headers with helmet
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "https://api.groq.com", "https://connect.pluggy.ai"],
+            frameSrc: ["'none'"],
+            objectSrc: ["'none'"]
+        }
+    },
+    hsts: process.env.NODE_ENV === 'production' ? {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    } : false,
+    noSniff: true,
+    frameguard: { action: 'deny' },
+    xssFilter: true
+}));
 
 app.use(cors({
     origin: (origin, callback) => {
         // Permitir requisições sem origin (como mobile apps ou curl)
         if (!origin) return callback(null, true);
-        
-        // Verificar se está na lista explícita
+
+        // Permitir origins explicitamente configurados
         if (allowedOrigins.includes(origin)) return callback(null, true);
-        
-        // Permitir qualquer subdomínio vercel.app
-        if (origin.endsWith('.vercel.app')) return callback(null, true);
-        
+
+        // Permitir apenas o domínio principal da aplicação em produção
+        if (process.env.NODE_ENV === 'production') {
+            const productionDomain = process.env.PRODUCTION_DOMAIN || 'finpj.vercel.app';
+            if (origin === `https://${productionDomain}`) return callback(null, true);
+        }
+
         console.warn(`CORS rejeitado para a origem: ${origin}`);
-        return callback(null, false);
+        callback(new Error('Not allowed by CORS'));
     },
     credentials: true
 }));
@@ -129,7 +156,10 @@ app.use((err, req, res, next) => {
     }
 
     console.error('Erro não tratado:', err.message || err);
-    return res.status(err.status || 500).json({ erro: err.message || 'Erro interno do servidor.' });
+    // In production, don't expose detailed error messages
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const errorMessage = isDevelopment ? (err.message || 'Erro interno do servidor.') : 'Erro interno do servidor.';
+    return res.status(err.status || 500).json({ erro: errorMessage });
 });
 
 if (require.main === module) {

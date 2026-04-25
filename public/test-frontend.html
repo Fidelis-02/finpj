@@ -150,7 +150,7 @@
                 
                 document.getElementById('simulacao-result').innerHTML = html;
             } catch (error) {
-                document.getElementById('simulacao-result').innerHTML = `<div class="status error">Erro: ${error.message}</div>`;
+                document.getElementById('simulacao-result').innerHTML = `<div class="status error">Erro: ${error.message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
             }
         }
 

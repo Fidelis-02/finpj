@@ -60,7 +60,7 @@ async function enviarEmailVerificacao(email, code) {
         if (process.env.NODE_ENV === 'production') {
             throw error;
         }
-        console.log(`📌 Código para ${email}: ${code}`);
+        // Removed sensitive code from logs for security
     }
 }
 
@@ -113,7 +113,7 @@ async function enviarEmailVerificacaoCadastro(email, verificationUrl) {
         if (process.env.NODE_ENV === 'production') {
             throw error;
         }
-        console.log(`LINK DE VERIFICACAO PARA ${email}: ${verificationUrl}`);
+        // Removed sensitive verification link from logs for security
         return null;
     }
 }
@@ -148,7 +148,7 @@ async function enviarEmailRecuperacaoSenha(email, resetUrl) {
         if (process.env.NODE_ENV === 'production') {
             throw error;
         }
-        console.log(`LINK DE RESET PARA ${email}: ${resetUrl}`);
+        // Removed sensitive reset link from logs for security
         return null;
     }
 }

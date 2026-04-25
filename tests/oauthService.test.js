@@ -1,7 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-finpj';
+// Use a cryptographically secure test secret or generate dynamically
+process.env.JWT_SECRET = process.env.JWT_SECRET || require('crypto').randomBytes(64).toString('hex');
 process.env.BASE_URL = 'http://localhost:3001';
 process.env.GOOGLE_CLIENT_ID = 'google-client-id';
 process.env.GOOGLE_CLIENT_SECRET = 'google-client-secret';

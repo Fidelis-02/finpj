@@ -1,7 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-finpj';
+// Use a cryptographically secure test secret or generate dynamically
+process.env.JWT_SECRET = process.env.JWT_SECRET || require('crypto').randomBytes(64).toString('hex');
 
 delete require.cache[require.resolve('../src/services/authTokens')];
 const {

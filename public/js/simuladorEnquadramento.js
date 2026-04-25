@@ -561,7 +561,7 @@ class SimuladorEnquadramento {
                 <div class="resultado-vazio">
                     <div class="resultado-vazio-icon">⚠️</div>
                     <p>Erro ao calcular simulação. Verifique os dados e tente novamente.</p>
-                    <small>${error.message}</small>
+                    <small>${error.message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</small>
                 </div>
             `;
         } finally {

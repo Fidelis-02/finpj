@@ -15,6 +15,16 @@ try {
 const wrap = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 
 const { verificarTokenMiddleware } = require('../middlewares/auth');
+const { 
+    validateRequest, 
+    validateRegisterCNPJ, 
+    validateLoginCNPJ, 
+    validateEmailCode,
+    validateDiagnostic,
+    validateProfile,
+    validateAIAnalysis,
+    validateChatMessage
+} = require('../middlewares/validation');
 
 const authController = require('../controllers/authController');
 const accountAuthController = require('../controllers/accountAuthController');
@@ -84,8 +94,8 @@ router.post('/auth/forgot-password', passwordRecoveryLimiter, wrap(accountAuthCo
 router.post('/auth/reset-password', passwordRecoveryLimiter, wrap(accountAuthController.resetPassword));
 router.post('/auth/send-code', otpLimiter, wrap(authController.sendCode));
 router.post('/auth/verify-code', wrap(authController.verifyCode));
-router.post('/auth/login-cnpj', wrap(authController.loginCnpj));
-router.post('/auth/register-cnpj', wrap(authController.registerCnpj));
+router.post('/auth/login-cnpj', validateRequest(validateLoginCNPJ), wrap(authController.loginCnpj));
+router.post('/auth/register-cnpj', validateRequest(validateRegisterCNPJ), wrap(authController.registerCnpj));
 router.post('/auth/logout', verificarTokenMiddleware, wrap(accountAuthController.logout));
 router.get('/auth/session', verificarTokenMiddleware, wrap(accountAuthController.getSession));
 router.get('/auth/oauth/:provider/start', wrap(accountAuthController.startOAuth));
@@ -110,7 +120,7 @@ router.get('/cashflow-projection', verificarTokenMiddleware, wrap(financeControl
 router.post('/calcular-das', verificarTokenMiddleware, wrap(taxController.calcularDas));
 router.post('/gerar-das-automatico', verificarTokenMiddleware, wrap(taxController.gerarDasAutomatico));
 router.get('/fiscal-calendar', verificarTokenMiddleware, wrap(taxController.fiscalCalendar));
-router.post('/diagnosticos', verificarTokenMiddleware, wrap(taxController.postDiagnostico));
+router.post('/diagnosticos', verificarTokenMiddleware, validateRequest(validateDiagnostic), wrap(taxController.postDiagnostico));
 router.get('/diagnosticos', verificarTokenMiddleware, wrap(async (req, res) => {
     try {
         const [usuario, diagnosticos] = await Promise.all([
@@ -161,11 +171,11 @@ router.delete('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, re
     }
 }));
 
-router.post('/upload-documento', verificarTokenMiddleware, upload.single('arquivo'), wrap(documentController.uploadDocumento));
+router.post('/upload-documento', verificarTokenMiddleware, validateRequest(validateAIAnalysis), upload.single('arquivo'), wrap(documentController.uploadDocumento));
 router.post('/upload-url', verificarTokenMiddleware, wrap(documentController.getUploadUrl));
 router.post('/process-document', verificarTokenMiddleware, wrap(documentController.processDocumentFromUrl));
 router.get('/analises', verificarTokenMiddleware, wrap(documentController.getAnalises));
-router.post('/chat', verificarTokenMiddleware, wrap(documentController.postChat));
+router.post('/chat', verificarTokenMiddleware, validateRequest(validateChatMessage), wrap(documentController.postChat));
 
 router.get('/profile', verificarTokenMiddleware, wrap(userController.getProfile));
 router.put('/profile', verificarTokenMiddleware, wrap(userController.updateProfile));

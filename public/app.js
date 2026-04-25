@@ -2463,7 +2463,7 @@ async function registerLegacyRoute(event) {
   const annualRevenue = annualRevenueFromMonthlyInput($('[data-route-register-faturamento]')?.value);
   const margin = parsePercentLike($('[data-route-register-margem]')?.value);
   if (cnpj.length !== 14) throw new Error('Informe um CNPJ com 14 digitos.');
-  if (password.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
+  if (password.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
   if (password !== confirm) throw new Error('As senhas nao conferem.');
   if (!annualRevenue) throw new Error('Informe o faturamento mensal da empresa.');
   if (!Number.isFinite(margin)) throw new Error('Informe a margem estimada.');
@@ -2904,7 +2904,7 @@ async function register(event) {
   const confirm = $('[data-register-confirm]').value;
   const plan = $('[data-register-plan]').value;
   if (cnpj.length !== 14) throw new Error('Informe um CNPJ com 14 dígitos.');
-  if (password.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
+  if (password.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
   if (password !== confirm) throw new Error('As senhas não conferem.');
   if (!annualRevenueFromMonthlyInput($('[data-register-faturamento]')?.value)) throw new Error('Informe o faturamento mensal da empresa.');
   if (!Number.isFinite(parsePercentLike($('[data-register-margem]')?.value))) throw new Error('Informe a margem estimada da empresa.');

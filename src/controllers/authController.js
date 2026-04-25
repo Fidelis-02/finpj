@@ -183,7 +183,7 @@ async function sendCode(req, res) {
     if (isDev && semSmtp) {
         resBody._devCode = codigo;
         resBody.mensagem = `[DEV] Código gerado sem SMTP configurado: ${codigo}`;
-        console.log(`Código OTP para ${emailNorm}: ${codigo}`);
+        // Removed sensitive OTP code from logs for security
     }
 
     return res.json(resBody);
@@ -250,8 +250,8 @@ async function loginCnpj(req, res) {
 
 async function registerCnpj(req, res) {
     const { cnpj, password, plan, empresa } = req.body || {};
-    if (!cnpj || !password || password.length < 6) {
-        return res.status(400).json({ erro: 'CNPJ e senha de no mínimo 6 caracteres são obrigatórios.' });
+    if (!cnpj || !password || password.length < 8) {
+        return res.status(400).json({ erro: 'CNPJ e senha de no mínimo 8 caracteres são obrigatórios.' });
     }
 
     const cnpjNorm = String(cnpj).replace(/\D/g, '');

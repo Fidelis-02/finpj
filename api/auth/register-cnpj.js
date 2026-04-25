@@ -6,8 +6,8 @@ module.exports = async function handler(req, res) {
     }
 
     const { cnpj, password } = req.body || {};
-    if (!cnpj || !password || password.length < 6) {
-        return res.status(400).json({ erro: 'CNPJ e senha de no mínimo 6 caracteres são obrigatórios.' });
+    if (!cnpj || !password || password.length < 8) {
+        return res.status(400).json({ erro: 'CNPJ e senha de no mínimo 8 caracteres são obrigatórios.' });
     }
 
     let user = await getUserByCnpj(cnpj);

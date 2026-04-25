@@ -203,18 +203,28 @@ function possuiTermosContabeisMinimos(texto, tipo) {
 
 function extrairTextoExcel(buffer) {
     try {
-        const XLSX = require('xlsx');
-        const wb = XLSX.read(buffer, { type: 'buffer' });
-        let texto = '';
-        wb.SheetNames.forEach(name => {
-            const ws = wb.Sheets[name];
-            const csv = XLSX.utils.sheet_to_csv(ws);
-            texto += `=== Aba: ${name} ===\n${csv}\n\n`;
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        return workbook.xlsx.load(buffer).then(() => {
+            let texto = '';
+            workbook.eachSheet((worksheet, sheetId) => {
+                texto += `=== Aba: ${worksheet.name} ===\n`;
+                worksheet.eachRow((row, rowNumber) => {
+                    const rowValues = row.values.filter(val => val !== null && val !== undefined);
+                    if (rowValues.length > 0) {
+                        texto += rowValues.map(val => String(val)).join(',') + '\n';
+                    }
+                });
+                texto += '\n';
+            });
+            return texto;
+        }).catch(e => {
+            console.error('Excel parse error:', e.message);
+            return '';
         });
-        return texto;
     } catch (e) {
         console.error('Excel parse error:', e.message);
-        return '';
+        return Promise.resolve('');
     }
 }
 
@@ -232,7 +242,7 @@ async function uploadDocumento(req, res) {
     } else if (mime === 'application/pdf' || nome.endsWith('.pdf')) {
         texto = await extrairTextoPDF(req.file.buffer);
     } else if (nome.match(/\.(xlsx|xls|ods)$/)) {
-        texto = extrairTextoExcel(req.file.buffer);
+        texto = await extrairTextoExcel(req.file.buffer);
     } else {
         texto = req.file.buffer.toString('utf-8');
     }
@@ -396,7 +406,7 @@ async function processDocumentFromUrl(req, res) {
         } else if (mime === 'application/pdf' || nome.endsWith('.pdf')) {
             texto = await extrairTextoPDF(buffer);
         } else if (nome.match(/\.(xlsx|xls|ods)$/)) {
-            texto = extrairTextoExcel(buffer);
+            texto = await extrairTextoExcel(buffer);
         } else {
             texto = buffer.toString('utf-8');
         }
