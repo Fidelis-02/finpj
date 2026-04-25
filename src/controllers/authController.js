@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { obterUsuario, obterUsuarioPorCnpj, salvarUsuario, formatarEmail } = require('../services/database');
-const { enviarEmailVerificacao } = require('../services/emailService');
+const { emailTransportConfigured, enviarEmailVerificacao } = require('../services/emailService');
 const { getFiscalSimulation } = require('../services/fiscalCache');
 const { buildDashboard } = require('../services/dashboardService');
 const { parseAnnualRevenueInput, parseMarginInput } = require('../services/companyContext');
@@ -177,7 +177,7 @@ async function sendCode(req, res) {
         console.error('Falha ao enviar e-mail:', err.message);
     }
 
-    const semSmtp = !process.env.MAIL_HOST && !process.env.GMAIL_USER;
+    const semSmtp = !emailTransportConfigured();
     const isDev = process.env.NODE_ENV !== 'production';
     const resBody = { sucesso: true, mensagem: `Código enviado para ${emailNorm}.` };
     if (isDev && semSmtp) {

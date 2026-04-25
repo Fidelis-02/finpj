@@ -2,6 +2,14 @@ const nodemailer = require('nodemailer');
 
 const MAIL_FROM = process.env.MAIL_FROM || 'FinPJ <no-reply@finpj.com>';
 
+function emailTransportConfigured() {
+    return Boolean(
+        process.env.MAIL_HOST
+        && process.env.MAIL_USER
+        && (process.env.MAIL_PASS || process.env.BREVO_API_KEY)
+    );
+}
+
 function criarTransportadorEmail() {
     return nodemailer.createTransport({
         host: process.env.MAIL_HOST,
@@ -146,6 +154,7 @@ async function enviarEmailRecuperacaoSenha(email, resetUrl) {
 }
 
 module.exports = {
+    emailTransportConfigured,
     enviarEmailVerificacao,
     enviarEmailVerificacaoCadastro,
     enviarEmailRecuperacaoSenha

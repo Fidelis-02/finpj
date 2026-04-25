@@ -39,6 +39,7 @@ const DASHBOARD_TAB_LABELS = {
 };
 
 const DASHBOARD_CLIENT_CACHE_TTL_MS = 60 * 1000;
+const SIDEBAR_COLLAPSE_KEY = 'finpj_sidebar_collapsed';
 const dashboardMemoryCache = new Map();
 let chartModulePromise = null;
 let chartObserver = null;
@@ -152,6 +153,17 @@ function sanitizeClientPath(path = '') {
   return '/dashboard';
 }
 
+function canAccessVerifyEmailRouteWithoutSession(path = currentPublicPath()) {
+  if (path !== '/onboarding/verificar-email') return false;
+  const params = queryParams();
+  return Boolean(
+    params.get('token')
+    || params.get('email')
+    || state.authEmail
+    || state.authUser?.email
+  );
+}
+
 function navigateToPath(path, { replace = false } = {}) {
   const nextPath = sanitizeClientPath(path);
   if (nextPath === currentPublicPath()) return;
@@ -240,6 +252,7 @@ function persistSession(token, email, provider = 'local') {
 }
 
 function clearSession() {
+  const protectedRoute = currentPublicPath() === '/dashboard' || isOnboardingPath();
   clearDashboardClientCache();
   addCompanyPrompted = false;
   state.token = '';
@@ -261,6 +274,7 @@ function clearSession() {
   localStorage.removeItem('finpj_provider');
   localStorage.removeItem('finpj_active_company');
   updateSessionUi();
+  if (protectedRoute) navigateToPath('/login', { replace: true });
 }
 
 function updateSessionUi() {
@@ -279,16 +293,121 @@ function updateSessionUi() {
   
   // Controlar links individuais: Dashboard só aparece logado, Recursos/Planos escondidos quando logado
   navLinks.forEach((link) => {
-    link.classList.toggle('is-hidden', showDashboardArea && link.hasAttribute('data-auth-only'));
+    const authOnly = link.hasAttribute('data-auth-only');
+    const hide = authOnly ? (!logged || dedicatedPublicRoute) : false;
+    link.classList.toggle('is-hidden', hide);
   });
   
   $('[data-public-area]')?.classList.toggle('is-hidden', !showPublicArea);
   $$('[data-open-login], [data-open-register]').forEach((el) => el.classList.toggle('is-hidden', showDashboardArea));
   $$('[data-logout]').forEach((el) => el.classList.toggle('is-hidden', !logged));
   $('[data-dashboard]')?.classList.toggle('is-hidden', !showDashboardArea);
+  syncDashboardSidebarVisibility();
+  syncSidebarChrome();
+  applySidebarCollapsedState();
   if (logged) $('[data-user-title]').textContent = `Dashboard ${state.authEmail || ''}`.trim();
   if (logged) closeMobileMenu();
   if (showDashboardArea && location.hash !== '#dashboard') location.hash = '#dashboard';
+}
+
+function readSidebarCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeSidebarCollapsed(collapsed) {
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSE_KEY, String(collapsed));
+  } catch {
+    // Local storage can be unavailable in private contexts.
+  }
+}
+
+function normalizePlanLabel(user = {}) {
+  const raw = String(user.plano || user.plan || state.authUser?.plano || state.authUser?.plan || 'starter')
+    .trim()
+    .toLowerCase();
+  if (raw === 'growth') return { key: 'growth', label: 'Growth' };
+  if (raw === 'enterprise') return { key: 'enterprise', label: 'Enterprise' };
+  if (raw === 'freemium') return { key: 'freemium', label: 'Freemium' };
+  return { key: 'starter', label: 'Starter' };
+}
+
+function initialsFromText(value = '') {
+  const letters = String(value || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('');
+  return letters || 'FP';
+}
+
+function getSidebarIdentity(user = getCurrentUser()) {
+  const companyName = user.fantasia || user.nomeEmpresa || user.nome || user.email || state.authEmail || 'Workspace FinPJ';
+  const personName = user.profile?.name || user.name || user.nome || user.email || state.authEmail || 'Equipe FinPJ';
+  const email = user.email || state.authEmail || 'Sessao ativa';
+  const cnpj = user.cnpj ? formatCnpj(user.cnpj) : '';
+  const regime = user.regime ? formatRegime(user.regime) : '';
+  return {
+    companyName,
+    personName,
+    email,
+    detail: [cnpj, regime].filter(Boolean).join(' | ') || 'Sincronizando contexto financeiro.',
+    plan: normalizePlanLabel(user)
+  };
+}
+
+function syncSidebarChrome(user = getCurrentUser()) {
+  const identity = getSidebarIdentity(user);
+  const companyEl = $('[data-sidebar-company]');
+  const detailEl = $('[data-sidebar-company-detail]');
+  const planEl = $('[data-sidebar-plan]');
+  const avatarEl = $('[data-sidebar-avatar]');
+  const userNameEl = $('[data-sidebar-user-name]');
+  const userEmailEl = $('[data-sidebar-user-email]');
+
+  if (companyEl) companyEl.textContent = identity.companyName;
+  if (detailEl) detailEl.textContent = identity.detail;
+  if (planEl) {
+    planEl.textContent = identity.plan.label;
+    planEl.dataset.plan = identity.plan.key;
+  }
+  if (avatarEl) avatarEl.textContent = initialsFromText(identity.personName || identity.companyName);
+  if (userNameEl) userNameEl.textContent = identity.personName;
+  if (userEmailEl) userEmailEl.textContent = identity.email;
+}
+
+function applySidebarCollapsedState(collapsed = readSidebarCollapsed()) {
+  const frame = $('[data-dashboard-frame]');
+  const toggle = $('[data-sidebar-toggle]');
+  const icon = $('[data-sidebar-toggle-icon]');
+  if (frame) frame.classList.toggle('is-nav-collapsed', collapsed);
+  if (toggle) {
+    const label = collapsed ? 'Expandir menu lateral' : 'Colapsar menu lateral';
+    toggle.setAttribute('aria-pressed', String(collapsed));
+    toggle.setAttribute('aria-label', label);
+    toggle.title = label;
+  }
+  if (icon) icon.textContent = collapsed ? '>' : '<';
+}
+
+function syncDashboardSidebarVisibility() {
+  const frame = $('[data-dashboard-frame]');
+  const sidebar = $('[data-dashboard-sidebar]');
+  const visible = Boolean(state.token) && currentPublicPath() === '/dashboard';
+  sidebar?.classList.toggle('is-hidden', !visible);
+  frame?.classList.toggle('is-sidebar-hidden', !visible);
+}
+
+function toggleDashboardSidebar() {
+  const next = !readSidebarCollapsed();
+  writeSidebarCollapsed(next);
+  applySidebarCollapsedState(next);
 }
 
 function openModal(selector) {
@@ -387,6 +506,15 @@ async function fetchAuthSessionState() {
   return result.body;
 }
 
+async function logoutCurrentSession() {
+  if (!state.token) return;
+  try {
+    await requestJsonWithMeta('/api/auth/logout', { method: 'POST' });
+  } catch {
+    // Logout local deve prosseguir mesmo se a sessao ja expirou ou a rede falhar.
+  }
+}
+
 function renderOnboardingChecklist(onboarding = state.onboarding) {
   const target = $('[data-onboarding-checklist-items]');
   if (!target) return;
@@ -460,6 +588,18 @@ function fillVerifyEmailRoute() {
   if (target) target.textContent = email || 'nao informado';
 }
 
+function prepareResetPasswordRoute() {
+  if (currentPublicPath() !== '/reset-password') return;
+  const hasToken = Boolean(queryParams().get('token'));
+  const submitButton = $('[data-reset-password-form] button[type="submit"]');
+  if (!hasToken) {
+    setInlineNote('[data-reset-password-note]', 'Link de redefinicao invalido ou ausente. Solicite um novo e-mail de recuperacao.', 'error');
+    if (submitButton) submitButton.disabled = true;
+    return;
+  }
+  if (submitButton) submitButton.disabled = false;
+}
+
 function applyOnboardingSelections() {
   const plan = state.authUser?.plan || state.onboarding?.data?.plan?.plan || '';
   const templateKey = state.authUser?.templateKey || state.onboarding?.data?.template?.templateKey || '';
@@ -469,8 +609,11 @@ function applyOnboardingSelections() {
 
 function setGoogleButtonsState(enabled, message = '') {
   $$('[data-oauth-button="google"]').forEach((button) => {
+    if (!button.dataset.defaultLabel) button.dataset.defaultLabel = button.textContent.trim();
     button.disabled = !enabled;
-    if (!enabled) button.textContent = 'Google em configuracao';
+    button.setAttribute('aria-disabled', String(!enabled));
+    button.title = !enabled && message ? message : '';
+    button.textContent = enabled ? (button.dataset.defaultLabel || 'Continuar com Google') : 'Google indisponivel';
   });
   if (message) setInlineNote('[data-route-oauth-note]', message, enabled ? 'info' : 'error');
 }
@@ -1256,6 +1399,7 @@ function renderDashboardContext(metrics) {
   if (contextEl) {
     contextEl.textContent = `${cnpj} | ${regime} | Plano ${user.plano || 'starter'}`;
   }
+  syncSidebarChrome(user);
   renderCompanySwitcher(state.dashboard);
 
   const readinessItems = getReadinessItems(metrics);
@@ -2641,6 +2785,7 @@ async function hydrateAuthenticatedRoute() {
 
 async function hydratePublicRoute() {
   prefillEmailFields();
+  prepareResetPasswordRoute();
   try {
     const pendingPlan = sessionStorage.getItem('finpj_pending_plan');
     if (pendingPlan && $('[data-route-register-plan]')) $('[data-route-register-plan]').value = pendingPlan;
@@ -2660,6 +2805,45 @@ async function hydratePublicRoute() {
   }
   if (currentPublicPath() === '/dashboard' && !state.token) {
     closeAuthModals();
+  }
+}
+
+async function runInitialRouteGuard() {
+  const path = currentPublicPath();
+  if (path === '/dashboard' && !state.token) {
+    navigateToPath('/login', { replace: true });
+    return true;
+  }
+
+  if (isOnboardingPath(path) && !state.token) {
+    if (canAccessVerifyEmailRouteWithoutSession(path)) return false;
+    navigateToPath('/login', { replace: true });
+    return true;
+  }
+
+  if (!state.token) return false;
+
+  if (!isAuthEntryPath(path) && !isOnboardingPath(path)) return false;
+
+  try {
+    const sessionData = await fetchAuthSessionState();
+    const redirectTo = sanitizeClientPath(sessionData?.redirectTo || '/dashboard');
+    if (isAuthEntryPath(path)) {
+      navigateToPath(redirectTo, { replace: true });
+      return true;
+    }
+    if (redirectTo === '/dashboard') {
+      navigateToPath('/dashboard', { replace: true });
+      return true;
+    }
+    if (path !== redirectTo) {
+      navigateToPath(redirectTo, { replace: true });
+      return true;
+    }
+    return false;
+  } catch {
+    if (isAuthEntryPath(path)) return false;
+    return false;
   }
 }
 
@@ -3004,8 +3188,11 @@ function handleAuthRedirect() {
     params = new URLSearchParams(window.location.hash.split('?')[1]);
   }
   const oauthError = params.get('oauth_error');
-  if (!params.get('token') && oauthError && currentPublicPath() === '/') {
-    navigateToPath(`/login?oauth_error=${encodeURIComponent(oauthError)}&provider=${encodeURIComponent(params.get('provider') || '')}`, { replace: true });
+  const legacyAuth0Failure = params.get('login') === 'failed';
+  if (!params.get('token') && (oauthError || legacyAuth0Failure) && (currentPublicPath() === '/' || PUBLIC_CALLBACK_PATHS.has(currentPublicPath()))) {
+    const provider = params.get('provider') || (legacyAuth0Failure ? 'auth0' : '');
+    const message = oauthError || 'Falha ao autenticar com Auth0. Tente novamente.';
+    navigateToPath(`/login?oauth_error=${encodeURIComponent(message)}&provider=${encodeURIComponent(provider)}`, { replace: true });
     return true;
   }
   const token = params.get('token');
@@ -3341,6 +3528,7 @@ function bindEvents() {
   });
 
   $$('[data-theme-toggle]').forEach((button) => button.addEventListener('click', toggleTheme));
+  $('[data-sidebar-toggle]')?.addEventListener('click', toggleDashboardSidebar);
 
   $$('[data-select-plan]').forEach((button) => button.addEventListener('click', () => {
     state.pendingPlan = button.dataset.selectPlan;
@@ -3368,8 +3556,9 @@ function bindEvents() {
     if (deleteButton) deleteDiagnostic(deleteButton.dataset.deleteDiagnostic).catch((error) => showToast(error.message, 'error'));
   });
 
-  $$('[data-logout]').forEach((button) => button.addEventListener('click', () => {
+  $$('[data-logout]').forEach((button) => button.addEventListener('click', async () => {
     const provider = state.provider;
+    await logoutCurrentSession();
     clearSession();
     if (provider === 'auth0') window.location.href = '/api/auth/auth0/logout';
     else showToast('Sessão encerrada.', 'success');
@@ -3383,14 +3572,16 @@ function bindEvents() {
   });
 }
 
-function initApp() {
+async function initApp() {
+  const handledRedirect = handleAuthRedirect();
+  if (handledRedirect) return;
+  const guarded = await runInitialRouteGuard();
+  if (guarded) return;
   renderPublicExperience();
   bindEvents();
   initLandingReveal();
   resetPublicDiagnostic();
   updatePublicSimulatorReadyState();
-  const handledRedirect = handleAuthRedirect();
-  if (handledRedirect) return;
   updateSessionUi();
   syncPublicRouteModal();
   hydratePublicRoute().catch((error) => showToast(error.message, 'error'));
@@ -3403,7 +3594,9 @@ function initApp() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
+  document.addEventListener('DOMContentLoaded', () => {
+    initApp().catch((error) => showToast(error.message, 'error'));
+  });
 } else {
-  initApp();
+  initApp().catch((error) => showToast(error.message, 'error'));
 }

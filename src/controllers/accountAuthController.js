@@ -32,6 +32,7 @@ const {
 } = require('../services/authStore');
 const { normalizeStep } = require('../services/onboardingService');
 const {
+    emailTransportConfigured,
     enviarEmailVerificacaoCadastro,
     enviarEmailRecuperacaoSenha
 } = require('../services/emailService');
@@ -63,10 +64,6 @@ function resendRetrySeconds(dateValue) {
     const date = new Date(dateValue);
     if (Number.isNaN(date.getTime())) return 0;
     return Math.max(0, Math.ceil((date.getTime() + EMAIL_RESEND_COOLDOWN_MS - Date.now()) / 1000));
-}
-
-function mailConfigured() {
-    return Boolean(process.env.MAIL_HOST || process.env.MAIL_USER || process.env.BREVO_API_KEY || process.env.GMAIL_USER);
 }
 
 function clientPathForStep(step) {
@@ -104,7 +101,7 @@ function buildPasswordResetUrl(token, email) {
 }
 
 function responseTokenPreview(rawToken) {
-    if (process.env.NODE_ENV === 'production' || mailConfigured()) return {};
+    if (process.env.NODE_ENV === 'production' || emailTransportConfigured()) return {};
     return { _devToken: rawToken };
 }
 
