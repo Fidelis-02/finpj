@@ -107,19 +107,64 @@ export default function AIPage() {
     setAnalysis(null);
 
     try {
-      const formData = new FormData();
-      formData.append("tipo", tipo);
-      formData.append("contexto", contexto);
-      formData.append("arquivo", file);
+      let data: AnalysisResponse;
 
-      const data = await apiRequest<AnalysisResponse>(
-        "/api/upload-documento",
-        {
-          method: "POST",
-          body: formData,
-          headers: {},
+      // Vercel Serverless payload limit is 4.5MB. For files > 4MB, we must use R2.
+      if (file.size > 4 * 1024 * 1024) {
+        setLoading(true); // Pode adicionar feedback visual de upload depois
+
+        const urlReq = await apiRequest<{ sucesso: boolean; uploadUrl: string; key: string; fallback?: boolean }>(
+          "/api/upload-url",
+          {
+            method: "POST",
+            body: JSON.stringify({ 
+              filename: file.name, 
+              contentType: file.type || 'application/octet-stream', 
+              size: file.size 
+            }),
+          }
+        );
+
+        if (urlReq.fallback) {
+          throw new Error("Armazenamento R2 não configurado. Impossível processar > 4MB na Vercel.");
         }
-      );
+
+        const putRes = await fetch(urlReq.uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type || 'application/octet-stream'
+          }
+        });
+
+        if (!putRes.ok) {
+          throw new Error("Falha ao enviar arquivo para o Cloudflare R2.");
+        }
+
+        data = await apiRequest<AnalysisResponse>(
+          "/api/process-document",
+          {
+            method: "POST",
+            body: JSON.stringify({ key: urlReq.key, tipo, contexto }),
+          }
+        );
+
+      } else {
+        const formData = new FormData();
+        formData.append("tipo", tipo);
+        formData.append("contexto", contexto);
+        formData.append("arquivo", file);
+
+        data = await apiRequest<AnalysisResponse>(
+          "/api/upload-documento",
+          {
+            method: "POST",
+            body: formData,
+            headers: {},
+          }
+        );
+      }
+
       setAnalysis(data);
     } catch (err: any) {
       setError(err.message || "Erro ao analisar documento.");
