@@ -342,7 +342,7 @@ export default function Home() {
                 className={`relative rounded-3xl p-8 transition-all ${
                   plan.featured
                     ? "bg-primary text-white shadow-2xl shadow-primary/20 scale-105 border-2 border-blue-400"
-                    : "bg-white border border-gray-100 shadow-sm hover:shadow-xl"
+                    : "bg-white text-gray-900 border border-gray-100 shadow-sm hover:shadow-xl"
                 }`}
               >
                 {plan.featured && (
