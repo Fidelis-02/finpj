@@ -36,9 +36,11 @@ export async function apiRequest<T = any>(
   }
 
   // Master Login Mock Interceptor
+  // Only mock profile/dashboard endpoints — let AI, chat, and processing
+  // endpoints hit the real backend so documents are actually analyzed.
   if (token === "master-token") {
-    if (path.includes("/api/user/companies")) {
-      return {
+    const mockRoutes: Record<string, () => any> = {
+      "/api/user/companies": () => ({
         empresas: [
           {
             _id: "master-company-1",
@@ -50,10 +52,8 @@ export async function apiRequest<T = any>(
             atividade: "servicos"
           }
         ]
-      } as any;
-    }
-    if (path.includes("/api/dashboard/overview")) {
-      return {
+      }),
+      "/api/dashboard/overview": () => ({
         kpis: {
           monthlyRevenue: 316666.67,
           monthlyTaxes: 44150.00,
@@ -61,27 +61,19 @@ export async function apiRequest<T = any>(
           taxSavings: 42000.00,
           alerts: 3
         }
-      } as any;
-    }
-    if (path.includes("/api/user/me")) {
-      return {
+      }),
+      "/api/user/me": () => ({
         email: "master@finpj.com.br",
         nome: "Admin Master",
         plan: "enterprise"
-      } as any;
-    }
-    if (path.includes("/api/ai/analyze")) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            resultado: `**Resumo da Análise (Modo Master)**\n\nIdentificamos uma DRE com receita bruta de R$ 3.800.000,00 e margem líquida de 15%.\n\n**Pontos de Atenção:**\n- Custos operacionais subiram 5% no último trimestre.\n- Regime tributário atual (Simples Nacional) está próximo ao limite do sublimite estadual.\n\n**Recomendações:**\n1. Simule a transição para Lucro Presumido para o próximo ano-calendário.\n2. Revise despesas com folha de pagamento (possível recuperação de créditos de INSS patronal).`,
-          } as any);
-        }, 1500); // Simulate processing delay
-      });
-    }
+      }),
+    };
 
-    // Para endpoints desconhecidos no mock master, simula uma resposta vazia mas com sucesso
-    return {} as any;
+    const matchedRoute = Object.keys(mockRoutes).find((route) => path.includes(route));
+    if (matchedRoute) {
+      return mockRoutes[matchedRoute]() as T;
+    }
+    // All other endpoints (AI analyze, chat, etc.) fall through to the real server
   }
 
   let response: Response;
