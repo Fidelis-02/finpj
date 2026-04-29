@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 interface RegisterModalProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function RegisterModal({
   const [error, setError] = useState("");
 
   const { register } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (open) {
@@ -91,6 +93,7 @@ export function RegisterModal({
         margem,
       });
       onClose();
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {

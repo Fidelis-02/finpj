@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
 
 interface LoginModalProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
   const [error, setError] = useState("");
 
   const { login, sendCode, loginWithCode } = useAuth();
+  const router = useRouter();
 
   const handleSendCode = async () => {
     setLoading(true);
@@ -43,6 +45,7 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
     try {
       await loginWithCode(email, code);
       onClose();
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -56,6 +59,7 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
     try {
       await login({ cnpj, password });
       onClose();
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
