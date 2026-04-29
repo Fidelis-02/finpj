@@ -61,6 +61,10 @@ app.use(cors({
         if (process.env.NODE_ENV === 'production') {
             const productionDomain = process.env.PRODUCTION_DOMAIN || 'finpj.vercel.app';
             if (origin === `https://${productionDomain}`) return callback(null, true);
+            // Allow Vercel preview deployments
+            if (origin.endsWith('.vercel.app')) return callback(null, true);
+            // Allow same origin (in case of relative requests)
+            if (origin.includes(productionDomain)) return callback(null, true);
         }
 
         console.warn(`CORS rejeitado para a origem: ${origin}`);
