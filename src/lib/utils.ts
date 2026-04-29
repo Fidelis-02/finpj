@@ -21,5 +21,29 @@ export function formatPercent(value: number): string {
 }
 
 export function parseCurrencyInput(value: string): number {
-  return parseFloat(value.replace(/\./g, "").replace(",", ".")) || 0;
+  if (!value) return 0;
+  const digits = value.replace(/\D/g, "");
+  return parseInt(digits, 10) / 100;
+}
+
+export function maskCurrency(value: string): string {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const number = parseInt(digits, 10) / 100;
+  return number.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export function maskPercent(value: string): string {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const number = parseInt(digits, 10) / 100;
+  return number.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }

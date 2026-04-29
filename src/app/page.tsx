@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { maskCurrency, parseCurrencyInput } from "@/lib/utils";
 import {
   ArrowRight,
   BarChart3,
@@ -40,7 +41,7 @@ export default function Home() {
     e.preventDefault();
     if (!simCnpj || !simFaturamento) return;
     try {
-      const revenue = parseFloat(simFaturamento.replace(/\D/g, ""));
+      const revenue = parseCurrencyInput(simFaturamento);
       if (isNaN(revenue) || revenue <= 0) return;
       const sim = TaxEngine.simulateTaxes({
         annualRevenue: revenue,
@@ -285,9 +286,9 @@ export default function Home() {
                     </label>
                     <input
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-white/40"
-                      placeholder="R$ 0,00"
+                      placeholder="0,00"
                       value={simFaturamento}
-                      onChange={(e) => setSimFaturamento(e.target.value)}
+                      onChange={(e) => setSimFaturamento(maskCurrency(e.target.value))}
                       inputMode="numeric"
                       required
                     />

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { maskCurrency, maskPercent } from "@/lib/utils";
 
 interface RegisterModalProps {
   open: boolean;
@@ -89,8 +90,8 @@ export function RegisterModal({
         cnpj,
         password,
         plan,
-        faturamento,
-        margem,
+        faturamento: parseCurrencyInput(faturamento),
+        margem: parseCurrencyInput(margem) / 100, // percentage to decimal
       });
       onClose();
       router.push("/dashboard");
@@ -160,18 +161,18 @@ export function RegisterModal({
 
         <Input
           label="Faturamento mensal (R$)"
-          placeholder="Ex.: 40.000,00"
-          inputMode="decimal"
+          placeholder="0,00"
+          inputMode="numeric"
           value={faturamento}
-          onChange={(e) => setFaturamento(e.target.value)}
+          onChange={(e) => setFaturamento(maskCurrency(e.target.value))}
         />
 
         <Input
           label="Margem estimada (%)"
-          placeholder="Ex.: 12"
-          inputMode="decimal"
+          placeholder="0,00"
+          inputMode="numeric"
           value={margem}
-          onChange={(e) => setMargem(e.target.value)}
+          onChange={(e) => setMargem(maskPercent(e.target.value))}
         />
 
         <Button

@@ -6,6 +6,7 @@ import { Calculator } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { maskCurrency, maskPercent, parseCurrencyInput } from "@/lib/utils";
 
 const TaxEngine = require("@/tax/index.js");
 
@@ -22,9 +23,9 @@ export default function TaxPage() {
     try {
       if (TaxEngine) {
         const sim = TaxEngine.simulateTaxes({
-          annualRevenue: parseFloat(faturamento.replace(/\D/g, "")),
-          margin: parseFloat(margem.replace(",", ".")) / 100,
-          payroll: folha ? parseFloat(folha.replace(/\D/g, "")) : 0,
+          annualRevenue: parseCurrencyInput(faturamento),
+          margin: parseCurrencyInput(margem) / 100,
+          payroll: folha ? parseCurrencyInput(folha) : 0,
           activity: atividade,
         });
         setResult(sim);
@@ -60,24 +61,24 @@ export default function TaxPage() {
           <form onSubmit={handleSimulate} className="space-y-4">
             <Input
               label="Faturamento anual (R$)"
-              placeholder="Ex.: 480.000,00"
-              inputMode="decimal"
+              placeholder="0,00"
+              inputMode="numeric"
               value={faturamento}
-              onChange={(e) => setFaturamento(e.target.value)}
+              onChange={(e) => setFaturamento(maskCurrency(e.target.value))}
             />
             <Input
               label="Margem estimada (%)"
-              placeholder="Ex.: 12"
-              inputMode="decimal"
+              placeholder="0,00"
+              inputMode="numeric"
               value={margem}
-              onChange={(e) => setMargem(e.target.value)}
+              onChange={(e) => setMargem(maskPercent(e.target.value))}
             />
             <Input
               label="Folha de Pagamento Anual (R$)"
-              placeholder="Ex.: 120.000,00"
-              inputMode="decimal"
+              placeholder="0,00"
+              inputMode="numeric"
               value={folha}
-              onChange={(e) => setFolha(e.target.value)}
+              onChange={(e) => setFolha(maskCurrency(e.target.value))}
               hint="Impacta INSS Patronal e Fator R"
             />
 
