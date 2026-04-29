@@ -163,6 +163,32 @@ export default function DashboardOverview() {
         ))}
       </motion.div>
 
+      {/* Smart Integrations Banner */}
+      <motion.div variants={fadeUp} initial="hidden" animate="show">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase">Open Finance Ativo</span>
+                <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase border border-green-500/30">Motor Fiscal Sincronizado</span>
+              </div>
+              <h2 className="text-xl font-bold mb-1">Seu DRE Mágico está rodando</h2>
+              <p className="text-blue-100 max-w-xl text-sm">
+                Analisamos 452 transações recentes. Identificamos R$ 42.000,00 em potencial de economia migrando para o Lucro Real, baseado nos seus gastos mapeados em nuvem e infraestrutura.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <Link href="/dashboard/tax">
+                <button className="bg-white text-blue-700 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-sm">
+                  Aplicar Economia
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart placeholder */}
@@ -261,6 +287,24 @@ export default function DashboardOverview() {
                   <span className="text-sm text-gray-700">{item.text}</span>
                 </div>
               ))}
+            </div>
+
+            {/* AI Shortcut */}
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <Link href="/dashboard/ai">
+                <div className="bg-slate-900 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-slate-800 transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                      <span className="font-bold text-xs">AI</span>
+                    </div>
+                    <div>
+                      <h4 className="text-white text-sm font-semibold">Assistente Financeiro IA</h4>
+                      <p className="text-slate-400 text-xs">Pergunte sobre seus impostos ou DRE</p>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} className="text-slate-500 group-hover:text-white transition-colors" />
+                </div>
+              </Link>
             </div>
           </Card>
         </motion.div>

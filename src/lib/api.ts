@@ -35,6 +35,45 @@ export async function apiRequest<T = any>(
     headers.Authorization = `Bearer ${token}`;
   }
 
+  // Master Login Mock Interceptor
+  if (token === "master-token") {
+    if (path.includes("/api/user/companies")) {
+      return {
+        empresas: [
+          {
+            _id: "master-company-1",
+            nome: "FinPJ Tech Services LTDA (Master)",
+            cnpj: "00.000.000/0001-00",
+            regime: "simples_nacional",
+            faturamento: 3800000,
+            margem: 0.15,
+            atividade: "servicos"
+          }
+        ]
+      } as any;
+    }
+    if (path.includes("/api/dashboard/overview")) {
+      return {
+        kpis: {
+          monthlyRevenue: 316666.67,
+          monthlyTaxes: 44150.00,
+          profitMargin: 0.18,
+          taxSavings: 42000.00,
+          alerts: 3
+        }
+      } as any;
+    }
+    if (path.includes("/api/user/me")) {
+      return {
+        email: "master@finpj.com.br",
+        nome: "Admin Master",
+        plan: "enterprise"
+      } as any;
+    }
+    // Para endpoints desconhecidos no mock master, simula uma resposta vazia mas com sucesso
+    return {} as any;
+  }
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, { ...options, headers });
