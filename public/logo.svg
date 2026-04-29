@@ -1,13 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" role="img" aria-labelledby="title">
   <title id="title">FinPJ</title>
   <defs>
-    <linearGradient id="finpjBlue" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0A84FF"/>
-      <stop offset="1" stop-color="#0057D9"/>
+    <!-- Gradiente moderno mais vibrante -->
+    <linearGradient id="finpjBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066FF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0052CC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#003D99;stop-opacity:1" />
     </linearGradient>
+    
+    <!-- Gradiente para destaque -->
+    <linearGradient id="highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4D94FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0066FF;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Sombra suave -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
   </defs>
-  <rect x="4" y="8" width="48" height="48" rx="14" fill="url(#finpjBlue)"/>
-  <path d="M18 42V22h22v6H25v4h12v6H25v4h-7Z" fill="#fff"/>
-  <text x="64" y="41" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="800" fill="#111114">Fin</text>
-  <text x="112" y="41" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="800" fill="#0A84FF">PJ</text>
+  
+  <!-- Background do ícone com borda arredondada moderna -->
+  <rect x="4" y="8" width="48" height="48" rx="16" fill="url(#finpjBlue)" filter="url(#shadow)"/>
+  
+  <!-- Ícone F moderno e estilizado -->
+  <g fill="#fff">
+    <!-- Barra vertical principal do F -->
+    <rect x="16" y="18" width="6" height="28" rx="1"/>
+    
+    <!-- Barra superior do F -->
+    <rect x="16" y="18" width="20" height="6" rx="1"/>
+    
+    <!-- Barra do meio do F -->
+    <rect x="16" y="29" width="16" height="6" rx="1"/>
+    
+    <!-- Detalhe decorativo -->
+    <circle cx="38" cy="21" r="2" fill="url(#highlight)" opacity="0.8"/>
+  </g>
+  
+  <!-- Texto "Fin" com font mais moderna -->
+  <text x="64" y="41" font-family="'Inter', 'Segoe UI', 'Arial', sans-serif" font-size="28" font-weight="700" fill="#1A1A1A">Fin</text>
+  
+  <!-- Texto "PJ" com gradiente e destaque -->
+  <text x="108" y="41" font-family="'Inter', 'Segoe UI', 'Arial', sans-serif" font-size="28" font-weight="700" fill="url(#finpjBlue)">PJ</text>
+  
+  <!-- Linha decorativa sutil -->
+  <rect x="64" y="48" width="72" height="1" fill="url(#finpjBlue)" opacity="0.3"/>
 </svg>
