@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// Use relative path ("") in production so it hits the Vercel serverless functions, 
+// and localhost:3001 for local development.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" && window.location.hostname !== "localhost" ? "" : "http://localhost:3001");
 
 const HTTP_MESSAGES: Record<number, string> = {
   400: "Dados inválidos. Verifique as informações enviadas.",
