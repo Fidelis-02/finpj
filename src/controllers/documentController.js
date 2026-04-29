@@ -274,20 +274,30 @@ async function uploadDocumento(req, res) {
     texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
     console.log(`[uploadDocumento] trechoEnviadoIA=${texto.length} caracteres`);
 
-    const usuario = req.userEmail ? await obterUsuario(req.userEmail) : null;
+    let usuario = null;
+    try {
+        usuario = req.userEmail ? await obterUsuario(req.userEmail) : null;
+    } catch (e) {
+        console.warn('[uploadDocumento] Banco de dados não disponível para obterUsuario:', e.message);
+    }
     const scoped = usuario ? getScopedCompanyRecord(usuario, req.body?.companyId) : null;
     const analise = await analisarComGroq(tipo, texto, contexto);
     const resultadoCompacto = compactarResultadoAnalise(analise.dados);
-    await salvarAnalise(attachCompanyScope({
-        email: req.userEmail,
-        tipo,
-        nomeArquivo: req.file.originalname,
-        tamanho: req.file.size,
-        data: new Date().toISOString(),
-        resultado: resultadoCompacto,
-        fonte: analise.fonte,
-        confianca: analise.confianca
-    }, scoped));
+    
+    try {
+        await salvarAnalise(attachCompanyScope({
+            email: req.userEmail,
+            tipo,
+            nomeArquivo: req.file.originalname,
+            tamanho: req.file.size,
+            data: new Date().toISOString(),
+            resultado: resultadoCompacto,
+            fonte: analise.fonte,
+            confianca: analise.confianca
+        }, scoped));
+    } catch (e) {
+        console.warn('[uploadDocumento] Não foi possível salvar análise no histórico (DB offline?):', e.message);
+    }
 
     res.json({ sucesso: true, ...analise, dados: resultadoCompacto, nomeArquivo: req.file.originalname });
 }
@@ -433,20 +443,31 @@ async function processDocumentFromUrl(req, res) {
         }
         texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
         console.log(`[processDocumentFromUrl] trechoEnviadoIA=${texto.length} caracteres`);
-        const usuario = req.userEmail ? await obterUsuario(req.userEmail) : null;
+        let usuario = null;
+        try {
+            usuario = req.userEmail ? await obterUsuario(req.userEmail) : null;
+        } catch (dbErr) {
+            console.warn('[processDocumentFromUrl] DB offline para obterUsuario:', dbErr.message);
+        }
         const scoped = usuario ? getScopedCompanyRecord(usuario, companyId) : null;
         const analise = await analisarComGroq(tipo, texto, contexto);
         const resultadoCompacto = compactarResultadoAnalise(analise.dados);
-        await salvarAnalise(attachCompanyScope({
-            email: req.userEmail,
-            tipo,
-            nomeArquivo: filename || key,
-            tamanho: size || buffer.length,
-            data: new Date().toISOString(),
-            resultado: resultadoCompacto,
-            fonte: analise.fonte,
-            confianca: analise.confianca
-        }, scoped));
+        
+        try {
+            await salvarAnalise(attachCompanyScope({
+                email: req.userEmail,
+                tipo,
+                nomeArquivo: filename || key,
+                tamanho: size || buffer.length,
+                data: new Date().toISOString(),
+                resultado: resultadoCompacto,
+                fonte: analise.fonte,
+                confianca: analise.confianca
+            }, scoped));
+        } catch (dbErr) {
+            console.warn('[processDocumentFromUrl] DB offline para salvarAnalise:', dbErr.message);
+        }
+
         await deleteObject(key).catch((e) => {
             console.warn('[processDocumentFromUrl] Falha ao deletar arquivo temporário:', e.message);
         });
