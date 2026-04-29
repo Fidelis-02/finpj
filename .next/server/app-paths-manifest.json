@@ -1,3 +1,13 @@
 {
-  "/page": "app/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
+  "/dashboard/diagnostics/page": "app/dashboard/diagnostics/page.js",
+  "/dashboard/ai/page": "app/dashboard/ai/page.js",
+  "/dashboard/insights/page": "app/dashboard/insights/page.js",
+  "/dashboard/openfinance/page": "app/dashboard/openfinance/page.js",
+  "/dashboard/settings/page": "app/dashboard/settings/page.js",
+  "/dashboard/financial/page": "app/dashboard/financial/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/statements/page": "app/dashboard/statements/page.js",
+  "/dashboard/tax/page": "app/dashboard/tax/page.js"
 }
