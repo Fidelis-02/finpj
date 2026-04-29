@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ interface RegisterModalProps {
   onClose: () => void;
   onSwitchToLogin: () => void;
   defaultPlan?: string;
+  defaultCnpj?: string;
+  defaultFaturamento?: string;
 }
 
 export function RegisterModal({
@@ -19,6 +21,8 @@ export function RegisterModal({
   onClose,
   onSwitchToLogin,
   defaultPlan = "growth",
+  defaultCnpj = "",
+  defaultFaturamento = "",
 }: RegisterModalProps) {
   const [cnpj, setCnpj] = useState("");
   const [password, setPassword] = useState("");
@@ -32,6 +36,20 @@ export function RegisterModal({
   const [error, setError] = useState("");
 
   const { register } = useAuth();
+
+  useEffect(() => {
+    if (open) {
+      if (defaultCnpj && defaultCnpj !== cnpj) {
+        handleCnpjChange(defaultCnpj);
+      }
+      if (defaultFaturamento) {
+        setFaturamento(defaultFaturamento);
+      }
+      if (defaultPlan) {
+        setPlan(defaultPlan);
+      }
+    }
+  }, [open, defaultCnpj, defaultFaturamento, defaultPlan]);
 
   // Auto-lookup CNPJ when it has 14+ digits
   const handleCnpjChange = async (value: string) => {

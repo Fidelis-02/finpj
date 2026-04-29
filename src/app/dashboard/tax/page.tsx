@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+const TaxEngine = require("@/tax/index.js");
+
 export default function TaxPage() {
   const [faturamento, setFaturamento] = useState("");
   const [margem, setMargem] = useState("");
@@ -16,9 +18,7 @@ export default function TaxPage() {
 
   const handleSimulate = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Tax simulation logic - uses the tax engine
     try {
-      const TaxEngine = (window as any).FinPJTax;
       if (TaxEngine) {
         const sim = TaxEngine.simulateTaxes({
           annualRevenue: parseFloat(faturamento.replace(/\D/g, "")),

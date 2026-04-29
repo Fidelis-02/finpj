@@ -14,21 +14,47 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { LoginModal } from "@/components/auth/login-modal";
 import { RegisterModal } from "@/components/auth/register-modal";
+const TaxEngine = require("@/tax/index.js");
 
 export default function Home() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("growth");
+  const [simCnpj, setSimCnpj] = useState("");
+  const [simFaturamento, setSimFaturamento] = useState("");
+  const [simResult, setSimResult] = useState<any>(null);
 
   const openLogin = () => {
     setRegisterOpen(false);
     setLoginOpen(true);
   };
-  const openRegister = (plan?: string) => {
+  const openRegister = (plan?: string, cnpj?: string, faturamento?: string) => {
     if (plan) setSelectedPlan(plan);
+    if (cnpj) setSimCnpj(cnpj);
+    if (faturamento) setSimFaturamento(faturamento);
     setLoginOpen(false);
     setRegisterOpen(true);
   };
+
+  const handleSimulate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!simCnpj || !simFaturamento) return;
+    try {
+      const revenue = parseFloat(simFaturamento.replace(/\D/g, ""));
+      if (isNaN(revenue) || revenue <= 0) return;
+      const sim = TaxEngine.simulateTaxes({
+        annualRevenue: revenue,
+        margin: 0.15, // default guess
+        activity: "comercio", // default guess
+      });
+      setSimResult(sim);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const formatBRL = (v: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   return (
     <main className="min-h-screen bg-white">
@@ -239,29 +265,75 @@ export default function Home() {
               </div>
             </div>
             <div className="bg-white/10 backdrop-blur-xl border border-white/10 p-8 rounded-3xl">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-blue-200 block mb-2">
-                    CNPJ
-                  </label>
-                  <input
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-white/40"
-                    placeholder="00.000.000/0001-00"
-                  />
+              {!simResult ? (
+                <form onSubmit={handleSimulate} className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-blue-200 block mb-2">
+                      CNPJ
+                    </label>
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-white/40"
+                      placeholder="00.000.000/0001-00"
+                      value={simCnpj}
+                      onChange={(e) => setSimCnpj(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-blue-200 block mb-2">
+                      Faturamento anual
+                    </label>
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-white/40"
+                      placeholder="R$ 0,00"
+                      value={simFaturamento}
+                      onChange={(e) => setSimFaturamento(e.target.value)}
+                      inputMode="numeric"
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="w-full bg-white text-primary font-bold py-4 rounded-xl mt-4 hover:bg-blue-50 transition-colors">
+                    Simular regime
+                  </button>
+                </form>
+              ) : (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calculator size={32} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">Simulação Concluída</h3>
+                    <p className="text-blue-100/80 text-sm">
+                      O regime mais eficiente para sua empresa é o{" "}
+                      <strong className="text-white">{simResult.bestRegime?.name}</strong>.
+                    </p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-blue-200 text-sm">Carga Tributária Anual</span>
+                      <span className="font-bold">{formatBRL(simResult.bestRegime?.annualTax)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-blue-200">Alíquota Efetiva</span>
+                      <span className="font-bold text-green-400">
+                        {((simResult.bestRegime?.effectiveRate || 0) * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openRegister("growth", simCnpj, simFaturamento)}
+                    className="w-full bg-blue-500 text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.5)]"
+                  >
+                    Criar conta para ver DRE completo
+                  </button>
+                  <button
+                    onClick={() => setSimResult(null)}
+                    className="w-full text-blue-200 text-sm hover:text-white transition-colors"
+                  >
+                    Refazer simulação
+                  </button>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-blue-200 block mb-2">
-                    Faturamento anual
-                  </label>
-                  <input
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-white/40"
-                    placeholder="R$ 0,00"
-                  />
-                </div>
-                <button className="w-full bg-white text-primary font-bold py-4 rounded-xl mt-4 hover:bg-blue-50 transition-colors">
-                  Simular regime
-                </button>
-              </div>
+              )}
             </div>
           </div>
           {/* Abstract background blobs */}
@@ -421,6 +493,8 @@ export default function Home() {
         onClose={() => setRegisterOpen(false)}
         onSwitchToLogin={openLogin}
         defaultPlan={selectedPlan}
+        defaultCnpj={simCnpj}
+        defaultFaturamento={simFaturamento}
       />
     </main>
   );
