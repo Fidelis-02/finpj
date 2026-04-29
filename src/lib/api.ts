@@ -70,6 +70,16 @@ export async function apiRequest<T = any>(
         plan: "enterprise"
       } as any;
     }
+    if (path.includes("/api/ai/analyze")) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            resultado: `**Resumo da Análise (Modo Master)**\n\nIdentificamos uma DRE com receita bruta de R$ 3.800.000,00 e margem líquida de 15%.\n\n**Pontos de Atenção:**\n- Custos operacionais subiram 5% no último trimestre.\n- Regime tributário atual (Simples Nacional) está próximo ao limite do sublimite estadual.\n\n**Recomendações:**\n1. Simule a transição para Lucro Presumido para o próximo ano-calendário.\n2. Revise despesas com folha de pagamento (possível recuperação de créditos de INSS patronal).`,
+          } as any);
+        }, 1500); // Simulate processing delay
+      });
+    }
+
     // Para endpoints desconhecidos no mock master, simula uma resposta vazia mas com sucesso
     return {} as any;
   }
