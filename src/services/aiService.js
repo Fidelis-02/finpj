@@ -2,7 +2,7 @@ function fmtReais(valor) {
     return 'R$ ' + Math.round(Number(valor) || 0).toLocaleString('pt-BR');
 }
 
-function sanitizeText(input, maxLen = 12000) {
+function sanitizeText(input, maxLen = 100000) {
     if (!input) return '';
     let s = String(input);
     s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ');
@@ -216,7 +216,7 @@ Exemplo: {"saldo_inicial":45230.00,"saldo_final":38910.00,"total_entradas":12500
     };
 
     const systemPrompt = prompts[tipoDoc] || prompts.dre;
-    const texto = sanitizeText(textoDoc, 12000);
+    const texto = sanitizeText(textoDoc, 100000);
 
     try {
         const { dados } = await callGroq([

@@ -18,6 +18,11 @@ export default function AIPage() {
     e.preventDefault();
     if (!file) return;
 
+    if (file.size > 50 * 1024 * 1024) {
+      setResult("Erro: O arquivo excede o limite máximo de 50 MB.");
+      return;
+    }
+
     setLoading(true);
     try {
       const formData = new FormData();
@@ -92,7 +97,7 @@ export default function AIPage() {
                     {file ? file.name : "Clique ou arraste o arquivo aqui"}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Limite: até 3,5 MB por arquivo
+                    Limite: até 50 MB por arquivo (Pode enviar DREs de dezenas de páginas)
                   </p>
                 </label>
               </div>

@@ -2,7 +2,7 @@ const { salvarAnalise, obterAnalises, obterUsuario } = require('../services/data
 const { analisarComGroq } = require('../services/aiService');
 const { getScopedCompanyRecord, attachCompanyScope, filterRecordsByCompany } = require('../services/companyContext');
 
-const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 16000);
+const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 100000);
 const MAX_ANALYSES_RETURNED = Number(process.env.MAX_ANALYSES_RETURNED || 20);
 
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff'];
