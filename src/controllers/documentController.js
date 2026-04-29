@@ -105,7 +105,7 @@ async function extrairTextoPDF(buffer) {
         throw new Error('Versão do pdf-parse sem extrator compatível.');
     } catch (e) {
         console.error('PDF parse error:', e.message);
-        return '';
+        throw new Error('Falha ao interpretar PDF: ' + e.message);
     }
 }
 
