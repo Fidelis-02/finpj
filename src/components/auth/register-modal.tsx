@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { maskCurrency, maskPercent } from "@/lib/utils";
+import { maskCurrency, maskPercent, parseCurrencyInput } from "@/lib/utils";
 
 interface RegisterModalProps {
   open: boolean;
