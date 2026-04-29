@@ -80,6 +80,11 @@
                 irpjPresumption: 0.08,
                 csllPresumption: 0.12
             },
+            services: {
+                irpjPresumption: 0.32,
+                csllPresumption: 0.32,
+                defaultIssRate: 0.05 // ISS estimado em 5%
+            },
             presumptiveBaseIncrease: {
                 effectiveFromYear: 2026,
                 annualRevenueLimit: 5000000,
@@ -98,6 +103,18 @@
             defaultIcmsInternalRate: 0.18,
             defaultUf: 'SP',
             source: 'RICMS/SP, art. 52, I'
+        },
+        payrollTaxes: {
+            cppRate: 0.20, // INSS Patronal
+            ratRate: 0.02, // RAT médio
+            terceirosRate: 0.058 // Terceiros
+        },
+        reformaTributaria: {
+            // Estimativa de alíquota dual (CBS + IBS) em regime de transição/pleno
+            cbsRate: 0.088,
+            ibsRate: 0.177,
+            // Permite desconto integral de insumos, mas folha não dá crédito
+            source: 'EC 132/2023 - Reforma Tributária'
         },
         assumptions: [
             'RBT12 foi aproximada pelo faturamento anual informado.',

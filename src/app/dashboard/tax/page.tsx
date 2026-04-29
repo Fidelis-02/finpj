@@ -12,6 +12,7 @@ const TaxEngine = require("@/tax/index.js");
 export default function TaxPage() {
   const [faturamento, setFaturamento] = useState("");
   const [margem, setMargem] = useState("");
+  const [folha, setFolha] = useState("");
   const [atividade, setAtividade] = useState("comercio");
   const [regime, setRegime] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -23,6 +24,7 @@ export default function TaxPage() {
         const sim = TaxEngine.simulateTaxes({
           annualRevenue: parseFloat(faturamento.replace(/\D/g, "")),
           margin: parseFloat(margem.replace(",", ".")) / 100,
+          payroll: folha ? parseFloat(folha.replace(/\D/g, "")) : 0,
           activity: atividade,
         });
         setResult(sim);
@@ -70,6 +72,14 @@ export default function TaxPage() {
               value={margem}
               onChange={(e) => setMargem(e.target.value)}
             />
+            <Input
+              label="Folha de Pagamento Anual (R$)"
+              placeholder="Ex.: 120.000,00"
+              inputMode="decimal"
+              value={folha}
+              onChange={(e) => setFolha(e.target.value)}
+              hint="Impacta INSS Patronal e Fator R"
+            />
 
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">
@@ -81,9 +91,7 @@ export default function TaxPage() {
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
               >
                 <option value="comercio">Comércio</option>
-                <option value="servicos" disabled>
-                  Serviços (em breve)
-                </option>
+                <option value="servicos">Serviços</option>
                 <option value="industria" disabled>
                   Indústria (em breve)
                 </option>
@@ -160,6 +168,25 @@ export default function TaxPage() {
                       </div>
                     )}
                   </div>
+                  {r.reformaTributaria && (
+                    <div className="mt-4 pt-3 border-t border-gray-100/50">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500 flex items-center gap-1">
+                          Reforma Tributária (CBS+IBS)
+                        </span>
+                        <span className="font-bold text-gray-700">
+                          {formatBRL(r.reformaTributaria.annualTax)} /ano
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs mt-1">
+                        <span className="text-gray-400">Diferença vs Atual:</span>
+                        <span className={`font-bold ${r.reformaTributaria.economiaVsAtual > 0 ? "text-green-600" : "text-red-500"}`}>
+                          {r.reformaTributaria.economiaVsAtual > 0 ? "Economia de " : "Aumento de "}
+                          {formatBRL(Math.abs(r.reformaTributaria.economiaVsAtual))}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {!r.eligible && (
                     <p className="text-xs text-red-500 mt-2">
                       Não elegível: {r.reason}
