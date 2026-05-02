@@ -198,21 +198,21 @@ export default function Home() {
         <div className="container mx-auto px-6 grid md:grid-cols-3 gap-8">
           {[
             {
-              title: "Cadastro direto",
+              title: "Diagnóstico Fiscal",
               description:
-                "Fluxo de CNPJ com validação, persistência e login imediato após a criação.",
+                "Descubra o regime tributário mais eficiente para sua empresa e reduza seus custos com impostos.",
               icon: <ShieldCheck className="text-blue-600" size={24} />,
             },
             {
               title: "Open Finance",
               description:
-                "Conecte bancos com segurança e acompanhe movimentações em poucos cliques.",
+                "Conecte contas bancárias com segurança e acompanhe seu fluxo de caixa em tempo real.",
               icon: <ArrowRight className="text-blue-600" size={24} />,
             },
             {
-              title: "Dashboard protegido",
+              title: "DRE e Indicadores",
               description:
-                "Indicadores e bancos carregam apenas com sessão válida.",
+                "Acompanhe a saúde financeira do seu negócio com métricas e painéis atualizados automaticamente.",
               icon: <BarChart3 className="text-blue-600" size={24} />,
             },
           ].map((feature, i) => (
