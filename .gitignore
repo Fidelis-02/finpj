@@ -1,8 +1,53 @@
+# Dependencies
 node_modules/
+
+# Environment variables (NEVER commit these)
 .env
 .env.local
-.vercel
-/tmp/
-
-.vercel
+.env.development
+.env.production
 .env*.local
+
+# Vercel
+.vercel
+
+# Next.js
+.next/
+out/
+
+# Build output
+dist/
+build/
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+
+# Logs
+*.log
+*.err.log
+finpj-server.log
+finpj-server.err.log
+.codex-devserver.err
+.codex-devserver.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Sensitive data files
+dados.json.bak
+backups/*.json
+
+# Trained OCR data (large binary)
+*.traineddata
+
+# Test/scratch files
+scratch_*.js
+test-*.js

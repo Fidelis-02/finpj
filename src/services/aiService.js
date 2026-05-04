@@ -97,15 +97,54 @@ function gerarAnaliseInterna(diagnostico) {
     };
 }
 
-async function gerarAnaliseFinanceira(diagnostico) {
+async function gerarAnaliseFinanceira(diagnostico, bankData = null) {
     if (!process.env.GROQ_API_KEY) {
         return gerarAnaliseInterna(diagnostico);
     }
 
     try {
-        const prompt = `Você é um analista financeiro para PMEs no Brasil. Com base nos dados abaixo, gere um resumo conciso e três recomendações práticas de melhoria financeira e tributária.`;
-        const rawMensagem = `Dados do diagnóstico:\nNome: ${diagnostico.nome}\nCNPJ: ${diagnostico.cnpj}\nSetor: ${diagnostico.setor}\nRegime atual: ${diagnostico.regime}\nFaturamento anual: R$ ${diagnostico.faturamento && diagnostico.faturamento.toLocaleString ? diagnostico.faturamento.toLocaleString('pt-BR') : diagnostico.faturamento}\nMargem: ${diagnostico.margem}\nEconomia estimada: R$ ${diagnostico.resultados.economia}\nCréditos identificados: R$ ${diagnostico.resultados.creditosIdentificados}\nAnomalia identificada: R$ ${diagnostico.resultados.anomaliaValor}\nRegime ideal: ${diagnostico.resultados.regimeIdeal}`;
-        const mensagem = sanitizeText(rawMensagem, 2000);
+        const prompt = `Você é um CFO digital especialista em PMEs brasileiras. Com base nos dados abaixo, gere:
+1. Um resumo conciso (2-3 frases) da situação financeira
+2. Três recomendações práticas e acionáveis de melhoria financeira e tributária
+3. Alerte sobre riscos identificados
+
+Retorne EXCLUSIVAMENTE JSON:
+{"resumo": "string", "recomendacoes": ["string", "string", "string"], "riscos": ["string"], "scoreGeral": number (0-100)}`;
+
+        let rawMensagem = `Dados do diagnóstico:\nNome: ${diagnostico.nome}\nCNPJ: ${diagnostico.cnpj}\nSetor: ${diagnostico.setor}\nRegime atual: ${diagnostico.regime}\nFaturamento anual: R$ ${diagnostico.faturamento && diagnostico.faturamento.toLocaleString ? diagnostico.faturamento.toLocaleString('pt-BR') : diagnostico.faturamento}\nMargem: ${diagnostico.margem}\nEconomia estimada: R$ ${diagnostico.resultados.economia}\nCréditos identificados: R$ ${diagnostico.resultados.creditosIdentificados}\nAnomalia identificada: R$ ${diagnostico.resultados.anomaliaValor}\nRegime ideal: ${diagnostico.resultados.regimeIdeal}`;
+
+        // Incluir dados bancários reais se disponíveis
+        if (bankData) {
+            const { transactions = [], summary = {} } = bankData;
+            if (transactions.length > 0) {
+                const entradas = transactions.filter(tx => tx.valor > 0).reduce((s, tx) => s + tx.valor, 0);
+                const saidas = transactions.filter(tx => tx.valor < 0).reduce((s, tx) => s + Math.abs(tx.valor), 0);
+                const impostos = transactions.filter(tx => /imposto|das|darf|tribut/i.test(`${tx.categoria || ''} ${tx.descricao || ''}`)).reduce((s, tx) => s + Math.abs(tx.valor), 0);
+
+                // Agrupar por categoria
+                const categorias = {};
+                transactions.forEach(tx => {
+                    const cat = tx.categoria || 'Outros';
+                    categorias[cat] = (categorias[cat] || 0) + Math.abs(tx.valor);
+                });
+                const topCategorias = Object.entries(categorias)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 5)
+                    .map(([cat, val]) => `${cat}: R$ ${Math.round(val).toLocaleString('pt-BR')}`)
+                    .join(', ');
+
+                rawMensagem += `\n\nDados bancários reais (último período):`;
+                rawMensagem += `\nEntradas totais: R$ ${Math.round(entradas).toLocaleString('pt-BR')}`;
+                rawMensagem += `\nSaídas totais: R$ ${Math.round(saidas).toLocaleString('pt-BR')}`;
+                rawMensagem += `\nSaldo líquido: R$ ${Math.round(entradas - saidas).toLocaleString('pt-BR')}`;
+                rawMensagem += `\nImpostos pagos: R$ ${Math.round(impostos).toLocaleString('pt-BR')}`;
+                rawMensagem += `\nMargem real estimada: ${entradas > 0 ? ((entradas - saidas) / entradas * 100).toFixed(1) : '0'}%`;
+                rawMensagem += `\nTop categorias: ${topCategorias}`;
+                rawMensagem += `\nTotal de transações: ${transactions.length}`;
+            }
+        }
+
+        const mensagem = sanitizeText(rawMensagem, 3000);
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -119,8 +158,8 @@ async function gerarAnaliseFinanceira(diagnostico) {
                     { role: 'system', content: prompt },
                     { role: 'user', content: mensagem }
                 ],
-                max_tokens: 250,
-                temperature: 0.6
+                max_tokens: 500,
+                temperature: 0.4
             })
         });
 
@@ -130,7 +169,19 @@ async function gerarAnaliseFinanceira(diagnostico) {
             return gerarAnaliseInterna(diagnostico);
         }
 
-        return { resumo: String(content).trim(), recomendacoes: [] };
+        // Tentar parsear JSON estruturado
+        const parsed = safeJsonParse(content);
+        if (parsed && parsed.resumo) {
+            return {
+                resumo: parsed.resumo,
+                recomendacoes: Array.isArray(parsed.recomendacoes) ? parsed.recomendacoes : [],
+                riscos: Array.isArray(parsed.riscos) ? parsed.riscos : [],
+                scoreGeral: parsed.scoreGeral || null,
+                fonte: 'groq-llama3'
+            };
+        }
+
+        return { resumo: String(content).trim(), recomendacoes: [], fonte: 'groq-llama3' };
     } catch (error) {
         console.error('Groq analysis error:', error);
         return gerarAnaliseInterna(diagnostico);
