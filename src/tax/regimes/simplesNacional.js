@@ -63,7 +63,17 @@
 
         const bracket = findBracket(input.annualRevenue, annex);
         const dasEffectiveRate = calculateEffectiveRate(input.annualRevenue, bracket);
-        const das = input.annualRevenue * dasEffectiveRate;
+        let das = input.annualRevenue * dasEffectiveRate;
+        
+        // Aplicação da Segregação Monofásica (PIS/COFINS)
+        let monofasicoDeduction = 0;
+        if (input.monofasicoRevenue > 0) {
+            // Aproximação estática: PIS/COFINS representam cerca de 15% do DAS no comércio/serviços
+            const monofasicoRatio = Math.min(input.monofasicoRevenue / input.annualRevenue, 1);
+            monofasicoDeduction = das * monofasicoRatio * 0.15;
+            das -= monofasicoDeduction;
+        }
+
         const extraIcms = input.annualRevenue > tables.simplesNacional.icmsSublimit
             ? utils.estimateIcms(input.annualRevenue, input.margin, tables)
             : { total: 0 };
@@ -83,13 +93,15 @@
             annualTax,
             breakdown: {
                 das: utils.roundCurrency(das),
+                monofasicoDeduction: utils.roundCurrency(monofasicoDeduction),
                 icmsOutsideSublimit: utils.roundCurrency(extraIcms.total)
             },
             details: {
                 annex: annex.label,
                 bracket,
                 dasEffectiveRate,
-                fatorR: fatorRInfo
+                fatorR: fatorRInfo,
+                monofasicoRevenue: input.monofasicoRevenue || 0
             },
             notes
         });

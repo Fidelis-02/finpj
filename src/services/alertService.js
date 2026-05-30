@@ -199,8 +199,48 @@ async function verificarAlertasEmLote(usuarios) {
     return results;
 }
 
+/**
+ * Detecta anomalias estatísticas (1.5 sigma) em transações operacionais.
+ * @param {Array} transactions - Lista de transações bancárias.
+ * @returns {Array} - Lista de anomalias encontradas.
+ */
+function detectAnomalies(transactions) {
+    if (!transactions || transactions.length === 0) return [];
+
+    // Filter to operational expenses (OPEX)
+    const opexCategories = ['fornecedor', 'despesas', 'operacional', 'marketing', 'ti'];
+    const opexTx = transactions.filter(t => t.tipo === 'saida' && opexCategories.includes(String(t.categoria).toLowerCase()));
+
+    if (opexTx.length < 5) return []; // Not enough data for stats
+
+    // Calculate mean
+    const values = opexTx.map(t => Math.abs(t.valor));
+    const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+
+    // Calculate standard deviation (sigma)
+    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const sigma = Math.sqrt(variance);
+
+    // Threshold: mean + 1.5 * sigma
+    const threshold = mean + (1.5 * sigma);
+
+    // Find anomalies
+    const anomalies = opexTx.filter(t => Math.abs(t.valor) > threshold).map(t => ({
+        id: t.id || Math.random().toString(),
+        date: t.data || new Date().toISOString().slice(0, 10),
+        title: `Anomalia de custo detectada: ${t.descricao || 'Despesa Operacional'}`,
+        amount: Math.abs(t.valor),
+        category: t.categoria,
+        threshold: Math.round(threshold),
+        sigma: 1.5
+    }));
+
+    return anomalies;
+}
+
 module.exports = {
     verificarEEnviarAlertas,
     verificarAlertasEmLote,
+    detectAnomalies,
     ALERT_COOLDOWN_MS
 };

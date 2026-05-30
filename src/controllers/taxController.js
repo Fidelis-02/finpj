@@ -19,12 +19,19 @@ async function calcularDas(req, res) {
     if (!Number.isFinite(fat) || fat <= 0) return res.status(422).json({ erro: 'Informe o faturamento.' });
     if (!Number.isFinite(marg) || marg < 0 || marg > 1) return res.status(422).json({ erro: 'Informe uma margem entre 0% e 100%.' });
 
+    let monofasicoRevenue = 0;
+    if (req.body.produtos && Array.isArray(req.body.produtos)) {
+        const impacto = taxEngine.calcularImpactoMonofasico(req.body.produtos);
+        monofasicoRevenue = impacto.valorMonofasico || 0;
+    }
+
     let simulation;
     try {
         simulation = getFiscalSimulation({
             annualRevenue: fat,
             margin: marg,
-            activity: inferActivity(atividade)
+            activity: inferActivity(atividade),
+            monofasicoRevenue
         }).simulation;
     } catch (error) {
         return res.status(422).json({ erro: error.message });
@@ -107,12 +114,21 @@ async function postDiagnostico(req, res) {
         return res.status(400).json({ erro: 'Informe uma margem entre 0% e 100%.' });
     }
 
+    let monofasicoRevenue = 0;
+    let analiseMonofasica = null;
+
+    if (req.body.produtos && Array.isArray(req.body.produtos)) {
+        analiseMonofasica = taxEngine.calcularImpactoMonofasico(req.body.produtos);
+        monofasicoRevenue = analiseMonofasica.valorMonofasico || 0;
+    }
+
     let simulation;
     try {
         simulation = getFiscalSimulation({
             annualRevenue: fat,
             margin: marg,
-            activity: inferActivity(resolvedSetor)
+            activity: inferActivity(resolvedSetor),
+            monofasicoRevenue
         }).simulation;
     } catch (error) {
         return res.status(400).json({ erro: error.message });
@@ -127,11 +143,9 @@ async function postDiagnostico(req, res) {
     if (ncm && ncm.trim() !== '') {
         ncmInfo = verificarNcmMonofasico(ncm);
 
-        if (ncmInfo && ncmInfo.isMonofasico) {
-            const parcelaMonofasica = fat * 0.3;
-            creditosIdentificados = parcelaMonofasica * ncmInfo.aliquotas.total;
-            alertasNcm.push(`NCM ${ncmInfo.codigo} (${ncmInfo.categoriaDescricao}) possui tributacao monofasica.`);
-        }
+    if (analiseMonofasica && analiseMonofasica.produtosMonofasicos > 0) {
+        creditosIdentificados += analiseMonofasica.creditosNãoAproveitados || 0;
+        alertasNcm.push(...(analiseMonofasica.alertas || []));
     }
 
     const impostos = simulation.regimes.reduce((acc, item) => {

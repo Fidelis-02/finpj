@@ -1,6 +1,6 @@
 const { obterUsuario, salvarUsuario } = require('../services/database');
 const pluggyService = require('../services/pluggyService');
-const { verificarEEnviarAlertas } = require('../services/alertService');
+const { verificarEEnviarAlertas, detectAnomalies } = require('../services/alertService');
 const { clearDashboardCache } = require('../services/dashboardService');
 const {
     getScopedCompanyRecord,
@@ -222,6 +222,21 @@ async function connectBank(req, res) {
         transactions
     };
 
+    const anomalies = detectAnomalies(transactions);
+    if (anomalies.length > 0) {
+        if (!usuario.bankReports) usuario.bankReports = [];
+        anomalies.forEach(anomaly => {
+            usuario.bankReports.push({
+                id: anomaly.id,
+                date: anomaly.date,
+                title: anomaly.title,
+                amount: anomaly.amount,
+                status: 'Atenção',
+                bankName
+            });
+        });
+    }
+
     banks.push(bank);
     touchScopedCompany(usuario, scoped, target);
     await salvarUsuario(usuario);
@@ -234,7 +249,7 @@ async function connectBank(req, res) {
         console.warn('[connectBank] Falha ao verificar alertas:', alertErr.message);
     }
 
-    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank, dataSource: bank.dataSource });
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank, dataSource: bank.dataSource, anomaliesCount: anomalies.length });
 }
 
 async function syncBank(req, res) {
@@ -247,11 +262,36 @@ async function syncBank(req, res) {
 
     bank.lastSync = new Date().toISOString();
     bank.transactions = await carregarTransacoesPluggy(bank.bankId, bank.bankName);
+    
+    const anomalies = detectAnomalies(bank.transactions);
+    if (anomalies.length > 0) {
+        if (!usuario.bankReports) usuario.bankReports = [];
+        anomalies.forEach(anomaly => {
+            // Only add if not already present
+            if (!usuario.bankReports.find(r => r.id === anomaly.id)) {
+                usuario.bankReports.push({
+                    id: anomaly.id,
+                    date: anomaly.date,
+                    title: anomaly.title,
+                    amount: anomaly.amount,
+                    status: 'Atenção',
+                    bankName: bank.bankName
+                });
+            }
+        });
+    }
+
     touchScopedCompany(usuario, scoped, target);
     await salvarUsuario(usuario);
     clearDashboardCache();
 
-    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank });
+    try {
+        await verificarEEnviarAlertas(usuario);
+    } catch (e) {
+        console.warn('[syncBank] Alert check failed:', e.message);
+    }
+
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank, anomaliesCount: anomalies.length });
 }
 
 async function removeBank(req, res) {
@@ -373,6 +413,61 @@ async function cashflowProjection(req, res) {
         saldoAtual: Math.round(entradas - saidas),
         mediaEntrada: Math.round(mediaDiariaEntrada),
         mediaSaida: Math.round(mediaDiariaSaida)
+async function getValuation(req, res) {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    const { banks } = getScopedBankContext(usuario, requestedCompanyId(req));
+    
+    // Aggregating annualized revenue and expenses
+    const allTransactions = banks.flatMap((bank) => bank.transactions || []);
+    const entradas = allTransactions.filter((item) => item.tipo === 'entrada').reduce((sum, item) => sum + Math.abs(item.valor), 0);
+    const saidas = allTransactions.filter((item) => item.tipo === 'saida').reduce((sum, item) => sum + Math.abs(item.valor), 0);
+    
+    // Extrapolate to 12 months based on transaction window (simplification for MVP assuming ~1 month of data)
+    const annualizedEbitda = Math.max((entradas - saidas) * 12, 10000); 
+    const effectiveTaxRate = 0.15; // Proxied tax rate
+    const nopat = annualizedEbitda * (1 - effectiveTaxRate);
+
+    // Inputs
+    const wacc = Number(req.query.wacc) || 0.12;
+    const capitalInvestido = Number(req.query.capital) || 50000;
+    const ebitdaGrowthRate = Number(req.query.growth) || 0.05;
+
+    // EVA Calculation
+    const eva = nopat - (capitalInvestido * wacc);
+
+    // 5-Year DCF Calculation (FCD)
+    const projectedFlows = [];
+    let dcfValue = 0;
+    let currentEbitda = annualizedEbitda;
+
+    for (let year = 1; year <= 5; year++) {
+        currentEbitda = currentEbitda * (1 + ebitdaGrowthRate);
+        const freeCashFlow = currentEbitda * (1 - effectiveTaxRate); // Simplification FCF
+        const discountedFlow = freeCashFlow / Math.pow(1 + wacc, year);
+        projectedFlows.push({
+            year,
+            freeCashFlow: Math.round(freeCashFlow),
+            discountedFlow: Math.round(discountedFlow)
+        });
+        dcfValue += discountedFlow;
+    }
+
+    // Terminal Value (Gordon Growth Method)
+    const perpetualGrowthRate = 0.03;
+    const terminalValue = (projectedFlows[4].freeCashFlow * (1 + perpetualGrowthRate)) / (wacc - perpetualGrowthRate);
+    const discountedTerminalValue = terminalValue / Math.pow(1 + wacc, 5);
+    
+    const enterpriseValue = dcfValue + discountedTerminalValue;
+
+    return res.json({
+        sucesso: true,
+        nopat: Math.round(nopat),
+        capitalInvestido,
+        wacc,
+        eva: Math.round(eva),
+        projectedFlows,
+        enterpriseValue: Math.round(enterpriseValue)
     });
 }
 
@@ -386,5 +481,6 @@ module.exports = {
     removeBank,
     tagTransaction,
     conciliar,
-    cashflowProjection
+    cashflowProjection,
+    getValuation
 };
