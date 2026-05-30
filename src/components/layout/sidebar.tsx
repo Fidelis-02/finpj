@@ -38,7 +38,7 @@ const operationNav = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user, activeCompany, logout } = useAuth();
+  const { user, activeCompany, companies, setActiveCompany, logout } = useAuth();
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -76,18 +76,36 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Company card */}
-      {!collapsed && activeCompany && (
+      {/* Company card / Selector */}
+      {!collapsed && (
         <div className="px-4 py-3 border-b border-gray-50">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">
             Workspace
           </span>
-          <p className="text-sm font-bold text-primary truncate mt-0.5">
-            {activeCompany.nome}
-          </p>
-          <p className="text-[11px] text-gray-400 truncate">
-            {activeCompany.cnpj}
-          </p>
+          {companies.length > 1 ? (
+            <select
+              value={activeCompany?._id || ""}
+              onChange={(e) => setActiveCompany(e.target.value)}
+              className="w-full text-sm font-bold text-primary bg-gray-50 border border-gray-200 rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate"
+            >
+              {companies.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+          ) : activeCompany ? (
+            <>
+              <p className="text-sm font-bold text-primary truncate mt-0.5">
+                {activeCompany.nome}
+              </p>
+              <p className="text-[11px] text-gray-400 truncate">
+                {activeCompany.cnpj}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400 italic">Nenhuma empresa</p>
+          )}
         </div>
       )}
 

@@ -1,7 +1,7 @@
 const taxEngine = require('../tax/index');
 const taxUtils = require('../tax/utils');
 
-const DEFAULT_TTL_MS = Number(process.env.FISCAL_CACHE_TTL_MS || 2 * 60 * 1000);
+const DEFAULT_TTL_MS = Number(process.env.FISCAL_CACHE_TTL_MS || 24 * 60 * 60 * 1000);
 const MAX_ENTRIES = Number(process.env.FISCAL_CACHE_MAX_ENTRIES || 200);
 const cache = new Map();
 

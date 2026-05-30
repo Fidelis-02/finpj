@@ -6,6 +6,7 @@ import { DollarSign, TrendingDown, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { apiRequest } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
+import { CashflowChart } from "@/components/dashboard/cashflow-chart";
 
 export default function FinancialPage() {
   const [data, setData] = useState<any>(null);
@@ -71,9 +72,7 @@ export default function FinancialPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <h3 className="font-bold text-primary mb-4">Fluxo de caixa projetado</h3>
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-sm">Dados serão exibidos após conectar um banco ou importar dados.</p>
-          </div>
+          <CashflowChart />
         </Card>
         <Card>
           <h3 className="font-bold text-primary mb-4">Categorias em atenção</h3>
