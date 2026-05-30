@@ -13,10 +13,9 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
-import { apiRequest } from "@/lib/api";
-import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { ValuationCard } from "@/components/dashboard/valuation-card";
 
 interface KPIData {
   monthlyRevenue: number;
@@ -292,6 +291,11 @@ export default function DashboardOverview() {
             </div>
           </Card>
         </motion.div>
+      </div>
+
+      {/* Corporate Finance - DCF / EVA Valuation */}
+      <div className="mt-6">
+        <ValuationCard companyId={activeCompany?._id} />
       </div>
     </div>
   );

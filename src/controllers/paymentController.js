@@ -122,6 +122,62 @@ async function createCheckoutSession(req, res) {
     }
 }
 
+async function triggerSuccessFeeInvoice(req, res) {
+    if (!stripe) {
+        return res.status(500).json({ erro: 'Integração Stripe indisponível no momento.' });
+    }
+
+    const { creditAmount } = req.body;
+    const amount = Number(creditAmount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return res.status(400).json({ erro: 'creditAmount deve ser um número positivo.' });
+    }
+
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) {
+        return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    const customerId = usuario.stripeCustomerId;
+    if (!customerId) {
+        return res.status(400).json({ erro: 'Nenhum método de pagamento conectado (stripeCustomerId não encontrado).' });
+    }
+
+    const successFeeRate = 0.15; // 15% Success Fee
+    const feeValue = Math.round(amount * successFeeRate); // Valor em BRL
+
+    try {
+        // Criar item da fatura no Stripe (valor em centavos)
+        await stripe.invoiceItems.create({
+            customer: customerId,
+            currency: 'brl',
+            amount: feeValue * 100,
+            description: `Success Fee FinPJ - 15% sobre R$ ${amount.toLocaleString('pt-BR')}`
+        });
+
+        // Gerar a fatura
+        const invoice = await stripe.invoices.create({
+            customer: customerId,
+            auto_advance: true, // Tenta cobrar automaticamente
+            description: 'Faturamento por Performance (Recuperação de Crédito Tributário)'
+        });
+
+        // Enviar a fatura imediatamente se não houver auto_advance
+        const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
+
+        res.json({
+            sucesso: true,
+            invoiceId: finalizedInvoice.id,
+            invoiceUrl: finalizedInvoice.hosted_invoice_url,
+            feeValue
+        });
+    } catch (error) {
+        console.error('Erro ao gerar Success Fee Invoice:', error);
+        res.status(500).json({ erro: 'Falha ao processar faturamento da taxa de sucesso.', detalhe: error.message });
+    }
+}
+
 async function webhookStripe(req, res) {
     if (!stripe) {
         return res.status(500).send('Checkout indisponível no momento.');
@@ -352,5 +408,6 @@ async function handleInvoicePaymentFailed(invoice) {
 module.exports = {
     processarPagamento,
     createCheckoutSession,
-    webhookStripe
+    webhookStripe,
+    triggerSuccessFeeInvoice
 };

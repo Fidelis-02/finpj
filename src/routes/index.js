@@ -118,6 +118,7 @@ router.delete('/openfinance/banks/:bankId', verificarTokenMiddleware, wrap(finan
 router.post('/openfinance/transactions/:txId/tags', verificarTokenMiddleware, wrap(financeController.tagTransaction));
 router.post('/conciliacao', verificarTokenMiddleware, wrap(financeController.conciliar));
 router.get('/cashflow-projection', verificarTokenMiddleware, wrap(financeController.cashflowProjection));
+router.get('/finance/valuation', verificarTokenMiddleware, wrap(financeController.getValuation));
 
 router.post('/calcular-das', verificarTokenMiddleware, wrap(taxController.calcularDas));
 router.post('/gerar-das-automatico', verificarTokenMiddleware, wrap(taxController.gerarDasAutomatico));
@@ -190,6 +191,7 @@ router.put('/companies/:companyId', verificarTokenMiddleware, wrap(companyContro
 
 router.post('/pagamento', verificarTokenMiddleware, wrap(paymentController.processarPagamento));
 router.post('/stripe/create-checkout-session', verificarTokenMiddleware, wrap(paymentController.createCheckoutSession));
+router.post('/stripe/trigger-success-fee', verificarTokenMiddleware, wrap(paymentController.triggerSuccessFeeInvoice));
 router.post('/webhooks/stripe', wrap(paymentController.webhookStripe));
 
 // ── Pluggy Webhook ──
