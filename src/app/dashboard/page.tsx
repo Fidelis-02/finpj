@@ -16,8 +16,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
-import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { ValuationCard } from "@/components/dashboard/valuation-card";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+} from "recharts";
 
 interface KPIData {
   monthlyRevenue: number;
@@ -27,7 +33,17 @@ interface KPIData {
   alerts: number;
 }
 
-const kpiConfig = [
+interface KPIConfigItem {
+  key: keyof KPIData;
+  label: string;
+  icon: React.ComponentType<any>;
+  color: string;
+  bg: string;
+  format: (v: number) => string;
+  href: string;
+}
+
+const kpiConfig: KPIConfigItem[] = [
   {
     key: "monthlyRevenue",
     label: "Receita mensal",
@@ -75,6 +91,17 @@ const kpiConfig = [
   },
 ];
 
+const mockChartData = [
+  { name: "Jan", receita: 4000, impostos: 2400 },
+  { name: "Fev", receita: 3000, impostos: 1398 },
+  { name: "Mar", receita: 2000, impostos: 9800 },
+  { name: "Abr", receita: 2780, impostos: 3908 },
+  { name: "Mai", receita: 1890, impostos: 4800 },
+  { name: "Jun", receita: 2390, impostos: 3800 },
+  { name: "Jul", receita: 3490, impostos: 4300 },
+  { name: "Ago", receita: 4000, impostos: 2400 },
+];
+
 export default function DashboardOverview() {
   const { activeCompany, user } = useAuth();
   const [kpis, setKpis] = useState<KPIData | null>(null);
@@ -86,7 +113,6 @@ export default function DashboardOverview() {
         const data = await apiRequest<{ kpis: KPIData }>("/api/dashboard/overview");
         setKpis(data.kpis);
       } catch {
-        // Use placeholder data
         setKpis({
           monthlyRevenue: 0,
           monthlyTaxes: 0,
@@ -149,11 +175,11 @@ export default function DashboardOverview() {
                     <kpi.icon size={16} className={kpi.color} />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-2xl font-bold text-primary" data-testid={`kpi-value-${kpi.key}`}>
                   {loading ? (
                     <div className="h-8 bg-gray-100 rounded-lg animate-pulse w-24" />
                   ) : (
-                    kpi.format((kpis as any)?.[kpi.key] || 0)
+                    kpi.format(kpis ? kpis[kpi.key] : 0)
                   )}
                 </div>
                 <p className="text-xs text-gray-400 mt-1 group-hover:text-blue-600 transition-colors">
@@ -165,35 +191,37 @@ export default function DashboardOverview() {
         ))}
       </motion.div>
 
-      {/* Smart Integrations Banner */}
-      <motion.div variants={fadeUp} initial="hidden" animate="show">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase">Open Finance Ativo</span>
-                <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase border border-green-500/30">Motor Fiscal Sincronizado</span>
+      {/* Smart Insights Banner */}
+      {!loading && kpis && kpis.taxSavings > 0 && (
+        <motion.div variants={fadeUp} initial="hidden" animate="show" data-testid="smart-insights-banner">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase">Open Finance Ativo</span>
+                  <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase border border-green-500/30">Motor Fiscal Sincronizado</span>
+                </div>
+                <h2 className="text-xl font-bold mb-1">Seu DRE Mágico está rodando</h2>
+                <p className="text-blue-100 max-w-xl text-sm">
+                  Analisamos 452 transações recentes. Identificamos {formatCurrency(kpis.taxSavings)} em potencial de economia migrando para o Lucro Real, baseado nos seus gastos mapeados em nuvem e infraestrutura.
+                </p>
               </div>
-              <h2 className="text-xl font-bold mb-1">Seu DRE Mágico está rodando</h2>
-              <p className="text-blue-100 max-w-xl text-sm">
-                Analisamos 452 transações recentes. Identificamos R$ 42.000,00 em potencial de economia migrando para o Lucro Real, baseado nos seus gastos mapeados em nuvem e infraestrutura.
-              </p>
-            </div>
-            <div className="shrink-0">
-              <Link href="/dashboard/tax">
-                <button className="bg-white text-blue-700 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-sm">
-                  Aplicar Economia
-                </button>
-              </Link>
+              <div className="shrink-0">
+                <Link href="/dashboard/tax">
+                  <button className="bg-white text-blue-700 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-sm">
+                    Aplicar Economia
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart placeholder */}
+        {/* Real Recharts Chart */}
         <motion.div variants={fadeUp} initial="hidden" animate="show">
           <Card className="h-full">
             <div className="flex items-center justify-between mb-2">
@@ -209,7 +237,32 @@ export default function DashboardOverview() {
                 </Button>
               </Link>
             </div>
-            <RevenueChart />
+            <div className="w-full h-56 mt-4" data-testid="dashboard-chart">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={mockChartData}
+                  margin={{
+                    top: 10,
+                    right: 10,
+                    left: -20,
+                    bottom: 0,
+                  }}
+                >
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: "#9ca3af" }}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: 'transparent' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Bar dataKey="receita" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
+                  <Bar dataKey="impostos" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={12} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </Card>
         </motion.div>
 

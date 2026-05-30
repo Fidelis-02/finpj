@@ -7,8 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { maskCurrency, maskPercent, parseCurrencyInput } from "@/lib/utils";
-
-const TaxEngine = require("@/tax/index.js");
+import { apiRequest } from "@/lib/api";
 
 export default function TaxPage() {
   const [faturamento, setFaturamento] = useState("");
@@ -17,21 +16,36 @@ export default function TaxPage() {
   const [atividade, setAtividade] = useState("comercio");
   const [regime, setRegime] = useState("");
   const [result, setResult] = useState<any>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSimulate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCalculating) return;
+
+    setIsCalculating(true);
+    setError(null);
+
     try {
-      if (TaxEngine) {
-        const sim = TaxEngine.simulateTaxes({
-          annualRevenue: parseCurrencyInput(faturamento),
-          margin: parseCurrencyInput(margem) / 100,
-          payroll: folha ? parseCurrencyInput(folha) : 0,
+      const annualRevenue = parseCurrencyInput(faturamento);
+      const margin = parseCurrencyInput(margem);
+      const payroll = folha ? parseCurrencyInput(folha) : 0;
+
+      const sim = await apiRequest("/api/tax/simulate", {
+        method: "POST",
+        body: JSON.stringify({
+          annualRevenue,
+          margin,
+          payroll,
           activity: atividade,
-        });
-        setResult(sim);
-      }
-    } catch (err) {
+        }),
+      });
+      setResult(sim);
+    } catch (err: any) {
       console.error("Simulação falhou:", err);
+      setError(err.message || "Erro de conexão com o motor fiscal.");
+    } finally {
+      setIsCalculating(false);
     }
   };
 
@@ -58,13 +72,15 @@ export default function TaxPage() {
             <h3 className="font-bold text-primary">Parâmetros</h3>
           </div>
 
-          <form onSubmit={handleSimulate} className="space-y-4">
+          <form onSubmit={handleSimulate} className="space-y-4" aria-busy={isCalculating}>
             <Input
               label="Faturamento anual (R$)"
               placeholder="0,00"
               inputMode="numeric"
               value={faturamento}
               onChange={(e) => setFaturamento(maskCurrency(e.target.value))}
+              disabled={isCalculating}
+              required
             />
             <Input
               label="Margem estimada (%)"
@@ -72,6 +88,8 @@ export default function TaxPage() {
               inputMode="numeric"
               value={margem}
               onChange={(e) => setMargem(maskPercent(e.target.value))}
+              disabled={isCalculating}
+              required
             />
             <Input
               label="Folha de Pagamento Anual (R$)"
@@ -80,6 +98,7 @@ export default function TaxPage() {
               value={folha}
               onChange={(e) => setFolha(maskCurrency(e.target.value))}
               hint="Impacta INSS Patronal e Fator R"
+              disabled={isCalculating}
             />
 
             <div className="space-y-1.5">
@@ -89,6 +108,7 @@ export default function TaxPage() {
               <select
                 value={atividade}
                 onChange={(e) => setAtividade(e.target.value)}
+                disabled={isCalculating}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
               >
                 <option value="comercio">Comércio</option>
@@ -106,6 +126,7 @@ export default function TaxPage() {
               <select
                 value={regime}
                 onChange={(e) => setRegime(e.target.value)}
+                disabled={isCalculating}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
               >
                 <option value="">Selecione</option>
@@ -115,8 +136,14 @@ export default function TaxPage() {
               </select>
             </div>
 
-            <Button type="submit" className="w-full">
-              Comparar regimes
+            {error && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl" role="alert">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isCalculating}>
+              {isCalculating ? "Processando Simulação..." : "Comparar regimes"}
             </Button>
           </form>
         </Card>
@@ -124,7 +151,7 @@ export default function TaxPage() {
         <Card>
           <h3 className="font-bold text-primary mb-4">Resultado estimado</h3>
           {result ? (
-            <div className="space-y-4">
+            <div className="space-y-4" data-testid="simulation-results">
               {result.regimes?.map((r: any, i: number) => (
                 <motion.div
                   key={r.key}
@@ -197,7 +224,7 @@ export default function TaxPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-gray-400" data-testid="empty-state">
               <Calculator size={48} className="mx-auto mb-4 opacity-30" />
               <p className="text-sm">
                 Informe faturamento e margem para comparar.

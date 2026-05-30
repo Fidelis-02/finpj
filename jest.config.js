@@ -11,6 +11,9 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   modulePathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/.vercel/'],
   roots: ['<rootDir>/src'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

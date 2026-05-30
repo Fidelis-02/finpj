@@ -240,9 +240,48 @@ async function gerarDasAutomatico(req, res) {
     });
 }
 
+async function simulate(req, res) {
+    const { annualRevenue, margin, payroll, activity } = req.body;
+
+    const fat = taxUtils.parseNumber(annualRevenue);
+    const marg = taxUtils.parseNumber(margin);
+    const folha = taxUtils.parseNumber(payroll ?? 0);
+
+    // Input validation
+    if (annualRevenue === undefined || isNaN(fat) || fat <= 0) {
+        return res.status(400).json({ erro: 'O faturamento anual deve ser um número maior que zero.' });
+    }
+    if (margin === undefined || isNaN(marg) || marg < 0 || marg > 100) {
+        return res.status(400).json({ erro: 'A margem estimada deve ser um número entre 0% e 100%.' });
+    }
+    if (isNaN(folha) || folha < 0) {
+        return res.status(400).json({ erro: 'A folha de pagamento deve ser um número maior ou igual a zero.' });
+    }
+    if (!activity) {
+        return res.status(400).json({ erro: 'A atividade da empresa é obrigatória.' });
+    }
+
+    try {
+        const simulation = taxEngine.simulateTaxes({
+            annualRevenue: fat,
+            margin: marg / 100,
+            payroll: folha,
+            activity: inferActivity(activity)
+        });
+
+        // Audit logging
+        console.log(`[AUDIT] Simulation executed by user: ${req.userEmail || 'anonymous'} at ${new Date().toISOString()}`);
+
+        return res.json(simulation);
+    } catch (error) {
+        return res.status(422).json({ erro: error.message });
+    }
+}
+
 module.exports = {
     calcularDas,
     fiscalCalendar,
     postDiagnostico,
-    gerarDasAutomatico
+    gerarDasAutomatico,
+    simulate
 };
