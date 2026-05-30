@@ -13,6 +13,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { apiRequest } from "@/lib/api";
+import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { ValuationCard } from "@/components/dashboard/valuation-card";
