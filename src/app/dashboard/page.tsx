@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
 
 interface KPIData {
   monthlyRevenue: number;
@@ -194,7 +195,7 @@ export default function DashboardOverview() {
         {/* Chart placeholder */}
         <motion.div variants={fadeUp} initial="hidden" animate="show">
           <Card className="h-full">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-2">
               <div>
                 <h3 className="font-bold text-primary">Receita vs impostos</h3>
                 <p className="text-sm text-gray-400">
@@ -207,24 +208,7 @@ export default function DashboardOverview() {
                 </Button>
               </Link>
             </div>
-            <div className="flex items-end gap-3 h-40 px-2">
-              {[40, 65, 45, 80, 55, 90, 70, 60].map((h, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ height: 0 }}
-                  animate={{ height: `${h}%` }}
-                  transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
-                  className="flex-1 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-md"
-                />
-              ))}
-            </div>
-            <div className="flex justify-between text-[10px] text-gray-400 mt-2 px-2">
-              {["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago"].map(
-                (m) => (
-                  <span key={m}>{m}</span>
-                )
-              )}
-            </div>
+            <RevenueChart />
           </Card>
         </motion.div>
 

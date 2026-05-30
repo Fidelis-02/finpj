@@ -16,8 +16,8 @@ async function calcularDas(req, res) {
     const { faturamento, margem, regime, atividade } = req.body;
     const fat = taxUtils.parseNumber(faturamento);
     const marg = taxUtils.parseMargin(margem);
-    if (!Number.isFinite(fat) || fat <= 0) return res.status(400).json({ erro: 'Informe o faturamento.' });
-    if (!Number.isFinite(marg) || marg < 0 || marg > 1) return res.status(400).json({ erro: 'Informe uma margem entre 0% e 100%.' });
+    if (!Number.isFinite(fat) || fat <= 0) return res.status(422).json({ erro: 'Informe o faturamento.' });
+    if (!Number.isFinite(marg) || marg < 0 || marg > 1) return res.status(422).json({ erro: 'Informe uma margem entre 0% e 100%.' });
 
     let simulation;
     try {
@@ -27,13 +27,13 @@ async function calcularDas(req, res) {
             activity: inferActivity(atividade)
         }).simulation;
     } catch (error) {
-        return res.status(400).json({ erro: error.message });
+        return res.status(422).json({ erro: error.message });
     }
 
     const regimeKey = taxUtils.normalizeRegime(regime || 'simples') || 'simples';
     const selected = simulation.regimes.find((item) => item.key === regimeKey);
     if (!selected || selected.eligible === false) {
-        return res.status(400).json({ erro: selected?.reason || 'Regime nao aplicavel aos dados informados.' });
+        return res.status(422).json({ erro: selected?.reason || 'Regime nao aplicavel aos dados informados.' });
     }
 
     const hoje = new Date();
@@ -170,7 +170,18 @@ async function postDiagnostico(req, res) {
         }
     }, scoped);
 
-    const analise = await gerarAnaliseFinanceira(diagnostico);
+    let analise;
+    try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 15000));
+        analise = await Promise.race([gerarAnaliseFinanceira(diagnostico), timeout]);
+    } catch (error) {
+        if (error.message === 'TIMEOUT') {
+            return res.status(504).json({ erro: 'O tempo limite da análise de IA foi excedido. Tente novamente.', status: 504 });
+        }
+        console.warn('Erro na análise de IA:', error.message);
+        analise = { resumo: 'Análise indisponível no momento.', recomendacoes: [] };
+    }
+
     diagnostico.resultados = {
         ...diagnostico.resultados,
         resumo: analise.resumo,
@@ -187,7 +198,17 @@ async function gerarDasAutomatico(req, res) {
         return res.status(400).json({ erro: 'Usuario sem CNPJ cadastrado para buscar notas fiscais.' });
     }
 
-    const dadosNfe = await fetchNotasFiscais(usuario.cnpj);
+    let dadosNfe;
+    try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 20000));
+        dadosNfe = await Promise.race([fetchNotasFiscais(usuario.cnpj), timeout]);
+    } catch (error) {
+        if (error.message === 'TIMEOUT') {
+            return res.status(504).json({ erro: 'O tempo limite ao buscar notas fiscais foi excedido. A Sefaz pode estar instável.', status: 504 });
+        }
+        return res.status(502).json({ erro: 'Falha ao comunicar com os sistemas fiscais.', detalhes: error.message, status: 502 });
+    }
+
     const das = calcularDasAutomatico(dadosNfe.resumo.faturamento);
 
     if (!usuario.impostosEmitidos) usuario.impostosEmitidos = [];

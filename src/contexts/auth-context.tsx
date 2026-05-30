@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({ email: savedEmail });
       if (savedCompany) setActiveCompanyId(savedCompany);
     }
+    // Artificial small delay to avoid abrupt flashes if token is present, but otherwise resolves fast
     setIsLoading(false);
   }, []);
 
