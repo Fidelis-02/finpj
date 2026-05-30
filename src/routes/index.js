@@ -1,7 +1,9 @@
 const express = require('express');
 const multer = require('multer');
-const { obterUsuario, obterDiagnosticos, obterDiagnostico, deletarDiagnostico } = require('../services/database');
+const { obterUsuario, obterDiagnosticos, obterDiagnostico, deletarDiagnostico, conectarDB } = require('../services/database');
 const { getScopedCompanyRecord, filterRecordsByCompany, recordMatchesCompany } = require('../services/companyContext');
+const pluggyService = require('../services/pluggyService');
+const { verificarEEnviarAlertas } = require('../services/alertService');
 
 const router = express.Router();
 
@@ -189,6 +191,199 @@ router.put('/companies/:companyId', verificarTokenMiddleware, wrap(companyContro
 router.post('/pagamento', verificarTokenMiddleware, wrap(paymentController.processarPagamento));
 router.post('/stripe/create-checkout-session', verificarTokenMiddleware, wrap(paymentController.createCheckoutSession));
 router.post('/webhooks/stripe', wrap(paymentController.webhookStripe));
+
+// ── Pluggy Webhook ──
+router.post('/webhooks/pluggy', wrap(async (req, res) => {
+    try {
+        const event = req.body;
+        const { eventType, itemId, action } = pluggyService.parseWebhookEvent(event);
+        console.log(`[Pluggy Webhook] ${eventType} → item=${itemId} action=${action}`);
+
+        if (action === 'sync' && itemId) {
+            // Find the user who has this bank connected and sync transactions
+            const db = await conectarDB();
+            const usuario = await db.collection('usuarios').findOne({
+                'connectedBanks.bankId': itemId
+            });
+
+            if (usuario) {
+                const bank = (usuario.connectedBanks || []).find(b => b.bankId === itemId);
+                if (bank) {
+                    const { transactions } = await pluggyService.fetchFullItemData(itemId);
+                    if (transactions.length > 0) {
+                        await db.collection('usuarios').updateOne(
+                            { email: usuario.email, 'connectedBanks.bankId': itemId },
+                            {
+                                $set: {
+                                    'connectedBanks.$.transactions': transactions,
+                                    'connectedBanks.$.lastSync': new Date().toISOString(),
+                                    'connectedBanks.$.dataSource': 'pluggy',
+                                    updatedAt: new Date()
+                                }
+                            }
+                        );
+                        console.log(`[Pluggy Webhook] Synced ${transactions.length} transactions for ${usuario.email}`);
+
+                        // Check alerts after sync
+                        try {
+                            await verificarEEnviarAlertas(usuario);
+                        } catch (alertErr) {
+                            console.warn('[Pluggy Webhook] Alert check failed:', alertErr.message);
+                        }
+                    }
+                }
+            }
+        } else if (action === 'mark_error' && itemId) {
+            const db = await conectarDB();
+            await db.collection('usuarios').updateMany(
+                { 'connectedBanks.bankId': itemId },
+                {
+                    $set: {
+                        'connectedBanks.$.status': 'error',
+                        'connectedBanks.$.lastError': eventType,
+                        updatedAt: new Date()
+                    }
+                }
+            );
+        }
+
+        return res.json({ received: true, action });
+    } catch (e) {
+        console.error('[Pluggy Webhook] Error:', e.message);
+        return res.json({ received: true, error: e.message });
+    }
+}));
+
+// ── OCR Pipeline (process document from R2 or direct upload) ──
+router.post('/ocr/process', verificarTokenMiddleware, upload.single('arquivo'), wrap(async (req, res) => {
+    const { key, tipo = 'dre', contexto = '' } = req.body;
+    const { isStorageConfigured, uploadBuffer, downloadBuffer, deleteObject, sanitizeFilename } = require('../services/storageService');
+    const { analisarComGroq } = require('../services/aiService');
+    const { salvarAnalise } = require('../services/database');
+
+    let buffer;
+    let filename;
+    let contentType;
+    let r2Key = key;
+
+    if (req.file) {
+        // Direct upload: save to R2 first, then process
+        buffer = req.file.buffer;
+        filename = req.file.originalname;
+        contentType = req.file.mimetype;
+
+        if (isStorageConfigured()) {
+            const safeName = sanitizeFilename(filename);
+            r2Key = `ocr/${Date.now()}-${req.userEmail.replace(/[^a-zA-Z0-9]/g, '_')}-${safeName}`;
+            try {
+                await uploadBuffer(buffer, r2Key, contentType, { email: req.userEmail, tipo });
+                console.log(`[OCR] Uploaded to R2: ${r2Key} (${buffer.length} bytes)`);
+            } catch (uploadErr) {
+                console.warn('[OCR] R2 upload failed, processing in-memory:', uploadErr.message);
+            }
+        }
+    } else if (key && isStorageConfigured()) {
+        // Process from R2 key
+        try {
+            const download = await downloadBuffer(key);
+            buffer = download.buffer;
+            contentType = download.contentType;
+            filename = key.split('/').pop();
+        } catch (dlErr) {
+            return res.status(404).json({ erro: 'Documento não encontrado no R2.', detalhes: dlErr.message });
+        }
+    } else {
+        return res.status(400).json({ erro: 'Envie um arquivo ou forneça a key do R2.' });
+    }
+
+    // Extract text
+    let texto = '';
+    const nome = (filename || '').toLowerCase();
+    const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff'];
+    const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff'];
+    const isImage = IMAGE_MIMES.includes(contentType) || IMAGE_EXTS.some(ext => nome.endsWith(ext));
+
+    try {
+        if (isImage) {
+            const { createWorker } = require('tesseract.js');
+            const worker = await createWorker('por');
+            try {
+                const ret = await worker.recognize(buffer);
+                texto = ret.data.text || '';
+            } finally {
+                await worker.terminate();
+            }
+        } else if (contentType === 'application/pdf' || nome.endsWith('.pdf')) {
+            const pdfParse = require('pdf-parse');
+            const data = typeof pdfParse === 'function' ? await pdfParse(buffer) : await pdfParse.default(buffer);
+            texto = data.text || '';
+        } else if (nome.match(/\.(xlsx|xls|ods)$/)) {
+            const ExcelJS = require('exceljs');
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(buffer);
+            workbook.eachSheet((ws) => {
+                texto += `=== ${ws.name} ===\n`;
+                ws.eachRow((row) => {
+                    texto += row.values.filter(v => v != null).map(String).join(',') + '\n';
+                });
+            });
+        } else {
+            texto = buffer.toString('utf-8');
+        }
+    } catch (parseErr) {
+        return res.status(422).json({ erro: 'Falha ao extrair texto do documento.', detalhes: parseErr.message });
+    }
+
+    if (!texto.trim() || texto.trim().length < 50) {
+        return res.status(422).json({
+            erro: 'Texto extraído insuficiente.',
+            sugestao: 'Envie o documento como imagem (JPG/PNG) ou Excel/CSV.'
+        });
+    }
+
+    // Analyze with Groq
+    const analise = await analisarComGroq(tipo, texto.slice(0, 100000), contexto);
+
+    // Save analysis
+    try {
+        await salvarAnalise({
+            email: req.userEmail,
+            tipo,
+            nomeArquivo: filename,
+            tamanho: buffer.length,
+            data: new Date().toISOString(),
+            resultado: analise.dados,
+            fonte: analise.fonte,
+            confianca: analise.confianca,
+            pipeline: 'ocr-r2',
+            r2Key: r2Key || null
+        });
+    } catch (saveErr) {
+        console.warn('[OCR] Failed to save analysis:', saveErr.message);
+    }
+
+    // Cleanup R2 temp file
+    if (r2Key && r2Key !== key && isStorageConfigured()) {
+        deleteObject(r2Key).catch(() => {});
+    }
+
+    return res.json({
+        sucesso: true,
+        ...analise,
+        nomeArquivo: filename,
+        pipeline: 'ocr-r2',
+        tamanho: buffer.length
+    });
+}));
+
+// ── Alertas ──
+router.post('/alerts/check', verificarTokenMiddleware, wrap(async (req, res) => {
+    const usuario = await obterUsuario(req.userEmail);
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+
+    const result = await verificarEEnviarAlertas(usuario, { force: req.body?.force === true });
+    return res.json({ sucesso: true, ...result });
+}));
 
 router.get('/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));
 

@@ -1,5 +1,6 @@
 const { obterUsuario, salvarUsuario } = require('../services/database');
 const pluggyService = require('../services/pluggyService');
+const { verificarEEnviarAlertas } = require('../services/alertService');
 const { clearDashboardCache } = require('../services/dashboardService');
 const {
     getScopedCompanyRecord,
@@ -51,30 +52,36 @@ function gerarTransacoesMock(bankName) {
             descricao: tipo.desc,
             valor: tipo.tipo === 'entrada' ? valor : -valor,
             tipo: tipo.tipo,
-            categoria: tipo.cat
+            categoria: tipo.cat,
+            source: 'mock'
         };
     });
 }
 
+/**
+ * Carrega transações reais via Pluggy SDK.
+ * Só cai em mock se a Pluggy estiver completamente indisponível.
+ */
 async function carregarTransacoesPluggy(itemId, bankName) {
-    const accounts = await pluggyService.getAccounts(itemId);
-    if (!accounts.length) {
+    if (!pluggyService.isConfigured()) {
+        console.warn(`[Pluggy] SDK não configurado — usando dados mock para ${bankName}`);
         return gerarTransacoesMock(bankName);
     }
 
-    const transacoes = await pluggyService.getTransactions(accounts[0].id);
-    if (!transacoes.length) {
+    try {
+        const { transactions, summary } = await pluggyService.fetchFullItemData(itemId);
+
+        if (transactions.length > 0) {
+            console.log(`[Pluggy] Carregadas ${transactions.length} transações reais para ${bankName} (${summary.totalEntradas} entradas / ${summary.totalSaidas} saídas)`);
+            return transactions.map((tx) => ({ ...tx, source: 'pluggy' }));
+        }
+
+        console.warn(`[Pluggy] Nenhuma transação retornada para ${bankName}, usando mock`);
+        return gerarTransacoesMock(bankName);
+    } catch (error) {
+        console.error(`[Pluggy] Erro ao buscar transações para ${bankName}:`, error.message);
         return gerarTransacoesMock(bankName);
     }
-
-    return transacoes.map((transaction) => ({
-        id: transaction.id,
-        data: String(transaction.date || '').slice(0, 10),
-        descricao: transaction.description,
-        valor: transaction.amount,
-        tipo: transaction.amount > 0 ? 'entrada' : 'saida',
-        categoria: transaction.category || 'Outros'
-    }));
 }
 
 function flattenBankTransactions(banks = []) {
@@ -201,6 +208,8 @@ async function connectBank(req, res) {
 
     const bankName = item.connector?.name || 'Instituicao financeira';
     const transactions = await carregarTransacoesPluggy(itemId, bankName);
+    const isReal = transactions.length > 0 && transactions[0]?.source === 'pluggy';
+
     const bank = {
         bankId: itemId,
         bankName,
@@ -209,6 +218,7 @@ async function connectBank(req, res) {
         lastSync: new Date().toISOString(),
         status: item.status || 'connected',
         accountType: 'Conta PJ',
+        dataSource: isReal ? 'pluggy' : 'mock',
         transactions
     };
 
@@ -217,7 +227,14 @@ async function connectBank(req, res) {
     await salvarUsuario(usuario);
     clearDashboardCache();
 
-    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank });
+    // Verificar alertas após conexão de novo banco
+    try {
+        await verificarEEnviarAlertas(usuario);
+    } catch (alertErr) {
+        console.warn('[connectBank] Falha ao verificar alertas:', alertErr.message);
+    }
+
+    return res.json({ sucesso: true, companyId: scoped.snapshot?.id || null, bank, dataSource: bank.dataSource });
 }
 
 async function syncBank(req, res) {

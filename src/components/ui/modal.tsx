@@ -43,7 +43,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby={title ? "modal-title" : undefined}>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -62,6 +62,7 @@ export function Modal({
             transition={{ duration: 0.25, ease: "easeOut" }}
             className={cn(
               "relative z-10 w-full max-w-md mx-4 bg-white rounded-3xl shadow-2xl overflow-hidden",
+              "dark:bg-slate-900 dark:shadow-slate-950/50 dark:ring-1 dark:ring-white/10",
               className
             )}
           >
@@ -69,17 +70,17 @@ export function Modal({
             <div className="flex items-start justify-between p-6 pb-0">
               <div>
                 {subtitle && (
-                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1 dark:text-blue-400">
                     {subtitle}
                   </p>
                 )}
                 {title && (
-                  <h2 className="text-2xl font-bold text-primary">{title}</h2>
+                  <h2 id="modal-title" className="text-2xl font-bold text-primary dark:text-white">{title}</h2>
                 )}
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+                className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 dark:hover:bg-white/10 dark:text-slate-500 dark:hover:text-slate-300"
                 aria-label="Fechar"
               >
                 <X size={20} />
