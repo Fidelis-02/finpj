@@ -9,10 +9,17 @@
   --muted: #64748b;
 }
 
+.dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --primary: #0A1F44;
+  --muted: #94a3b8;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0A1F44;
-    --foreground: #ffffff;
+  :root:not(.light) {
+    --background: #020617;
+    --foreground: #f1f5f9;
   }
 }
 
@@ -47,6 +54,14 @@ html {
   background: #9ca3af;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
 /* Custom styles from existing project if needed */
 .glass {
   background: rgba(255, 255, 255, 0.05);
@@ -58,6 +73,11 @@ html {
 ::selection {
   background-color: rgba(59, 130, 246, 0.2);
   color: var(--primary);
+}
+
+.dark ::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #e2e8f0;
 }
 
 /* Focus visible */
