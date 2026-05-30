@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { maskCurrency, maskPercent, parseCurrencyInput } from "@/lib/utils";
+import { maskCurrency, maskPercent, maskCNPJ, parseCurrencyInput } from "@/lib/utils";
 
 interface RegisterModalProps {
   open: boolean;
@@ -105,7 +105,7 @@ export function RegisterModal({
   return (
     <Modal open={open} onClose={onClose} title="Crie sua conta PJ" subtitle="Cadastro">
       {error && (
-        <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">
+        <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400" role="alert">
           {error}
         </div>
       )}
@@ -115,18 +115,20 @@ export function RegisterModal({
           label="CNPJ"
           placeholder="00.000.000/0001-00"
           inputMode="numeric"
+          maxLength={18}
           value={cnpj}
-          onChange={(e) => handleCnpjChange(e.target.value)}
+          onChange={(e) => handleCnpjChange(maskCNPJ(e.target.value))}
+          autoComplete="off"
         />
 
         {companyName && (
-          <div className="bg-blue-50 border border-blue-100 text-blue-800 text-sm rounded-xl px-4 py-3">
+          <div className="bg-blue-50 border border-blue-100 text-blue-800 text-sm rounded-xl px-4 py-3 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-300">
             <span className="font-semibold">Empresa encontrada:</span>{" "}
             {companyName}
           </div>
         )}
         {lookupLoading && (
-          <p className="text-xs text-gray-400">Buscando dados do CNPJ...</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500">Buscando dados do CNPJ...</p>
         )}
 
         <Input
@@ -145,13 +147,14 @@ export function RegisterModal({
         />
 
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
             Plano
           </label>
           <select
             value={plan}
             onChange={(e) => setPlan(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 dark:bg-white/5 dark:border-white/10 dark:text-white"
+            aria-label="Selecionar plano"
           >
             <option value="starter">Starter – R$ 490/mês</option>
             <option value="growth">Growth – R$ 950/mês</option>
@@ -185,11 +188,11 @@ export function RegisterModal({
         </Button>
       </div>
 
-      <p className="text-center text-sm text-gray-500 mt-4">
+      <p className="text-center text-sm text-gray-500 mt-4 dark:text-slate-400">
         Já tem conta?{" "}
         <button
           onClick={onSwitchToLogin}
-          className="text-blue-600 font-semibold hover:underline"
+          className="text-blue-600 font-semibold hover:underline dark:text-blue-400"
         >
           Entrar
         </button>

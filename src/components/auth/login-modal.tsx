@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
+import { maskCNPJ } from "@/lib/utils";
 
 interface LoginModalProps {
   open: boolean;
@@ -70,14 +71,17 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
   return (
     <Modal open={open} onClose={onClose} title="Acesse sua conta" subtitle="Entrar">
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 dark:bg-white/5">
         <button
           onClick={() => setTab("email")}
           className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${
             tab === "email"
-              ? "bg-white text-primary shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-white text-primary shadow-sm dark:bg-white/10 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
           }`}
+          role="tab"
+          aria-selected={tab === "email"}
+          aria-label="Login por e-mail"
         >
           E-mail
         </button>
@@ -85,16 +89,19 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
           onClick={() => setTab("cnpj")}
           className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${
             tab === "cnpj"
-              ? "bg-white text-primary shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-white text-primary shadow-sm dark:bg-white/10 dark:text-white"
+              : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
           }`}
+          role="tab"
+          aria-selected={tab === "cnpj"}
+          aria-label="Login por CNPJ"
         >
           CNPJ
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">
+        <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400" role="alert">
           {error}
         </div>
       )}
@@ -144,8 +151,10 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
             label="CNPJ"
             placeholder="00.000.000/0001-00"
             inputMode="numeric"
+            maxLength={18}
             value={cnpj}
-            onChange={(e) => setCnpj(e.target.value)}
+            onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+            autoComplete="off"
           />
           <Input
             label="Senha"
@@ -165,10 +174,11 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
       )}
 
       {/* SSO */}
-      <div className="mt-6 pt-4 border-t border-gray-100">
+      <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/10">
         <a
           href="/api/auth/auth0/login"
-          className="flex items-center justify-center gap-3 w-full py-3 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          className="flex items-center justify-center gap-3 w-full py-3 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+          aria-label="Entrar com SSO via Auth0"
         >
           <span className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center text-white text-xs font-bold">
             A0
@@ -177,11 +187,11 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
         </a>
       </div>
 
-      <p className="text-center text-sm text-gray-500 mt-4">
+      <p className="text-center text-sm text-gray-500 mt-4 dark:text-slate-400">
         Não tem conta?{" "}
         <button
           onClick={onSwitchToRegister}
-          className="text-blue-600 font-semibold hover:underline"
+          className="text-blue-600 font-semibold hover:underline dark:text-blue-400"
         >
           Criar conta
         </button>
