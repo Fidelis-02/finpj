@@ -121,7 +121,7 @@ router.get('/cashflow-projection', verificarTokenMiddleware, wrap(financeControl
 router.get('/finance/valuation', verificarTokenMiddleware, wrap(financeController.getValuation));
 
 router.post('/calcular-das', verificarTokenMiddleware, wrap(taxController.calcularDas));
-router.post('/tax/simulate', verificarTokenMiddleware, wrap(taxController.simulate));
+router.post('/tax/simulate', wrap(taxController.simulate));
 router.post('/gerar-das-automatico', verificarTokenMiddleware, wrap(taxController.gerarDasAutomatico));
 router.get('/fiscal-calendar', verificarTokenMiddleware, wrap(taxController.fiscalCalendar));
 router.post('/diagnosticos', verificarTokenMiddleware, validateRequest(validateDiagnostic), wrap(taxController.postDiagnostico));

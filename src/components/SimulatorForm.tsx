@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Calculator, ArrowRight, ShieldCheck, Mail, CheckCircle2 } from "lucide-react";
+import { Calculator, ArrowRight, ShieldCheck, Mail, CheckCircle2, Building2, MapPin, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { maskCurrency, parseCurrencyInput, maskCNPJ, unmaskCNPJ, isValidCNPJ } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ interface SimulatorFormProps {
 export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [cnpj, setCnpj] = useState("");
-  const [companyName, setCompanyName] = useState("");
+  const [companyDetails, setCompanyDetails] = useState<any>(null);
   const [faturamento, setFaturamento] = useState("");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -46,23 +46,35 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
       if (!res.ok) throw new Error("CNPJ não encontrado");
       const data = await res.json();
       if (data.nome || data.razao_social) {
-        setCompanyName(data.nome || data.razao_social);
+        setCompanyDetails({
+          nome: data.nome || data.razao_social,
+          fantasia: data.fantasia || "Não informado",
+          cnae: data.cnae_descricao || data.cnae || "Não cadastrado",
+          municipio: `${data.municipio || "São Paulo"} - ${data.uf || "SP"}`,
+          porte: data.porte || "Demais Empresas / PME"
+        });
         toast.success(`Empresa localizada: ${data.nome || data.razao_social}`);
         setTimeout(() => {
           setStep(2);
           setIsLoading(false);
-        }, 600);
+        }, 1000);
       } else {
         throw new Error();
       }
     } catch (err) {
       console.warn("API lookup failed, fallback to mock company name", err);
-      setCompanyName("Empresa Exemplo LTDA");
+      setCompanyDetails({
+        nome: "Empresa Exemplo LTDA",
+        fantasia: "FinTech Soluções",
+        cnae: "6202-3/00 - Desenvolvimento de softwares",
+        municipio: "São Paulo - SP",
+        porte: "Microempresa (ME)"
+      });
       toast.success("Empresa localizada (Mock)");
       setTimeout(() => {
         setStep(2);
         setIsLoading(false);
-      }, 600);
+      }, 1000);
     }
   };
 
@@ -100,7 +112,7 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
     setTimeout(() => {
       setIsLoading(false);
       setStep(3);
-    }, 800);
+    }, 1200);
   };
 
   const handleStep3Submit = (e: React.FormEvent) => {
@@ -143,7 +155,7 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
 
   const handleReset = () => {
     setCnpj("");
-    setCompanyName("");
+    setCompanyDetails(null);
     setFaturamento("");
     setEmail("");
     setSimResult(null);
@@ -173,56 +185,60 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
               Descubra em segundos o regime tributário ideal e veja onde você está deixando dinheiro na mesa.
             </p>
           </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const digits = unmaskCNPJ(cnpj);
-              if (digits.length === 14) handleCnpjLookup(digits);
-            }}
-            className="space-y-4"
-            aria-busy={isLoading}
-            aria-label="Passo 1: CNPJ"
-          >
-            <div>
-              <label htmlFor="sim-cnpj" className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-2">
-                CNPJ da Empresa
-              </label>
-              <div className="relative">
-                <input
-                  id="sim-cnpj"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={18}
-                  placeholder="00.000.000/0001-00"
-                  value={cnpj}
-                  onChange={handleCnpjChange}
-                  onBlur={handleCnpjBlur}
-                  disabled={isLoading}
-                  required
-                  className="w-full bg-slate-900/60 border border-slate-700/80 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500 transition-all font-mono"
-                  aria-label="CNPJ da empresa"
-                  autoComplete="off"
-                />
-                {isLoading && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  </div>
-                )}
+          {isLoading ? (
+            <div className="py-12 flex flex-col items-center justify-center space-y-4" data-testid="enrichment-loader">
+              <div className="relative w-16 h-16">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75 animate-ping" />
+                <div className="relative w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                  <Building2 size={28} />
+                </div>
               </div>
+              <p className="text-sm font-semibold text-blue-400 animate-pulse">Analisando dados da sua empresa...</p>
             </div>
-            <button
-              type="submit"
-              disabled={isLoading || unmaskCNPJ(cnpj).length !== 14}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-              aria-label="Começar Simulação"
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const digits = unmaskCNPJ(cnpj);
+                if (digits.length === 14) handleCnpjLookup(digits);
+              }}
+              className="space-y-4"
+              aria-busy={isLoading}
+              aria-label="Passo 1: CNPJ"
             >
-              Começar Simulação
-              <ArrowRight size={16} />
-            </button>
-          </form>
+              <div>
+                <label htmlFor="sim-cnpj" className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-2">
+                  CNPJ da Empresa
+                </label>
+                <div className="relative">
+                  <input
+                    id="sim-cnpj"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={18}
+                    placeholder="00.000.000/0001-00"
+                    value={cnpj}
+                    onChange={handleCnpjChange}
+                    onBlur={handleCnpjBlur}
+                    disabled={isLoading}
+                    required
+                    className="w-full bg-slate-900/60 border border-slate-700/80 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500 transition-all font-mono"
+                    aria-label="CNPJ da empresa"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading || unmaskCNPJ(cnpj).length !== 14}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                aria-label="Começar Simulação"
+              >
+                Começar Simulação
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          )}
         </div>
       )}
 
@@ -230,11 +246,36 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
       {step === 2 && (
         <div className="space-y-4">
           <div className="text-left mb-6">
-            <h3 className="text-xl font-bold text-white mb-1">{companyName || "Sua Empresa"}</h3>
+            <h3 className="text-xl font-bold text-white mb-1" data-testid="company-enriched-title">
+              {companyDetails?.nome || "Sua Empresa"}
+            </h3>
             <p className="text-xs text-emerald-400 font-medium flex items-center gap-1">
-              <CheckCircle2 size={12} /> CNPJ validado com sucesso
+              <CheckCircle2 size={12} /> CNPJ enriquecido com sucesso
             </p>
           </div>
+
+          {/* Enriched Details Card */}
+          {companyDetails && (
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-2.5 text-xs text-slate-300 mb-4">
+              <div className="flex items-center gap-2">
+                <Building2 size={14} className="text-blue-400" />
+                <span><strong className="text-white">Fantasia:</strong> {companyDetails.fantasia}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Briefcase size={14} className="text-blue-400" />
+                <span><strong className="text-white">CNAE:</strong> {companyDetails.cnae}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin size={14} className="text-blue-400" />
+                <span><strong className="text-white">Localização:</strong> {companyDetails.municipio}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={14} className="text-blue-400" />
+                <span><strong className="text-white">Porte:</strong> {companyDetails.porte}</span>
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="py-12 flex flex-col items-center justify-center space-y-4" aria-label="Carregando análise de NCMs">
               <div className="relative w-16 h-16">
