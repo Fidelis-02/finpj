@@ -30,7 +30,8 @@
             errors.push('Informe uma margem entre 0% e 100%.');
         }
         if (!tables.activityTypes[activity]) {
-            errors.push('Esta versão do motor fiscal calcula apenas empresas de comércio.');
+            const supported = Object.values(tables.activityTypes).map((item) => item.label).join(', ');
+            errors.push(`Atividade não suportada pelo simulador. Atividades disponíveis: ${supported}.`);
         }
 
         return {
