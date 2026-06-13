@@ -10,7 +10,7 @@
     "build": "next build",
     "start:next": "next start",
     "start:api": "node server.js",
-    "test": "node --test --test-isolation=none tests/authTokens.test.js tests/onboardingService.test.js tests/oauthService.test.js",
+    "test": "node --test tests/authTokens.test.js tests/onboardingService.test.js tests/oauthService.test.js",
     "test:frontend": "jest"
   },
   "keywords": [
