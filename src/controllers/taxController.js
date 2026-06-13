@@ -142,6 +142,7 @@ async function postDiagnostico(req, res) {
 
     if (ncm && ncm.trim() !== '') {
         ncmInfo = verificarNcmMonofasico(ncm);
+    }
 
     if (analiseMonofasica && analiseMonofasica.produtosMonofasicos > 0) {
         creditosIdentificados += analiseMonofasica.creditosNãoAproveitados || 0;
