@@ -36,13 +36,6 @@ async function verificarTokenMiddleware(req, res, next) {
     const token = extrairToken(req);
     if (!token) return res.status(401).json({ erro: 'Token obrigatório.' });
 
-    // Master login bypass — allows testing all real endpoints without a DB session
-    if (token === 'master-token') {
-        req.userEmail = 'master@finpj.com.br';
-        req.auth = { email: 'master@finpj.com.br', role: 'master' };
-        return next();
-    }
-
     try {
         const payload = jwt.verify(token, JWT_SECRET);
         if (payload?.sid) {
