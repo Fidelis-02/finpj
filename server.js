@@ -160,11 +160,12 @@ app.use((err, req, res, next) => {
     }
 
     console.error('Erro não tratado:', err.message || err);
-    // Temporarily exposing real error for debugging Vercel issues
-    return res.status(err.status || 500).json({ 
-        erro: err.message || 'Erro interno do servidor.', 
-        stack: err.stack 
-    });
+    const status = err.status || 500;
+    const body = { erro: err.message || 'Erro interno do servidor.' };
+    if (process.env.NODE_ENV !== 'production') {
+        body.stack = err.stack;
+    }
+    return res.status(status).json(body);
 });
 
 if (require.main === module) {
