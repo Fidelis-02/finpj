@@ -1,6 +1,6 @@
 # 📊 ESTADO ATUAL DO SISTEMA - FINPJ
-**Data:** 2026-04-25  
-**Versão:** v1.0.0  
+**Data:** 2026-06-13  
+**Versão:** v1.1.0  
 **Ambiente:** Produção Vercel
 
 ## 🏗️ ARQUITETURA ATUAL
@@ -8,8 +8,8 @@
 ### **Backend (Node.js/Express)**
 - **Runtime:** Node.js 18+
 - **Framework:** Express.js
-- **Database:** JSON files (local storage)
-- **Autenticação:** JWT + bcrypt
+- **Database:** MongoDB Atlas (coleções: usuarios, diagnosticos, analises, sessions, onboarding_state, webhookEvents)
+- **Autenticação:** JWT + bcrypt + sessões revogáveis no Mongo
 - **Dependencies:** 425 pacotes npm
 
 ### **Frontend (Vanilla JavaScript)**
@@ -143,7 +143,6 @@ Upload → Processamento → Análise IA → Chat
 ## ⚠️ PONTOS DE ATENÇÃO
 
 ### **Críticos**
-- Database em arquivos JSON (escalabilidade limitada)
 - Sem cache implementado
 - Testes limitados a auth básica
 
