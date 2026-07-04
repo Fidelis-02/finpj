@@ -28,175 +28,598 @@
 </head>
 
 <body>
-  <header class="topbar">
-    <a class="brand" href="#home" aria-label="FinPJ">
-      <img src="/favicon.svg" alt="" width="30" height="30">
-      <span>FinPJ</span>
-    </a>
-    <nav class="nav is-hidden" data-main-nav aria-label="Navegação principal">
-      <a href="#recursos" data-nav-link>Recursos</a>
-      <a href="#planos" data-nav-link>Planos</a>
-      <a href="#dashboard" data-nav-link data-auth-only>Dashboard</a>
-    </nav>
-    <div class="topbar-actions">
-      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema" title="Alternar tema">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5" />
-          <path
-            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-        </svg>
-      </button>
-      <button class="btn btn-ghost" type="button" data-open-login>Entrar</button>
-      <button class="btn btn-dark" type="button" data-open-register>Começar agora</button>
-      <button class="btn btn-ghost is-hidden" type="button" data-logout>Sair</button>
+  <!-- ═══════════════════════════════════
+       HEADER — pill navbar fixo
+  ════════════════════════════════════ -->
+  <header class="lp-header" id="home">
+    <div class="lp-header-inner">
+      <a class="lp-brand" href="#home" aria-label="FinPJ">
+        <div class="lp-brand-mark">
+          <img src="/favicon.svg" alt="" width="18" height="18">
+        </div>
+        <span>FinPJ</span>
+      </a>
+
+      <nav class="lp-nav" aria-label="Navegação principal">
+        <a href="#problema" data-nav-link>Por que FinPJ</a>
+        <a href="#recursos" data-nav-link>Recursos</a>
+        <a href="#simulador" data-nav-link>Simulador</a>
+        <a href="#planos" data-nav-link>Planos</a>
+        <a href="#dashboard" data-nav-link data-auth-only style="display:none;">Dashboard</a>
+      </nav>
+
+      <div class="lp-header-actions">
+        <button class="btn btn-ghost" type="button" data-open-login>Entrar</button>
+        <button class="btn btn-dark" type="button" data-open-register>Testar grátis</button>
+        <button class="btn btn-ghost is-hidden" type="button" data-logout>Sair</button>
+        <button class="lp-hamburger" type="button" data-mobile-menu-toggle aria-label="Menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- Mobile menu -->
+  <div class="lp-mobile-menu" data-mobile-menu aria-hidden="true">
+    <nav>
+      <a href="#problema" data-nav-link>Por que FinPJ</a>
+      <a href="#recursos" data-nav-link>Recursos</a>
+      <a href="#simulador" data-nav-link>Simulador</a>
+      <a href="#planos" data-nav-link>Planos</a>
+    </nav>
+    <div class="lp-mobile-menu-actions">
+      <button class="btn btn-light" type="button" data-open-login>Entrar</button>
+      <button class="btn btn-dark" type="button" data-open-register>Testar grátis — sem cartão</button>
+    </div>
+  </div>
+
   <main>
     <div data-public-area>
-      <section id="home" class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Open Finance, impostos e caixa em um só lugar</p>
-          <h1>Controle financeiro PJ com menos ruído e mais previsibilidade.</h1>
-          <p class="hero-text">Conecte bancos, acompanhe movimentações e organize indicadores sem planilhas quebradas ou
-            etapas desnecessárias.</p>
-          <div class="hero-actions">
-            <button class="btn btn-dark btn-lg" type="button" data-open-register>Testar agora</button>
-            <button class="btn btn-light btn-lg" type="button" data-open-login>Já tenho conta</button>
-          </div>
-        </div>
-        <aside class="hero-card dashboard-preview" aria-label="Resumo financeiro">
-          <div class="preview-header">
-            <span>Visão executiva</span>
-            <strong>Hoje</strong>
-          </div>
-          <div class="metric-card hero-metric">
-            <span>Saldo projetado</span>
-            <strong data-hero-balance>R$ 42.800</strong>
-            <small>+18% nos próximos 30 dias</small>
-          </div>
-          <div>
-            <span style="display:block;color:var(--muted);font-size:0.92rem;margin-bottom:10px;">Evolução mensal</span>
-            <div class="hero-chart" aria-hidden="true">
-              <div class="bar"></div>
-              <div class="bar"></div>
-              <div class="bar"></div>
-              <div class="bar"></div>
-              <div class="bar"></div>
-              <div class="bar"></div>
+
+    <!-- ═══════════════════════════════════
+         HERO
+    ════════════════════════════════════ -->
+    <section class="lp-hero" aria-labelledby="hero-heading">
+      <div class="lp-wrap">
+        <div class="lp-hero-inner">
+
+          <!-- Copy -->
+          <div data-reveal>
+            <div class="lp-badge">
+              <span class="lp-badge-dot"></span>
+              Novo · Open Finance + IA Fiscal
+            </div>
+            <h1 class="lp-hero-h1" id="hero-heading">
+              Pare de pagar<br>
+              <span class="lp-gradient-text">imposto a mais.</span>
+            </h1>
+            <p class="lp-hero-sub">
+              FinPJ compara regimes tributários, conecta seus bancos via Open Finance e entrega um diagnóstico fiscal completo — em menos de 3 minutos.
+            </p>
+            <div class="lp-hero-cta">
+              <button class="btn btn-dark btn-lg" type="button" data-open-register>
+                Começar gratuitamente
+              </button>
+              <button class="btn btn-light btn-lg" type="button" data-open-login>
+                Já tenho conta
+              </button>
+            </div>
+            <!-- Social proof -->
+            <div class="lp-social-proof">
+              <div class="lp-social-proof-avatars">
+                <div class="lp-avatar" style="--c1:#6366f1;--c2:#8b5cf6;">FM</div>
+                <div class="lp-avatar" style="--c1:#0ea5e9;--c2:#06b6d4;">CA</div>
+                <div class="lp-avatar" style="--c1:#f59e0b;--c2:#ef4444;">RB</div>
+                <div class="lp-avatar" style="--c1:#10b981;--c2:#6366f1;">TL</div>
+              </div>
+              <div class="lp-social-proof-text">
+                <strong>+1.200 PMEs ativas</strong>
+                <span>economizando em média R$ 3,2k/mês</span>
+              </div>
+              <div class="lp-trust-pills">
+                <span class="lp-trust-pill">Sem cartão</span>
+                <span class="lp-trust-pill">Setup em 3 min</span>
+                <span class="lp-trust-pill">LGPD</span>
+              </div>
             </div>
           </div>
-          <div class="glass-list">
-            <div><span>Receitas</span><strong>R$ 128k</strong></div>
-            <div><span>Impostos</span><strong>R$ 9,4k</strong></div>
-            <div><span>Pendências</span><strong>3</strong></div>
-          </div>
-        </aside>
-      </section>
 
-      <section id="recursos" class="section">
-        <div class="section-heading">
-          <p class="eyebrow">Operação limpa</p>
-          <h2>O essencial para decidir rápido.</h2>
+          <!-- Product visual -->
+          <div class="lp-hero-visual" data-reveal>
+            <div class="lp-product-frame">
+              <!-- Browser chrome -->
+              <div class="lp-frame-topbar">
+                <div class="lp-frame-dots">
+                  <span></span><span></span><span></span>
+                </div>
+                <div class="lp-frame-url">app.finpj.com.br/dashboard</div>
+                <div style="width:52px;"></div>
+              </div>
+              <!-- App body -->
+              <div class="lp-frame-body">
+                <!-- Sidebar -->
+                <div class="lp-frame-sidebar">
+                  <div class="lp-frame-nav-item active">
+                    <div class="lp-frame-nav-dot"></div>Raio-X
+                  </div>
+                  <div class="lp-frame-nav-item">
+                    <div class="lp-frame-nav-dot"></div>Fiscal
+                  </div>
+                  <div class="lp-frame-nav-item">
+                    <div class="lp-frame-nav-dot"></div>DRE
+                  </div>
+                  <div class="lp-frame-nav-item">
+                    <div class="lp-frame-nav-dot"></div>Custos
+                  </div>
+                  <div class="lp-frame-nav-item">
+                    <div class="lp-frame-nav-dot"></div>Open Finance
+                  </div>
+                </div>
+                <!-- Main content -->
+                <div class="lp-frame-main">
+                  <div class="lp-frame-kpi-row">
+                    <div class="lp-kpi-card highlight">
+                      <span>Receita mensal</span>
+                      <strong>R$ 128k</strong>
+                      <small>↑ +12% vs mês ant.</small>
+                    </div>
+                    <div class="lp-kpi-card">
+                      <span>Economia fiscal</span>
+                      <strong>R$ 3,2k</strong>
+                      <small>↑ Regime otimizado</small>
+                    </div>
+                    <div class="lp-kpi-card">
+                      <span>Impostos</span>
+                      <strong>R$ 9,4k</strong>
+                      <small>Simples Nacional</small>
+                    </div>
+                    <div class="lp-kpi-card">
+                      <span>Margem</span>
+                      <strong>24,1%</strong>
+                      <small>↑ Meta: 22%</small>
+                    </div>
+                  </div>
+                  <div class="lp-mini-chart">
+                    <div class="lp-mini-chart-header">
+                      <span>Receita vs Impostos</span>
+                      <span class="lp-mini-chip">6 meses</span>
+                    </div>
+                    <svg class="lp-chart-svg" viewBox="0 0 280 60" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.4"/>
+                          <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <polygon class="lp-chart-area"
+                        points="0,50 46,42 93,45 140,30 186,24 233,18 280,12 280,60 0,60"/>
+                      <polyline class="lp-chart-line-main"
+                        points="0,50 46,42 93,45 140,30 186,24 233,18 280,12"/>
+                      <polyline class="lp-chart-line-secondary"
+                        points="0,55 46,52 93,50 140,46 186,44 233,42 280,40"/>
+                    </svg>
+                  </div>
+                  <div class="lp-frame-alert">
+                    <div class="lp-frame-alert-dot"></div>
+                    <span>Insight: <strong>Lucro Presumido</strong> reduziria R$ 1.200/mês</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Floating indicator -->
+            <div class="lp-floating-badge">
+              <div class="lp-floating-badge-dot"></div>
+              Diagnóstico fiscal ativo
+            </div>
+          </div>
+
         </div>
-        <div class="feature-grid">
-          <article class="card">
-            <h3>Diagnóstico Fiscal</h3>
-            <p>Descubra o regime tributário mais eficiente para sua empresa e reduza seus custos com impostos.</p>
-          </article>
-          <article class="card">
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════
+         LOGOS / PROVA SOCIAL
+    ════════════════════════════════════ -->
+    <div class="lp-logos" data-reveal>
+      <div class="lp-wrap">
+        <p>Usado por PMEs em todo o Brasil</p>
+        <div class="lp-logos-strip">
+          <div class="lp-logo-item">
+            <div class="lp-logo-icon"></div>Distribuidora Ômega
+          </div>
+          <div class="lp-logo-item">
+            <div class="lp-logo-icon"></div>Tech Soluções
+          </div>
+          <div class="lp-logo-item">
+            <div class="lp-logo-icon"></div>Grupo Meridiano
+          </div>
+          <div class="lp-logo-item">
+            <div class="lp-logo-icon"></div>Construtora Apex
+          </div>
+          <div class="lp-logo-item">
+            <div class="lp-logo-icon"></div>Comercial Norte
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         PROBLEMA → SOLUÇÃO
+    ════════════════════════════════════ -->
+    <section id="problema" class="lp-section" aria-labelledby="problema-heading" data-reveal>
+      <div class="lp-wrap">
+        <div class="lp-section-label">O problema</div>
+        <h2 class="lp-section-h2" id="problema-heading">
+          PMEs pagam mais imposto do que deveriam.
+        </h2>
+        <p class="lp-section-sub">
+          Sem as ferramentas certas, a maioria das empresas termina no regime errado, sem visibilidade sobre fluxo de caixa e tomando decisões no escuro.
+        </p>
+
+        <div class="lp-problem-strip">
+          <div class="lp-problem-item">
+            <div class="lp-problem-item-num">01</div>
+            <h3>Regime tributário errado</h3>
+            <p>68% das PMEs estão no Simples quando deveriam migrar para Lucro Presumido — e perdem até R$ 4k/mês sem saber.</p>
+          </div>
+          <div class="lp-problem-item">
+            <div class="lp-problem-item-num">02</div>
+            <h3>Sem visibilidade real</h3>
+            <p>Planilhas desatualizadas, extratos manuais e dados fragmentados tornam a gestão financeira uma tarefa exaustiva e imprecisa.</p>
+          </div>
+          <div class="lp-problem-item">
+            <div class="lp-problem-item-num">03</div>
+            <h3>Contador avulso não escala</h3>
+            <p>Consultorias pontuais custam caro e entregam relatórios estáticos que ficam obsoletos em semanas.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════
+         MÉTRICAS
+    ════════════════════════════════════ -->
+    <div class="lp-wrap" data-reveal>
+      <div class="lp-metrics">
+        <div class="lp-metric">
+          <strong class="lp-metric-num-cyan">R$ 3,2k</strong>
+          <span>economia média mensal por empresa</span>
+        </div>
+        <div class="lp-metric">
+          <strong>3 min</strong>
+          <span>para diagnóstico fiscal completo</span>
+        </div>
+        <div class="lp-metric">
+          <strong class="lp-metric-num-cyan">98%</strong>
+          <span>de precisão na comparação de regimes</span>
+        </div>
+        <div class="lp-metric">
+          <strong>3 regimes</strong>
+          <span>comparados simultaneamente</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         RECURSOS — BENTO GRID
+    ════════════════════════════════════ -->
+    <section id="recursos" class="lp-section" aria-labelledby="recursos-heading" data-reveal>
+      <div class="lp-wrap">
+        <div class="lp-section-label">Recursos</div>
+        <h2 class="lp-section-h2" id="recursos-heading">
+          Tudo que você precisa para decidir com clareza.
+        </h2>
+
+        <div class="lp-bento">
+          <!-- Card largo — Diagnóstico fiscal -->
+          <div class="lp-bento-card featured wide">
+            <div class="lp-bento-icon">🧮</div>
+            <h3>Motor Fiscal Inteligente</h3>
+            <p>Compara Simples Nacional, Lucro Presumido e Lucro Real com base no seu CNPJ real, faturamento e margem. O motor analisa o CNAE, aplica as tabelas vigentes e indica a economia potencial de cada regime.</p>
+            <ul class="lp-feature-list">
+              <li>Cálculo com tabelas tributárias 2026 atualizadas</li>
+              <li>Detecção automática de atividade pelo CNAE</li>
+              <li>Análise de NCM monofásico para PIS/COFINS</li>
+              <li>Alerta de enquadramento e risco de exclusão do Simples</li>
+            </ul>
+          </div>
+
+          <!-- Open Finance -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-icon">🏦</div>
             <h3>Open Finance</h3>
-            <p>Conecte contas bancárias com segurança e acompanhe seu fluxo de caixa em tempo real.</p>
-          </article>
-          <article class="card">
-            <h3>DRE e Indicadores</h3>
-            <p>Acompanhe a saúde financeira do seu negócio com métricas e painéis atualizados automaticamente.</p>
-          </article>
-        </div>
-      </section>
+            <p>Conecte contas bancárias via Open Finance para importar movimentações automaticamente — sem planilhas, sem exportação manual.</p>
+            <ul class="lp-feature-list">
+              <li>Conexão segura com os principais bancos</li>
+              <li>Sinais fiscais bancários automáticos</li>
+              <li>Fluxo de caixa em tempo real</li>
+            </ul>
+          </div>
 
-      <section id="simulador" class="section simulator-section">
-        <div class="section-heading">
-          <p class="eyebrow">Diagnóstico prévio</p>
-          <h2>Simule o regime mais eficiente antes de criar sua conta.</h2>
-          <p>Informe o CNPJ para buscar dados da empresa, depois adicione faturamento e margem para comparar Simples
-            Nacional, Lucro Presumido e Lucro Real.</p>
+          <!-- IA / DRE -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-icon">🤖</div>
+            <h3>Análise de DRE por IA</h3>
+            <p>Envie DRE, balanço ou extrato em PDF, Excel ou imagem. A IA extrai os dados, calcula EBITDA e margem de contribuição e gera um laudo gerencial.</p>
+            <ul class="lp-feature-list">
+              <li>Suporte a PDF, Excel, CSV e imagens</li>
+              <li>OCR para documentos digitalizados</li>
+              <li>Histórico de análises com comparativos</li>
+            </ul>
+          </div>
+
+          <!-- Dashboard -->
+          <div class="lp-bento-card tall">
+            <div class="lp-bento-icon">📊</div>
+            <h3>Dashboard Gerencial</h3>
+            <p>Indicadores atualizados em tempo real: receita, despesas, margem, impostos e alertas fiscais consolidados em um único painel.</p>
+            <ul class="lp-feature-list">
+              <li>KPIs financeiros automáticos</li>
+              <li>Tendências e comparativos mensais</li>
+              <li>Alertas acionáveis com prioridade</li>
+              <li>Suporte a múltiplas empresas</li>
+            </ul>
+          </div>
+
+          <!-- Diagnóstico -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-icon">🔍</div>
+            <h3>Diagnóstico Tributário</h3>
+            <p>Gere laudos fiscais completos com dados de CNPJ, faturamento e produtos. Identifique créditos a recuperar e oportunidades de economia imediata.</p>
+          </div>
+
+          <!-- Insights -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-icon">⚡</div>
+            <h3>Insights e Alertas</h3>
+            <p>Recomendações práticas geradas automaticamente com base nos seus dados — datas fiscais, riscos de caixa e oportunidades de redução de custos.</p>
+          </div>
         </div>
-        <div class="simulator-grid">
-          <form class="simulator-card" data-public-diagnostic-form>
-            <label>CNPJ
-              <input name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00" maxlength="18" data-cnpj-input>
-            </label>
-            <div class="company-info" data-company-info style="display:none;">
-              <div class="info-row"><span>Razão Social</span><strong data-company-nome></strong></div>
-              <div class="info-row"><span>CNAE Principal</span><strong data-company-cnae></strong></div>
-              <div class="info-row"><span>Atividade Detectada</span><strong data-company-atividade></strong></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════
+         SIMULADOR
+    ════════════════════════════════════ -->
+    <section id="simulador" class="lp-section" aria-labelledby="simulador-heading" data-reveal>
+      <div class="lp-wrap">
+        <div class="lp-section-label">Diagnóstico prévio</div>
+        <h2 class="lp-section-h2" id="simulador-heading">
+          Simule agora — sem criar conta.
+        </h2>
+        <p class="lp-section-sub">
+          Informe o CNPJ, faturamento e margem estimada para comparar os três regimes tributários instantaneamente.
+        </p>
+
+        <div class="lp-sim-grid">
+          <!-- Formulário -->
+          <form class="lp-sim-form" data-public-diagnostic-form>
+            <div class="lp-sim-form-grid">
+              <label>CNPJ
+                <input name="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00" maxlength="18" data-cnpj-input>
+              </label>
+              <div class="company-info" data-company-info style="display:none;">
+                <div class="info-row"><span>Razão Social</span><strong data-company-nome></strong></div>
+                <div class="info-row"><span>CNAE Principal</span><strong data-company-cnae></strong></div>
+                <div class="info-row"><span>Atividade</span><strong data-company-atividade></strong></div>
+              </div>
+              <input type="hidden" name="atividade" data-atividade-input value="comercio">
+              <label>Faturamento anual (R$)
+                <input name="faturamento" inputmode="decimal" placeholder="Ex.: 480.000,00" data-currency-input>
+              </label>
+              <label>Margem estimada (%)
+                <input name="margem" inputmode="decimal" placeholder="Ex.: 12" data-percent-input>
+              </label>
+              <label>Regime atual
+                <select name="regime_atual">
+                  <option value="">Não informado</option>
+                  <option value="simples">Simples Nacional</option>
+                  <option value="presumido">Lucro Presumido</option>
+                  <option value="real">Lucro Real</option>
+                </select>
+              </label>
             </div>
-            <input type="hidden" name="atividade" data-atividade-input value="comercio">
-
-            <label>Faturamento anual (R$)
-              <input name="faturamento" inputmode="decimal" placeholder="480.000,00" data-currency-input>
-            </label>
-
-            <label>Margem estimada (%)
-              <input name="margem" inputmode="decimal" placeholder="12" data-percent-input>
-            </label>
-
-            <label>Regime atual (opcional)
-              <select name="regime_atual">
-                <option value="">Não informado</option>
-                <option value="simples">Simples Nacional</option>
-                <option value="presumido">Lucro Presumido</option>
-                <option value="real">Lucro Real</option>
-              </select>
-            </label>
-
-            <button class="btn btn-dark full" type="submit" data-public-simulate-button disabled>Simular regime</button>
+            <button class="btn btn-dark" style="width:100%;min-height:50px;" type="submit" data-public-simulate-button disabled>
+              Comparar regimes →
+            </button>
           </form>
-          <article class="simulator-card simulator-result">
-            <span>Melhor opção estimada</span>
-            <strong data-public-best-regime>Aguardando CNPJ</strong>
-            <p data-public-diagnostic-copy>Preencha os dados para visualizar uma comparação tributária prévia.</p>
-            <small class="simulator-result-status" data-public-simulator-status>Digite o CNPJ para liberar a análise.</small>
-            <div class="simulator-readiness" data-public-simulator-checks>
+
+          <!-- Resultado -->
+          <div class="lp-sim-result">
+            <span class="lp-sim-result-label">Melhor regime estimado</span>
+            <div class="lp-sim-result-value" data-public-best-regime>Aguardando CNPJ</div>
+            <p data-public-diagnostic-copy style="font-size:0.88rem;color:var(--lp-muted);margin:0;">
+              Preencha os dados ao lado para ver a comparação tributária completa.
+            </p>
+            <small class="simulator-result-status" data-public-simulator-status>
+              Digite o CNPJ para liberar a análise.
+            </small>
+            <div class="simulator-readiness" data-public-simulator-checks style="display:flex;flex-wrap:wrap;gap:0.5rem;">
               <span data-check="cnpj">CNPJ pendente</span>
               <span data-check="premissas">Premissas pendentes</span>
               <span data-check="atividade">Atividade a detectar</span>
             </div>
             <div class="regime-comparison" data-regime-comparison></div>
-          </article>
+          </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="planos" class="section">
-        <div class="section-heading">
-          <p class="eyebrow">Planos</p>
-          <h2>Escolha o ritmo da sua empresa.</h2>
-        </div>
-        <div class="pricing-grid">
-          <article class="price-card" data-plan-card="starter">
-            <span>Starter</span>
-            <strong>R$ 490</strong>
-            <p>DRE gerencial e alertas de custos.</p>
-            <button class="btn btn-light" type="button" data-select-plan="starter">Selecionar</button>
-          </article>
-          <article class="price-card featured" data-plan-card="growth">
-            <span>Growth</span>
-            <strong>R$ 950</strong>
-            <p>Simulador fiscal e margem por produto.</p>
-            <button class="btn btn-dark" type="button" data-select-plan="growth">Selecionar</button>
-          </article>
-          <article class="price-card" data-plan-card="enterprise">
-            <span>Enterprise</span>
-            <strong>R$ 1.850</strong>
-            <p>Auditoria de créditos e valuation mensal.</p>
-            <button class="btn btn-light" type="button" data-select-plan="enterprise">Selecionar</button>
-          </article>
-        </div>
-      </section>
-    </div>
+    <!-- ═══════════════════════════════════
+         PLANOS
+    ════════════════════════════════════ -->
+    <section id="planos" class="lp-section" aria-labelledby="planos-heading" data-reveal>
+      <div class="lp-wrap">
+        <div class="lp-section-label">Planos</div>
+        <h2 class="lp-section-h2" id="planos-heading">
+          Simples, transparente, sem surpresas.
+        </h2>
+        <p class="lp-section-sub">
+          Comece sem cartão de crédito. Faça upgrade quando precisar.
+        </p>
 
+        <div class="lp-pricing-grid">
+          <!-- Starter -->
+          <div class="lp-plan-card" data-plan-card="starter">
+            <div class="lp-plan-name">Starter</div>
+            <div class="lp-plan-price">
+              <strong>R$ 490</strong>
+              <span>/mês</span>
+            </div>
+            <p class="lp-plan-desc">Para quem está começando a organizar a gestão financeira.</p>
+            <div class="lp-plan-divider"></div>
+            <ul class="lp-plan-features">
+              <li>Dashboard financeiro</li>
+              <li>DRE gerencial</li>
+              <li>Alertas de custo</li>
+              <li>1 empresa</li>
+              <li>Suporte por e-mail</li>
+            </ul>
+            <button class="btn btn-light" style="width:100%;" type="button" data-select-plan="starter">
+              Selecionar Starter
+            </button>
+          </div>
+
+          <!-- Growth (popular) -->
+          <div class="lp-plan-card popular" data-plan-card="growth">
+            <div class="lp-popular-badge">Mais popular</div>
+            <div class="lp-plan-name">Growth</div>
+            <div class="lp-plan-price">
+              <strong>R$ 950</strong>
+              <span>/mês</span>
+            </div>
+            <p class="lp-plan-desc">Para PMEs que precisam de controle fiscal e financeiro integrado.</p>
+            <div class="lp-plan-divider"></div>
+            <ul class="lp-plan-features">
+              <li>Tudo do Starter</li>
+              <li>Motor fiscal completo</li>
+              <li>Simulador de regimes</li>
+              <li>Open Finance</li>
+              <li>Análise de DRE por IA</li>
+              <li>Diagnósticos ilimitados</li>
+            </ul>
+            <button class="btn btn-dark" style="width:100%;" type="button" data-select-plan="growth">
+              Selecionar Growth
+            </button>
+          </div>
+
+          <!-- Enterprise -->
+          <div class="lp-plan-card" data-plan-card="enterprise">
+            <div class="lp-plan-name">Enterprise</div>
+            <div class="lp-plan-price">
+              <strong>R$ 1.850</strong>
+              <span>/mês</span>
+            </div>
+            <p class="lp-plan-desc">Para grupos empresariais com múltiplos CNPJs e auditoria avançada.</p>
+            <div class="lp-plan-divider"></div>
+            <ul class="lp-plan-features">
+              <li>Tudo do Growth</li>
+              <li>Múltiplas empresas</li>
+              <li>Créditos PIS/COFINS</li>
+              <li>Valuation mensal</li>
+              <li>Auditoria de créditos fiscais</li>
+              <li>Suporte dedicado</li>
+            </ul>
+            <button class="btn btn-light" style="width:100%;" type="button" data-select-plan="enterprise">
+              Selecionar Enterprise
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════
+         FAQ
+    ════════════════════════════════════ -->
+    <section class="lp-section" aria-labelledby="faq-heading" data-reveal>
+      <div class="lp-wrap">
+        <div class="lp-section-label">Dúvidas frequentes</div>
+        <h2 class="lp-section-h2" id="faq-heading">Respostas diretas.</h2>
+
+        <div class="lp-faq">
+          <details class="lp-faq-item">
+            <summary>O FinPJ substitui meu contador?</summary>
+            <p>Não — e não é esse o objetivo. O FinPJ é uma ferramenta de inteligência tributária que complementa o trabalho do seu contador com dados precisos e diagnósticos automáticos. Você chega às reuniões mais preparado e toma decisões mais rápidas.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>O Open Finance é seguro?</summary>
+            <p>Sim. A conexão bancária usa o protocolo Open Finance regulamentado pelo Banco Central, com autenticação direto no seu banco. O FinPJ nunca armazena suas credenciais bancárias.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>O simulador de regime funciona para qualquer CNPJ?</summary>
+            <p>O simulador suporta empresas de comércio com faturamento de até R$ 78M/ano. Serviços e indústria estão chegando em breve. Para CNPJs com atividades específicas, o CNAE é detectado automaticamente e aplicado nos cálculos.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>Posso cancelar a qualquer momento?</summary>
+            <p>Sim, sem multas ou fidelidade. Você cancela diretamente pelo painel a qualquer momento e mantém acesso até o fim do período pago.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>Quantas empresas posso cadastrar?</summary>
+            <p>No Starter e Growth você pode cadastrar 1 empresa. No Enterprise é ilimitado. É possível adicionar empresas extras individualmente a partir do plano Growth com valor proporcional.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════
+         CTA FINAL
+    ════════════════════════════════════ -->
+    <section class="lp-cta-section" data-reveal>
+      <div class="lp-wrap">
+        <div class="lp-cta-card">
+          <div class="lp-badge" style="margin:0 auto 1.5rem;">
+            <span class="lp-badge-dot"></span>
+            Comece agora
+          </div>
+          <h2>Quanto você está perdendo<br>todo mês?</h2>
+          <p>
+            Faça o diagnóstico gratuito em 3 minutos e descubra se sua empresa está no regime tributário ideal.
+          </p>
+          <div class="lp-cta-buttons">
+            <button class="btn btn-dark btn-lg" type="button" data-open-register>
+              Criar conta gratuita
+            </button>
+            <button class="btn btn-light btn-lg" type="button" data-open-login>
+              Já tenho conta →
+            </button>
+          </div>
+          <p class="lp-cta-note">Sem cartão de crédito · Cancelamento a qualquer momento · Dados protegidos (LGPD)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════
+         FOOTER
+    ════════════════════════════════════ -->
+    <footer class="lp-footer" aria-label="Rodapé">
+      <div class="lp-wrap">
+        <div class="lp-footer-inner">
+          <div class="lp-footer-brand">
+            <a class="lp-brand" href="#home" aria-label="FinPJ">
+              <div class="lp-brand-mark">
+                <img src="/favicon.svg" alt="" width="16" height="16">
+              </div>
+              <span>FinPJ</span>
+            </a>
+            <p>Inteligência tributária e financeira para PMEs brasileiras. Mais clareza, menos imposto.</p>
+          </div>
+          <nav class="lp-footer-links-grid" aria-label="Links do rodapé">
+            <a href="#problema">Por que FinPJ</a>
+            <a href="#recursos">Recursos</a>
+            <a href="#simulador">Simulador</a>
+            <a href="#planos">Planos</a>
+            <a href="mailto:suporte@finpj.com.br">Suporte</a>
+            <a href="#" data-open-login>Entrar</a>
+          </nav>
+        </div>
+        <div class="lp-footer-bottom">
+          <small>© 2026 FinPJ. Todos os direitos reservados.</small>
+          <small>Dados protegidos conforme LGPD · Open Finance regulamentado pelo Banco Central</small>
+        </div>
+      </div>
+    </footer>
+
+    </div><!-- /data-public-area -->
     <section id="dashboard" class="dashboard app-shell is-hidden" data-dashboard>
       <div class="app-layout dashboard-frame" data-dashboard-frame>
         <aside class="side-nav dashboard-sidebar" aria-label="Navegação do aplicativo" data-dashboard-sidebar>
@@ -531,6 +954,22 @@
                     placeholder="480000"></label>
                 <label>Margem estimada<input name="margem" data-diag-margem inputmode="decimal"
                     placeholder="0.12"></label>
+
+                <!-- Seção de produtos NCM (opcional) -->
+                <details class="ncm-section" data-ncm-section>
+                  <summary class="ncm-section-toggle">
+                    Produtos/NCM <span class="ncm-optional-label">(opcional)</span>
+                  </summary>
+                  <p class="form-note ncm-section-help">
+                    Informe produtos com seu NCM para identificar itens com <strong>tributação monofásica de PIS/COFINS</strong>
+                    (já recolhida na indústria). Produtos cadastrados aqui podem gerar créditos a recuperar ou compensar.
+                  </p>
+                  <div class="ncm-rows-container" data-ncm-rows>
+                    <!-- Linhas de produto são inseridas via JS -->
+                  </div>
+                  <button class="btn btn-light btn-sm" type="button" data-add-ncm-row>+ Adicionar produto</button>
+                </details>
+
                 <button class="btn btn-dark" type="submit">Gerar diagnóstico</button>
                 <div class="company-preview" data-diagnostic-result>Preencha os dados para gerar a análise fiscal.</div>
               </form>

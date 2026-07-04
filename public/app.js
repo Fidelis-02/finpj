@@ -2116,6 +2116,35 @@ function renderAnalysisResult(targetSelector, payload) {
     });
     target.appendChild(list);
   }
+
+  // Render NCM monofasico credits block if present
+  renderCreditosMonofasicos(target, dados);
+}
+
+// --- NCM monofasico credits block (renders inside renderAnalysisResult) ---
+function renderCreditosMonofasicos(target, dados) {
+  const creditos = Number(dados.creditosIdentificados) || 0;
+  if (!creditos && !dados.ncmAnalise && !(dados.alertasNcm && dados.alertasNcm.length)) return;
+  const card = document.createElement('div');
+  card.className = 'credit-highlight';
+  let html = `<strong class="credit-highlight-title">Créditos tributários identificados</strong>`;
+  if (creditos > 0) {
+    html += `<p class="credit-highlight-value">${escapeHtml(formatCurrency(creditos))}</p>`;
+  }
+  if (dados.ncmAnalise) {
+    const ncm = dados.ncmAnalise;
+    html += `<div class="ncm-info">`;
+    if (ncm.categoria) html += `<span class="ncm-info-item"><b>Categoria:</b> ${escapeHtml(ncm.categoria)}</span>`;
+    if (ncm.descricao) html += `<span class="ncm-info-item"><b>NCM:</b> ${escapeHtml(ncm.descricao)}</span>`;
+    if (ncm.isMonofasico) html += `<span class="badge badge-monofasico">Monof&aacute;sico</span>`;
+    html += `</div>`;
+  }
+  if (dados.alertasNcm && dados.alertasNcm.length) {
+    html += `<ul class="credit-highlight-alerts">${dados.alertasNcm.map((a) => `<li>${escapeHtml(a)}</li>`).join('')}</ul>`;
+  }
+  html += `<p class="credit-highlight-note">Este valor representa PIS/COFINS pago em duplicidade em produtos cuja tributa&ccedil;&atilde;o j&aacute; ocorreu na ind&uacute;stria (regime monof&aacute;sico). Pode ser objeto de recupera&ccedil;&atilde;o ou compensa&ccedil;&atilde;o junto &agrave; Receita Federal.</p>`;
+  card.innerHTML = html;
+  target.appendChild(card);
 }
 
 function renderAnalysesList() {
@@ -2170,11 +2199,13 @@ function renderDiagnosticsList() {
   }
   state.diagnostics.slice(0, 8).forEach((diagnostic) => {
     const result = diagnostic.resultados || {};
+    const creditos = Number(result.creditosIdentificados) || 0;
+    const creditosTxt = creditos > 0 ? ` \u2022 cr\u00e9ditos identificados: ${formatCurrency(creditos)}` : '';
     const item = document.createElement('div');
     item.className = 'insight-item diagnostic-item';
     item.innerHTML = `
       <strong>${escapeHtml(diagnostic.nome || 'Diagnóstico fiscal')}</strong>
-      <p>${escapeHtml(formatDate(diagnostic.data || diagnostic.createdAt))} - ${escapeHtml(result.regimeIdeal || 'Regime a definir')} - economia ${escapeHtml(formatCurrency(result.economia || 0))}</p>
+      <p>${escapeHtml(formatDate(diagnostic.data || diagnostic.createdAt))} - ${escapeHtml(result.regimeIdeal || 'Regime a definir')} - economia ${escapeHtml(formatCurrency(result.economia || 0))}${escapeHtml(creditosTxt)}</p>`
       <div class="inline-actions">
         <button class="btn btn-light btn-sm" type="button" data-use-diagnostic="${escapeHtml(diagnostic.id)}">Reusar dados</button>
         <button class="btn btn-ghost btn-sm" type="button" data-delete-diagnostic="${escapeHtml(diagnostic.id)}">Excluir</button>
@@ -3031,6 +3062,16 @@ async function submitDiagnostic(event) {
   const margem = parsePercentLike(form.elements.margem.value);
   if (!faturamento) throw new Error('Informe o faturamento anual.');
   if (!Number.isFinite(margem) || margem < 0) throw new Error('Informe uma margem entre 0% e 100%.');
+  // Collect filled NCM product rows
+  const produtoRows = Array.from(form.querySelectorAll('[data-ncm-row]'));
+  const produtos = produtoRows
+    .map((row) => ({
+      ncm: (row.querySelector('[data-produto-ncm]')?.value || '').trim(),
+      valor: parseMoneyLike(row.querySelector('[data-produto-valor]')?.value || ''),
+      quantidade: Number(row.querySelector('[data-produto-qtd]')?.value) || 1
+    }))
+    .filter((p) => p.ncm && p.valor > 0);
+
   const payload = {
     nome: form.elements.nome.value.trim(),
     cnpj: onlyDigits(form.elements.cnpj.value),
@@ -3041,6 +3082,7 @@ async function submitDiagnostic(event) {
     companyId: activeCompanyId() || undefined,
     ncm: form.elements.ncm ? form.elements.ncm.value.trim() : ''
   };
+  if (produtos.length > 0) payload.produtos = produtos;
   const button = $('button[type="submit"]', form);
   setLoading(button, true, 'Analisando...');
   try {
@@ -3368,9 +3410,34 @@ function bindEvents() {
     event.target.setAttribute('maxlength', '18');
   });
   $('[data-diagnostic-form]')?.addEventListener('submit', (event) => submitDiagnostic(event).catch((error) => showToast(error.message, 'error')));
+
+  // --- NCM product rows ---
+  function addNcmRow() {
+    const container = $('[data-ncm-rows]');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'ncm-row';
+    row.setAttribute('data-ncm-row', '');
+    row.innerHTML = `
+      <input type="text" class="ncm-input" data-produto-ncm placeholder="NCM (ex.: 2203.00.00)" maxlength="12" aria-label="NCM do produto">
+      <input type="text" class="ncm-input" data-produto-valor inputmode="decimal" placeholder="Valor (R$)" aria-label="Valor do produto">
+      <input type="number" class="ncm-input ncm-qtd" data-produto-qtd min="1" value="1" placeholder="Qtd" aria-label="Quantidade">
+      <button type="button" class="btn btn-ghost btn-sm ncm-remove-btn" data-remove-ncm-row aria-label="Remover produto">&times;</button>
+    `;
+    container.appendChild(row);
+  }
+
+  $('[data-add-ncm-row]')?.addEventListener('click', addNcmRow);
+
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-remove-ncm-row]')) {
+      event.target.closest('[data-ncm-row]')?.remove();
+    }
+  }, true);
+
+  $('[data-refresh-diagnostics]')?.addEventListener('click', () => loadDiagnostics().catch((error) => showToast(error.message, 'error')));
   $('[data-ai-upload-form]')?.addEventListener('submit', (event) => uploadAiDocument(event).catch((error) => showToast(error.message, 'error')));
   $('[data-refresh-analyses]')?.addEventListener('click', () => loadAnalyses().catch((error) => showToast(error.message, 'error')));
-  $('[data-refresh-diagnostics]')?.addEventListener('click', () => loadDiagnostics().catch((error) => showToast(error.message, 'error')));
   $('[data-public-diagnostic-form]')?.addEventListener('submit', runPublicDiagnostic);
   $('[data-dashboard-tax-form]')?.addEventListener('submit', runDashboardTaxSimulation);
   $('[data-dashboard-tax-form]')?.addEventListener('input', () => runDashboardTaxSimulation());
