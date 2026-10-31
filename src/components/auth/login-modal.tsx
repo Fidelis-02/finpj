@@ -15,32 +15,18 @@ interface LoginModalProps {
 
 export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProps) {
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { sendCode, loginWithCode } = useAuth();
+  const { loginWithPassword } = useAuth();
   const router = useRouter();
 
-  const handleSendCode = async () => {
+  const handleLogin = async () => {
     setLoading(true);
     setError("");
     try {
-      await sendCode(email);
-      setCodeSent(true);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      await loginWithCode(email, code);
+      await loginWithPassword(email, password);
       onClose();
       router.push("/dashboard");
     } catch (err: any) {
@@ -66,35 +52,22 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          {!codeSent ? (
-            <Button
-              className="w-full"
-              loading={loading}
-              onClick={handleSendCode}
-              disabled={!email}
-            >
-              Enviar código
-            </Button>
-          ) : (
-            <>
-              <Input
-                label="Código"
-                placeholder="000000"
-                inputMode="numeric"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-              />
-              <Button
-                variant="secondary"
-                className="w-full"
-                loading={loading}
-                onClick={handleVerifyCode}
-                disabled={!code}
-              >
-                Confirmar código
-              </Button>
-            </>
-          )}
+          <Input
+            label="Senha"
+            type="password"
+            placeholder="Sua senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+          <Button
+            className="w-full"
+            loading={loading}
+            onClick={handleLogin}
+            disabled={!email || !password}
+          >
+            Entrar
+          </Button>
       </div>
 
       {/* SSO */}
