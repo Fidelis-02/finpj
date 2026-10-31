@@ -45,6 +45,12 @@ interface AnalysisResponse {
   confianca?: { score: number; flags?: string[] };
   resultado?: string; // fallback for old format
   nomeArquivo?: string;
+  qualidade?: {
+    tipo: string;
+    extractedChars: number;
+    matchedTerms: string[];
+    sufficient: boolean;
+  };
 }
 
 function ConfidenceBadge({ score, flags }: { score: number; flags?: string[] }) {
@@ -338,6 +344,12 @@ export default function AIPage() {
                   <span className="text-xs text-gray-400">Fonte: {analysis.fonte}</span>
                 )}
               </div>
+              {analysis.qualidade && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                  <strong>Qualidade da extração:</strong> {analysis.qualidade.extractedChars.toLocaleString("pt-BR")} caracteres,
+                  {" "}{analysis.qualidade.matchedTerms.length} termos contábeis reconhecidos.
+                </div>
+              )}
 
               {/* Summary */}
               {dados.resumo && (

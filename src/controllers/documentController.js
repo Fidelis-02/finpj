@@ -4,6 +4,7 @@ const { getScopedCompanyRecord, attachCompanyScope, filterRecordsByCompany } = r
 
 const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 100000);
 const MAX_ANALYSES_RETURNED = Number(process.env.MAX_ANALYSES_RETURNED || 20);
+const DOCUMENT_TYPES = new Set(['dre', 'balanco', 'extrato']);
 
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff'];
@@ -190,15 +191,25 @@ function encontrarTrechoContabil(texto, tipo, limite) {
     return texto.slice(start, end);
 }
 
-function possuiTermosContabeisMinimos(texto, tipo) {
+function avaliarQualidadeDocumento(texto, tipo) {
     const n = normalizarBusca(texto);
-    const mapa = {
+    const termosPorTipo = {
         dre: ['receita', 'lucro', 'custo', 'despesa', 'resultado'],
         balanco: ['ativo', 'passivo', 'patrimonio', 'circulante'],
         extrato: ['saldo', 'data', 'historico', 'transacao', 'lancamento']
     };
-    const termos = mapa[tipo] || mapa.dre;
-    return termos.some(t => n.includes(t));
+    const termos = termosPorTipo[tipo] || [];
+    const encontrados = termos.filter((termo) => n.includes(termo));
+    return {
+        tipo,
+        extractedChars: texto.length,
+        matchedTerms: encontrados,
+        sufficient: encontrados.length >= 2
+    };
+}
+
+function validarTipoDocumento(tipo) {
+    return typeof tipo === 'string' && DOCUMENT_TYPES.has(tipo.trim().toLowerCase());
 }
 
 function extrairTextoExcel(buffer) {
@@ -230,7 +241,11 @@ function extrairTextoExcel(buffer) {
 
 async function uploadDocumento(req, res) {
     if (!req.file) return res.status(400).json({ erro: 'Nenhum arquivo enviado.' });
-    const { tipo = 'dre', contexto = '' } = req.body;
+    const tipo = String(req.body?.tipo || 'dre').trim().toLowerCase();
+    const contexto = req.body?.contexto || '';
+    if (!validarTipoDocumento(tipo)) {
+        return res.status(422).json({ erro: 'Tipo de documento inválido. Use dre, balanco ou extrato.' });
+    }
 
     let texto = '';
     const mime = req.file.mimetype;
@@ -267,8 +282,13 @@ async function uploadDocumento(req, res) {
         });
     }
 
-    if (!possuiTermosContabeisMinimos(textoLimpo, tipo)) {
-        console.warn(`[uploadDocumento] Documento ${req.file.originalname} não contém termos contábeis mínimos esperados para tipo=${tipo}`);
+    const qualidade = avaliarQualidadeDocumento(textoLimpo, tipo);
+    if (!qualidade.sufficient) {
+        return res.status(422).json({
+            erro: `O documento não apresenta estrutura mínima reconhecível para ${tipo}.`,
+            termosEncontrados: qualidade.matchedTerms,
+            sugestao: 'Confirme o tipo selecionado e envie um demonstrativo contábil legível.'
+        });
     }
 
     texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
@@ -293,13 +313,14 @@ async function uploadDocumento(req, res) {
             data: new Date().toISOString(),
             resultado: resultadoCompacto,
             fonte: analise.fonte,
-            confianca: analise.confianca
+            confianca: analise.confianca,
+            qualidade
         }, scoped));
     } catch (e) {
         console.warn('[uploadDocumento] Não foi possível salvar análise no histórico (DB offline?):', e.message);
     }
 
-    res.json({ sucesso: true, ...analise, dados: resultadoCompacto, nomeArquivo: req.file.originalname });
+    res.json({ sucesso: true, ...analise, dados: resultadoCompacto, qualidade, nomeArquivo: req.file.originalname });
 }
 
 async function getAnalises(req, res) {
@@ -385,9 +406,13 @@ async function getUploadUrl(req, res) {
 }
 
 async function processDocumentFromUrl(req, res) {
-    const { key, tipo = 'dre', contexto = '', filename, size, companyId } = req.body;
+    const { key, contexto = '', filename, size, companyId } = req.body;
+    const tipo = String(req.body?.tipo || 'dre').trim().toLowerCase();
     if (!key) {
         return res.status(400).json({ erro: 'Chave do arquivo é obrigatória.' });
+    }
+    if (!validarTipoDocumento(tipo)) {
+        return res.status(422).json({ erro: 'Tipo de documento inválido. Use dre, balanco ou extrato.' });
     }
     const { isStorageConfigured, generateDownloadUrl, deleteObject } = require('../services/storageService');
     if (!isStorageConfigured()) {
@@ -438,8 +463,14 @@ async function processDocumentFromUrl(req, res) {
                 acoes: ['converter_pdf_para_imagem', 'enviar_excel']
             });
         }
-        if (!possuiTermosContabeisMinimos(textoLimpo, tipo)) {
-            console.warn(`[processDocumentFromUrl] Documento ${filename || key} não contém termos contábeis mínimos esperados para tipo=${tipo}`);
+        const qualidade = avaliarQualidadeDocumento(textoLimpo, tipo);
+        if (!qualidade.sufficient) {
+            await deleteObject(key).catch(() => {});
+            return res.status(422).json({
+                erro: `O documento não apresenta estrutura mínima reconhecível para ${tipo}.`,
+                termosEncontrados: qualidade.matchedTerms,
+                sugestao: 'Confirme o tipo selecionado e envie um demonstrativo contábil legível.'
+            });
         }
         texto = encontrarTrechoContabil(textoLimpo, tipo, MAX_EXTRACTED_CHARS);
         console.log(`[processDocumentFromUrl] trechoEnviadoIA=${texto.length} caracteres`);
@@ -462,7 +493,8 @@ async function processDocumentFromUrl(req, res) {
                 data: new Date().toISOString(),
                 resultado: resultadoCompacto,
                 fonte: analise.fonte,
-                confianca: analise.confianca
+                confianca: analise.confianca,
+                qualidade
             }, scoped));
         } catch (dbErr) {
             console.warn('[processDocumentFromUrl] DB offline para salvarAnalise:', dbErr.message);
@@ -471,7 +503,7 @@ async function processDocumentFromUrl(req, res) {
         await deleteObject(key).catch((e) => {
             console.warn('[processDocumentFromUrl] Falha ao deletar arquivo temporário:', e.message);
         });
-        res.json({ sucesso: true, ...analise, dados: resultadoCompacto, nomeArquivo: filename || key });
+        res.json({ sucesso: true, ...analise, dados: resultadoCompacto, qualidade, nomeArquivo: filename || key });
     } catch (e) {
         console.error('[processDocumentFromUrl] Erro:', e.message);
         await deleteObject(key).catch(() => {});
