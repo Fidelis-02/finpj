@@ -24,12 +24,16 @@ export default function FinancialPage() {
         ]);
         const metrics = dashboardResponse.dashboard.metrics;
         const summary = summaryResponse.summary;
+        const projectionResponse = summary.banksCount > 0
+          ? await apiRequest<{ projecao?: Array<{ data: string; saldo: number }> }>("/api/cashflow-projection")
+          : { projecao: [] };
         setData({
           income: metrics.monthlyIncome || summary.monthlyIncome || 0,
           expenses: metrics.monthlyExpenses || summary.monthlyExpenses || 0,
           profit: metrics.profit || 0,
           hasBankConnected: summary.banksCount > 0,
           categories: summary.categories || [],
+          projection: projectionResponse.projecao || [],
         });
         setLoadError("");
       } catch (error) {
@@ -127,7 +131,13 @@ export default function FinancialPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-testid="financial-data-grid">
           <Card>
             <h3 className="font-bold text-primary mb-4">Fluxo de caixa projetado</h3>
-            <CashflowChart />
+            {data.projection.length > 0 ? (
+              <CashflowChart data={data.projection} />
+            ) : (
+              <div className="h-64 flex items-center justify-center text-sm text-gray-400">
+                Ainda não há dados suficientes para projetar o fluxo de caixa.
+              </div>
+            )}
           </Card>
           <Card>
             <h3 className="font-bold text-primary mb-4">Categorias em atenção</h3>

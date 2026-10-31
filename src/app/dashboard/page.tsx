@@ -17,13 +17,7 @@ import { apiRequest } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { ValuationCard } from "@/components/dashboard/valuation-card";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  Tooltip,
-} from "recharts";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
 
 interface KPIData {
   monthlyRevenue: number;
@@ -31,6 +25,13 @@ interface KPIData {
   profitMargin: number;
   taxSavings: number;
   alerts: number;
+}
+
+interface TrendData {
+  labels: string[];
+  revenue: number[];
+  taxes: number[];
+  empty: boolean;
 }
 
 interface KPIConfigItem {
@@ -91,28 +92,19 @@ const kpiConfig: KPIConfigItem[] = [
   },
 ];
 
-const mockChartData = [
-  { name: "Jan", receita: 4000, impostos: 2400 },
-  { name: "Fev", receita: 3000, impostos: 1398 },
-  { name: "Mar", receita: 2000, impostos: 9800 },
-  { name: "Abr", receita: 2780, impostos: 3908 },
-  { name: "Mai", receita: 1890, impostos: 4800 },
-  { name: "Jun", receita: 2390, impostos: 3800 },
-  { name: "Jul", receita: 3490, impostos: 4300 },
-  { name: "Ago", receita: 4000, impostos: 2400 },
-];
-
 export default function DashboardOverview() {
   const { activeCompany, user } = useAuth();
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [trend, setTrend] = useState<TrendData>({ labels: [], revenue: [], taxes: [], empty: true });
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await apiRequest<{ dashboard: { overview: { kpis: Record<string, { value: number }> } } }>("/api/dashboard");
+        const data = await apiRequest<{ dashboard: { overview: { kpis: Record<string, { value: number }>; trend: TrendData } } }>("/api/dashboard");
         const overview = data.dashboard.overview.kpis;
+        setTrend(data.dashboard.overview.trend);
         setKpis({
           monthlyRevenue: overview.monthlyRevenue?.value || 0,
           monthlyTaxes: overview.monthlyTaxes?.value || 0,
@@ -214,7 +206,7 @@ export default function DashboardOverview() {
                 </div>
                 <h2 className="text-xl font-bold mb-1">Seu DRE Mágico está rodando</h2>
                 <p className="text-blue-100 max-w-xl text-sm">
-                  Analisamos 452 transações recentes. Identificamos {formatCurrency(kpis.taxSavings)} em potencial de economia migrando para o Lucro Real, baseado nos seus gastos mapeados em nuvem e infraestrutura.
+                  Identificamos {formatCurrency(kpis.taxSavings)} em economia tributária estimada com base nos dados disponíveis para esta empresa.
                 </p>
               </div>
               <div className="shrink-0">
@@ -247,32 +239,13 @@ export default function DashboardOverview() {
                 </Button>
               </Link>
             </div>
-            <div className="w-full h-56 mt-4" data-testid="dashboard-chart">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={mockChartData}
-                  margin={{
-                    top: 10,
-                    right: 10,
-                    left: -20,
-                    bottom: 0,
-                  }}
-                >
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: "#9ca3af" }}
-                  />
-                  <Tooltip 
-                    cursor={{ fill: 'transparent' }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Bar dataKey="receita" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
-                  <Bar dataKey="impostos" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={12} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {trend.empty ? (
+              <div className="h-56 mt-4 flex items-center justify-center text-sm text-gray-400">
+                Conecte um banco ou informe o faturamento para gerar a tendência.
+              </div>
+            ) : (
+              <RevenueChart labels={trend.labels} revenue={trend.revenue} taxes={trend.taxes} />
+            )}
           </Card>
         </motion.div>
 

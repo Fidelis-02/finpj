@@ -33,7 +33,6 @@ interface AuthContextType {
   isLoading: boolean;
   companies: Company[];
   activeCompany: Company | null;
-  login: (credentials: { cnpj: string; password: string }) => Promise<void>;
   loginWithCode: (email: string, code: string) => Promise<void>;
   sendCode: (email: string) => Promise<void>;
   register: (data: Record<string, any>) => Promise<void>;
@@ -99,17 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ email });
   };
 
-  const login = async (credentials: { cnpj: string; password: string }) => {
-    const data = await apiRequest<{ token: string; email: string }>(
-      "/api/auth/login",
-      {
-        method: "POST",
-        body: JSON.stringify(credentials),
-      }
-    );
-    persistSession(data.token, data.email);
-  };
-
   const sendCode = async (email: string) => {
     await apiRequest("/api/auth/send-code", {
       method: "POST",
@@ -166,7 +154,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         companies,
         activeCompany,
-        login,
         loginWithCode,
         sendCode,
         register,

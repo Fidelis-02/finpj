@@ -52,9 +52,15 @@ describe("DashboardOverview Page", () => {
 
   test("renders KPIs, Chart and smart insights banner when taxSavings > 0", async () => {
     // Mock API response with positive taxSavings
-    (apiRequest as jest.Mock).mockResolvedValueOnce({
+    (apiRequest as jest.Mock).mockResolvedValue({
       dashboard: {
         overview: {
+          trend: {
+            labels: ["Jan"],
+            revenue: [150000],
+            taxes: [12000],
+            empty: false,
+          },
           kpis: {
             monthlyRevenue: { value: 150000 },
             monthlyTaxes: { value: 12000 },
@@ -89,9 +95,15 @@ describe("DashboardOverview Page", () => {
 
   test("hides smart insights banner when taxSavings = 0", async () => {
     // Mock API response with zero taxSavings
-    (apiRequest as jest.Mock).mockResolvedValueOnce({
+    (apiRequest as jest.Mock).mockResolvedValue({
       dashboard: {
         overview: {
+          trend: {
+            labels: [],
+            revenue: [],
+            taxes: [],
+            empty: true,
+          },
           kpis: {
             monthlyRevenue: { value: 150000 },
             monthlyTaxes: { value: 12000 },

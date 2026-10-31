@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { maskCNPJ } from "@/lib/utils";
 
 interface LoginModalProps {
   open: boolean;
@@ -15,16 +14,13 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProps) {
-  const [tab, setTab] = useState<"email" | "cnpj">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [password, setPassword] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { login, sendCode, loginWithCode } = useAuth();
+  const { sendCode, loginWithCode } = useAuth();
   const router = useRouter();
 
   const handleSendCode = async () => {
@@ -54,60 +50,15 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
     }
   };
 
-  const handleCnpjLogin = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      await login({ cnpj, password });
-      onClose();
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Modal open={open} onClose={onClose} title="Acesse sua conta" subtitle="Entrar">
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 dark:bg-white/5">
-        <button
-          onClick={() => setTab("email")}
-          className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${
-            tab === "email"
-              ? "bg-white text-primary shadow-sm dark:bg-white/10 dark:text-white"
-              : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
-          }`}
-          role="tab"
-          aria-selected={tab === "email"}
-          aria-label="Login por e-mail"
-        >
-          E-mail
-        </button>
-        <button
-          onClick={() => setTab("cnpj")}
-          className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${
-            tab === "cnpj"
-              ? "bg-white text-primary shadow-sm dark:bg-white/10 dark:text-white"
-              : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
-          }`}
-          role="tab"
-          aria-selected={tab === "cnpj"}
-          aria-label="Login por CNPJ"
-        >
-          CNPJ
-        </button>
-      </div>
-
       {error && (
         <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400" role="alert">
           {error}
         </div>
       )}
 
-      {tab === "email" ? (
-        <div className="space-y-4">
+      <div className="space-y-4">
           <Input
             label="E-mail"
             type="email"
@@ -144,34 +95,7 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
               </Button>
             </>
           )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <Input
-            label="CNPJ"
-            placeholder="00.000.000/0001-00"
-            inputMode="numeric"
-            maxLength={18}
-            value={cnpj}
-            onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
-            autoComplete="off"
-          />
-          <Input
-            label="Senha"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button
-            className="w-full"
-            loading={loading}
-            onClick={handleCnpjLogin}
-            disabled={!cnpj || !password}
-          >
-            Entrar com CNPJ
-          </Button>
-        </div>
-      )}
+      </div>
 
       {/* SSO */}
       <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/10">

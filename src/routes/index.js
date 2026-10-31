@@ -21,7 +21,6 @@ const { verificarTokenMiddleware } = require('../middlewares/auth');
 const { 
     validateRequest, 
     validateRegisterCNPJ, 
-    validateLoginCNPJ, 
     validateEmailCode,
     validateDiagnostic,
     validateProfile,
@@ -97,7 +96,6 @@ router.post('/auth/forgot-password', passwordRecoveryLimiter, wrap(accountAuthCo
 router.post('/auth/reset-password', passwordRecoveryLimiter, wrap(accountAuthController.resetPassword));
 router.post('/auth/send-code', otpLimiter, wrap(authController.sendCode));
 router.post('/auth/verify-code', wrap(authController.verifyCode));
-router.post('/auth/login-cnpj', validateRequest(validateLoginCNPJ), wrap(authController.loginCnpj));
 router.post('/auth/register-cnpj', validateRequest(validateRegisterCNPJ), wrap(authController.registerCnpj));
 router.post('/auth/logout', verificarTokenMiddleware, wrap(accountAuthController.logout));
 router.get('/auth/session', verificarTokenMiddleware, wrap(accountAuthController.getSession));

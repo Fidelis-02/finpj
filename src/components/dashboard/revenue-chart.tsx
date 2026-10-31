@@ -1,32 +1,24 @@
 "use client";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const mockData = [
-  { name: "Jan", receita: 4000, impostos: 2400 },
-  { name: "Fev", receita: 3000, impostos: 1398 },
-  { name: "Mar", receita: 2000, impostos: 9800 },
-  { name: "Abr", receita: 2780, impostos: 3908 },
-  { name: "Mai", receita: 1890, impostos: 4800 },
-  { name: "Jun", receita: 2390, impostos: 3800 },
-  { name: "Jul", receita: 3490, impostos: 4300 },
-  { name: "Ago", receita: 4000, impostos: 2400 },
-];
+interface RevenueChartProps {
+  labels: string[];
+  revenue: number[];
+  taxes: number[];
+}
 
-export function RevenueChart() {
+export function RevenueChart({ labels, revenue, taxes }: RevenueChartProps) {
+  const data = labels.map((name, index) => ({
+    name,
+    receita: revenue[index] || 0,
+    impostos: taxes[index] || 0,
+  }));
   return (
-    <div className="w-full h-56 mt-4">
+    <div className="w-full h-56 mt-4" data-testid="dashboard-chart">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={mockData}
+          data={data}
           margin={{
             top: 10,
             right: 10,
@@ -41,11 +33,6 @@ export function RevenueChart() {
             tickLine={false} 
             tick={{ fontSize: 12, fill: "#9ca3af" }}
             dy={10}
-          />
-          <YAxis 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fontSize: 12, fill: "#9ca3af" }}
           />
           <Tooltip 
             cursor={{ fill: 'transparent' }}
