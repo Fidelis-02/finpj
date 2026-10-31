@@ -1,14 +1,71 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Landmark } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/api";
+
+declare global {
+  interface Window {
+    PluggyConnect?: new (options: {
+      connectToken: string;
+      includeSandbox?: boolean;
+      onSuccess: (item: { item?: { id?: string }; itemId?: string; id?: string }) => void;
+      onError: (error: { message?: string }) => void;
+    }) => { init: () => void };
+  }
+}
 
 export default function OpenFinancePage() {
-  const handleConnect = () => {
-    // Pluggy Connect integration placeholder
-    if (typeof window !== "undefined" && (window as any).PluggyConnect) {
-      // Trigger Pluggy widget
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.pluggy.ai/pluggy-connect/v2.7.0/pluggy-connect.js";
+    script.async = true;
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, []);
+
+  const handleConnect = async () => {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const data = await apiRequest<{ token: string }>("/api/openfinance/token");
+      if (!data.token || !window.PluggyConnect) {
+        throw new Error("Não foi possível iniciar a conexão bancária.");
+      }
+      const pluggy = new window.PluggyConnect({
+        connectToken: data.token,
+        includeSandbox: process.env.NODE_ENV !== "production",
+        onSuccess: (itemData) => {
+          void (async () => {
+            try {
+              const itemId = itemData.item?.id || itemData.itemId || itemData.id;
+              if (!itemId) throw new Error("A Pluggy não retornou o identificador do banco.");
+              await apiRequest("/api/openfinance/connect", {
+                method: "POST",
+                body: JSON.stringify({ itemId }),
+              });
+              setMessage("Banco conectado com sucesso.");
+            } catch (connectError) {
+              setError(connectError instanceof Error ? connectError.message : "Falha ao salvar o banco conectado.");
+            }
+          })();
+        },
+        onError: (connectError) => {
+          setError(connectError.message || "Falha ao conectar o banco.");
+        },
+      });
+      pluggy.init();
+    } catch (connectError) {
+      setError(connectError instanceof Error ? connectError.message : "Falha ao iniciar conexão.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -29,10 +86,13 @@ export default function OpenFinancePage() {
             Conecte sua conta empresarial para importar movimentações e melhorar as análises financeiras.
           </p>
         </div>
-        <Button onClick={handleConnect}>
+        <Button onClick={handleConnect} disabled={loading}>
           <Landmark size={16} /> Conectar banco
         </Button>
       </Card>
+
+      {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {message && <div role="status" className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

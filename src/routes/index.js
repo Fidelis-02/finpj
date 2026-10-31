@@ -4,6 +4,7 @@ const { obterUsuario, obterDiagnosticos, obterDiagnostico, deletarDiagnostico, c
 const { getScopedCompanyRecord, filterRecordsByCompany, recordMatchesCompany } = require('../services/companyContext');
 const pluggyService = require('../services/pluggyService');
 const { verificarEEnviarAlertas } = require('../services/alertService');
+const newsService = require('../services/newsService');
 
 const router = express.Router();
 
@@ -106,6 +107,11 @@ router.get('/onboarding/state', verificarTokenMiddleware, wrap(accountAuthContro
 router.put('/onboarding/state', verificarTokenMiddleware, wrap(accountAuthController.saveOnboardingState));
 router.post('/onboarding/complete-step', verificarTokenMiddleware, wrap(accountAuthController.completeOnboardingStep));
 router.get('/dashboard', verificarTokenMiddleware, wrap(authController.getDashboard));
+router.get('/news', wrap(async (req, res) => {
+    const news = await newsService.getDailyNews({ force: req.query?.refresh === 'true' });
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=900');
+    return res.json({ sucesso: true, news });
+}));
 router.get('/cnpj', wrap(cnpjController.consultarCnpj));
 
 router.get('/openfinance/token', verificarTokenMiddleware, wrap(financeController.getPluggyToken));

@@ -11,7 +11,7 @@ jest.mock("@/lib/api", () => ({
 jest.mock("@/contexts/auth-context", () => ({
   useAuth: () => ({
     activeCompany: {
-      _id: "company-123",
+      id: "company-123",
       nome: "Empresa Teste",
       cnpj: "12.345.678/0001-95",
       regime: "simples",
@@ -53,12 +53,16 @@ describe("DashboardOverview Page", () => {
   test("renders KPIs, Chart and smart insights banner when taxSavings > 0", async () => {
     // Mock API response with positive taxSavings
     (apiRequest as jest.Mock).mockResolvedValueOnce({
-      kpis: {
-        monthlyRevenue: 150000,
-        monthlyTaxes: 12000,
-        profitMargin: 0.22,
-        taxSavings: 25000,
-        alerts: 2,
+      dashboard: {
+        overview: {
+          kpis: {
+            monthlyRevenue: { value: 150000 },
+            monthlyTaxes: { value: 12000 },
+            profitMargin: { value: 0.22 },
+            taxSavings: { value: 25000 },
+            alerts: { value: 2 },
+          },
+        },
       },
     });
 
@@ -86,12 +90,16 @@ describe("DashboardOverview Page", () => {
   test("hides smart insights banner when taxSavings = 0", async () => {
     // Mock API response with zero taxSavings
     (apiRequest as jest.Mock).mockResolvedValueOnce({
-      kpis: {
-        monthlyRevenue: 150000,
-        monthlyTaxes: 12000,
-        profitMargin: 0.22,
-        taxSavings: 0,
-        alerts: 2,
+      dashboard: {
+        overview: {
+          kpis: {
+            monthlyRevenue: { value: 150000 },
+            monthlyTaxes: { value: 12000 },
+            profitMargin: { value: 0.22 },
+            taxSavings: { value: 0 },
+            alerts: { value: 2 },
+          },
+        },
       },
     });
 

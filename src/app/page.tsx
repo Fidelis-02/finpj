@@ -19,7 +19,9 @@ import {
   UserCheck,
   HelpCircle,
   Activity,
-  Layers
+  Layers,
+  Newspaper,
+  ExternalLink
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
@@ -27,6 +29,27 @@ import { Footer } from "@/components/layout/footer";
 import { LoginModal } from "@/components/auth/login-modal";
 import { RegisterModal } from "@/components/auth/register-modal";
 import { SimulatorForm } from "@/components/SimulatorForm";
+import { apiRequest } from "@/lib/api";
+
+interface NewsItem {
+  title: string;
+  summary: string;
+  url: string;
+  source: string;
+  publishedAt: string | null;
+  category: string;
+  relevance: number;
+  opportunity: string;
+  cta: string;
+  href: string;
+}
+
+interface NewsResponse {
+  generatedAt: string;
+  items: NewsItem[];
+  sourceCount: number;
+  warnings: Array<{ source: string; message: string }>;
+}
 
 // Analytics Instrumentation Mock
 function trackEvent(name: string, data?: any) {
@@ -45,6 +68,9 @@ export default function Home() {
   const [simCnpj, setSimCnpj] = useState("");
   const [simFaturamento, setSimFaturamento] = useState("");
   const [showStickyCta, setShowStickyCta] = useState(false);
+  const [news, setNews] = useState<NewsResponse | null>(null);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsError, setNewsError] = useState("");
 
   // Real-time calculator states
   const [calcFat, setCalcFat] = useState(1200000); // 1.2M faturamento
@@ -68,6 +94,26 @@ export default function Home() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<{ news: NewsResponse }>("/api/news")
+      .then((response) => {
+        if (active) {
+          setNews(response.news);
+          setNewsError("");
+        }
+      })
+      .catch((error) => {
+        if (active) setNewsError(error instanceof Error ? error.message : "Notícias indisponíveis no momento.");
+      })
+      .finally(() => {
+        if (active) setNewsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const openLogin = () => {
@@ -288,6 +334,65 @@ export default function Home() {
             <span>Infraestrutura em nuvem segura</span>
           </div>
         </div>
+      </section>
+
+      <section id="noticias" className="py-16 container mx-auto px-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2 text-emerald-400 text-sm font-bold uppercase tracking-wider mb-2">
+              <Newspaper size={16} /> Radar de oportunidades
+            </div>
+            <h2 className="text-3xl font-extrabold text-white">Notícias que podem impactar sua empresa</h2>
+            <p className="text-slate-400 mt-2 max-w-2xl">
+              Acompanhe fatos recentes sobre tributos, juros, regulação e operações. Cada notícia vem com uma ação prática para transformar contexto em decisão.
+            </p>
+          </div>
+          {news?.generatedAt && (
+            <span className="text-xs text-slate-500">
+              Atualizado em {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(news.generatedAt))}
+            </span>
+          )}
+        </div>
+
+        {newsLoading && (
+          <div className="grid md:grid-cols-2 gap-5">
+            {[1, 2, 4, 5].map((item) => <div key={item} className="h-52 rounded-2xl bg-slate-900 animate-pulse border border-slate-800" />)}
+          </div>
+        )}
+        {!newsLoading && newsError && (
+          <div role="alert" className="rounded-2xl border border-amber-900/60 bg-amber-950/30 p-6 text-amber-200">
+            {newsError} Tente novamente mais tarde.
+          </div>
+        )}
+        {!newsLoading && !newsError && news && news.items.length === 0 && (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-slate-400">
+            Nenhuma notícia relevante foi encontrada nas últimas 48 horas.
+          </div>
+        )}
+        {!newsLoading && !newsError && news && news.items.length > 0 && (
+          <div className="grid md:grid-cols-2 gap-5">
+            {news.items.map((item) => (
+              <article key={item.url} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 hover:border-emerald-500/40 transition-colors">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">{item.category}</span>
+                  <span className="text-xs text-slate-500">{item.source}</span>
+                </div>
+                <h3 className="text-lg font-bold text-white leading-snug">{item.title}</h3>
+                <p className="text-sm text-slate-400 mt-3 line-clamp-3">{item.summary}</p>
+                <div className="mt-5 rounded-xl border border-blue-900/50 bg-blue-950/30 p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-blue-300">Oportunidade</p>
+                  <p className="text-sm text-blue-100 mt-1">{item.opportunity}</p>
+                  <a href={item.href} className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold text-emerald-400 hover:text-emerald-300">
+                    {item.cta} <ArrowRight size={14} />
+                  </a>
+                </div>
+                <a href={item.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 mt-4 text-xs text-slate-500 hover:text-slate-300">
+                  Ler fonte original <ExternalLink size={12} />
+                </a>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Product Screenshots Carousel Section */}

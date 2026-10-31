@@ -106,20 +106,24 @@ export default function DashboardOverview() {
   const { activeCompany, user } = useAuth();
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await apiRequest<{ kpis: KPIData }>("/api/dashboard/overview");
-        setKpis(data.kpis);
-      } catch {
+        const data = await apiRequest<{ dashboard: { overview: { kpis: Record<string, { value: number }> } } }>("/api/dashboard");
+        const overview = data.dashboard.overview.kpis;
         setKpis({
-          monthlyRevenue: 0,
-          monthlyTaxes: 0,
-          profitMargin: 0,
-          taxSavings: 0,
-          alerts: 0,
+          monthlyRevenue: overview.monthlyRevenue?.value || 0,
+          monthlyTaxes: overview.monthlyTaxes?.value || 0,
+          profitMargin: overview.profitMargin?.value || 0,
+          taxSavings: overview.taxSavings?.value || 0,
+          alerts: overview.alerts?.value || 0,
         });
+        setLoadError("");
+      } catch (error) {
+        console.error("Falha ao carregar dashboard:", error);
+        setLoadError("Não foi possível carregar os dados financeiros. Tente novamente.");
       } finally {
         setLoading(false);
       }
@@ -153,6 +157,12 @@ export default function DashboardOverview() {
             : `Bem-vindo, ${user?.email || "usuário"}`}
         </p>
       </div>
+
+      {loadError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
 
       {/* KPIs */}
       <motion.div
@@ -350,7 +360,7 @@ export default function DashboardOverview() {
 
       {/* Corporate Finance - DCF / EVA Valuation */}
       <div className="mt-6">
-        <ValuationCard companyId={activeCompany?._id} />
+        <ValuationCard companyId={activeCompany?.id} />
       </div>
     </div>
   );

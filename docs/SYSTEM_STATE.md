@@ -1,171 +1,120 @@
-# 📊 ESTADO ATUAL DO SISTEMA - FINPJ
-**Data:** 2026-06-13  
-**Versão:** v1.1.0  
-**Ambiente:** Produção Vercel
+# Estado atual do sistema - FinPJ
 
-## 🏗️ ARQUITETURA ATUAL
+**Atualizado em:** 2026-10-31
+**Branch de referência:** `evolution`
 
-### **Backend (Node.js/Express)**
-- **Runtime:** Node.js 18+
-- **Framework:** Express.js
-- **Database:** MongoDB Atlas (coleções: usuarios, diagnosticos, analises, sessions, onboarding_state, webhookEvents)
-- **Autenticação:** JWT + bcrypt + sessões revogáveis no Mongo
-- **Dependencies:** 425 pacotes npm
+## Resumo
 
-### **Frontend (Vanilla JavaScript)**
-- **Framework:** Vanilla JS (ES6+)
-- **Styling:** CSS3 com variáveis
-- **Build:** Estático (Vercel)
-- **Assets:** SVG, CSS, JS
+O FinPJ é uma plataforma de gestão financeira e tributária para PMEs brasileiras.
+A aplicação combina um frontend Next.js/React com uma API Express e persistência
+em MongoDB Atlas.
 
-### **Infraestrutura**
-- **Hosting:** Vercel (Serverless)
-- **Domain:** finpj.vercel.app
-- **CDN:** Vercel Edge Network
-- **SSL:** Automático
+## Arquitetura
 
-## 📡 ENDPOINTS MAPEADOS
+### Frontend principal
 
-### **Autenticação**
-- `POST /api/auth/register` - Registro de usuário
-- `POST /api/auth/login` - Login email/senha
-- `POST /api/auth/login-cnpj` - Login CNPJ/senha
-- `POST /api/auth/send-code` - Enviar código OTP
-- `POST /api/auth/verify-code` - Verificar código
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/session` - Sessão atual
+- Next.js 14 com App Router.
+- React 18 e TypeScript.
+- Tailwind CSS, Framer Motion, Recharts e componentes próprios.
+- Landing page e áreas autenticadas em [`src/app`](../src/app).
+- Dashboard, motor fiscal, DRE, custos, Open Finance, documentos e insights.
 
-### **OAuth**
-- `GET /api/auth/oauth/:provider/start` - Iniciar OAuth
-- `GET /api/auth/oauth/:provider/callback` - Callback OAuth
+### Backend
 
-### **Principal**
-- `GET /api/dashboard` - Dashboard principal
-- `GET /api/cnpj` - Consulta CNPJ
-- `POST /api/diagnosticos` - Criar diagnóstico
+- Node.js 18+ e Express.
+- Rotas centralizadas em [`src/routes/index.js`](../src/routes/index.js).
+- Controllers e serviços separados por domínio.
+- MongoDB Atlas com índices para usuários, diagnósticos, análises, sessões e onboarding.
+- JWT, bcrypt, sessões revogáveis, rate limiting, Helmet, CORS e validação de entrada.
 
-### **Documentos**
-- `POST /api/upload-documento` - Upload de arquivo
-- `POST /api/upload-url` - Gerar URL de upload
-- `POST /api/process-document` - Processar documento
-- `GET /api/analises` - Listar análises
-- `POST /api/chat` - Chat com IA
+### Integrações
 
-### **Perfil**
-- `GET /api/profile` - Perfil do usuário
-- `PUT /api/profile` - Atualizar perfil
-- `GET /api/notifications` - Notificações
-- `POST /api/notifications/read` - Marcar lidas
+- Pluggy para Open Finance.
+- Stripe para pagamentos e webhooks.
+- R2/S3 para armazenamento de documentos.
+- OCR com Tesseract.js.
+- Processamento de PDF e Excel.
+- IA/Groq para análise e chat.
+- OAuth Google/Auth0.
+- Radar público de notícias em [`src/services/newsService.js`](../src/services/newsService.js),
+  com NewsAPI opcional, RSS configurável como fallback, cache, deduplicação,
+  relevância por domínio e oportunidades.
 
-### **Empresas**
-- `GET /api/companies` - Listar empresas
-- `POST /api/companies` - Criar empresa
-- `PUT /api/companies/:id` - Atualizar empresa
+### Deploy
 
-### **Financeiro**
-- `POST /api/openfinance/connect` - Conectar banco
-- `POST /api/openfinance/sync/:id` - Sincronizar banco
-- `DELETE /api/openfinance/banks/:id` - Remover banco
-- `POST /api/conciliacao` - Conciliação
-- `GET /api/cashflow-projection` - Projeção fluxo
+- Vercel configurado em [`vercel.json`](../vercel.json).
+- `server.js` atende a API serverless.
+- Next.js atende as páginas.
+- A pasta [`public`](../public) contém a superfície Vanilla JS legada, mantida
+  por compatibilidade local e por fluxos existentes; o frontend principal é o Next.js.
 
-### **Tributário**
-- `POST /api/calcular-das` - Calcular DAS
-- `POST /api/gerar-das-automatico` - Gerar DAS automático
-- `GET /api/fiscal-calendar` - Calendário fiscal
+## Fluxos principais
 
-## 🔧 FLUXOS CRÍTICOS
+1. Cadastro/login → JWT e sessão persistida no MongoDB.
+2. Onboarding → perfil, empresa, plano e primeiro diagnóstico.
+3. Dashboard → KPIs, tendências, alertas e economia tributária estimada.
+4. Open Finance → token Pluggy, conexão bancária, sincronização e categorização.
+5. Documentos → upload, OCR/extração, análise e chat.
+6. Fiscal → simulação de regimes, DAS, calendário e diagnósticos.
+7. Pagamentos → checkout, success fee e webhook Stripe idempotente.
+8. Notícias → consulta RSS no backend, filtro das últimas 48 horas, classificação por
+   tema e recomendação de ação na homepage.
 
-### **1. Fluxo de Autenticação**
-```
-Usuário → Login → JWT → Dashboard
-├── Email + Senha
-├── CNPJ + Senha
-└── OAuth (Google/GitHub)
-```
+## Qualidade verificada
 
-### **2. Fluxo de Diagnóstico Fiscal**
-```
-Dashboard → Simulador → Cálculo Tributário → Salvar
-├── Input: CNPJ, Faturamento, Margem
-├── Processamento: Regimes disponíveis
-└── Output: Melhor regime + economia
-```
+Comandos disponíveis em [`package.json`](../package.json):
 
-### **3. Fluxo de Upload de Documentos**
-```
-Upload → Processamento → Análise IA → Chat
-├── Formatos: PDF, Excel, Imagem
-├── Processamento: OCR + Estruturação
-└── Resultado: Dados extraídos + Chat
-```
+- `npm test`: 11 testes backend aprovados na última validação.
+- `npm run test:frontend`: 9 testes Jest aprovados na última validação.
+- `npm run build`: build Next.js aprovado, incluindo type-check.
 
-## 📈 MÉTRICAS BASELINE
+O build emite apenas um aviso não bloqueante sobre a versão do banco de dados do
+Browserslist.
 
-### **Performance**
-- **Load Time:** ~2.3s (medido em production)
-- **TTI (Time to Interactive):** ~3.1s
-- **Bundle Size:** ~850KB (total)
-- **API Response:** ~150ms average
+## Estado do versionamento
 
-### **Qualidade**
-- **Test Coverage:** 11 testes unitários (authTokens, oauthService, onboarding)
-- **Code Quality:** Sem linting configurado
-- **Type Safety:** JavaScript puro
+- `.next/` é artefato gerado e deve permanecer ignorado pelo Git.
+- Logs, `.env`, dados locais, backups e arquivos de teste manual também não devem
+  ser versionados.
+- O frontend legado em `public/` não deve ser removido sem validar os fluxos locais
+  e os consumidores que ainda dependem dele.
 
-### **Segurança**
-- **JWT Secrets:** Configurados
-- **Headers:** Helmet implementado
-- **CORS:** Restrito
-- **Validation:** express-validator implementado
+## Melhorias priorizadas
 
-## 🗂️ ESTRUTURA DE ARQUIVOS
+### Concluídas nesta atualização
 
-### **Backend (src/)**
-```
-├── controllers/     # Lógica de negócio
-├── services/        # Serviços externos
-├── middlewares/     # Middlewares Express
-├── routes/          # Definição de rotas
-├── tax/            # Cálculos fiscais
-└── utils/          # Utilitários
-```
+- Alinhamento da documentação com a arquitetura real.
+- Remoção de artefatos `.next` do índice do Git, mantendo-os localmente ignorados.
+- Correção dos consumidores Next.js para usar `/api/dashboard`, `/api/companies` e
+  `/api/openfinance/summary`.
+- Integração da tela Next.js de Open Finance com o token e widget Pluggy existentes.
+- Estados de erro explícitos no dashboard, custos, empresas e Open Finance.
 
-### **Frontend (public/)**
-```
-├── js/             # Módulos JavaScript
-├── tax/            # Engine fiscal (frontend)
-├── style.css       # Estilos principais
-├── index.html      # SPA principal
-└── logo.svg        # Logo da aplicação
-```
+### Próximas
 
-## ⚠️ PONTOS DE ATENÇÃO
+1. Expandir testes de contratos da API e dos fluxos de Open Finance.
+2. Substituir dados mock por estados explícitos de “sem dados” ou “aguardando sincronização”.
+3. Adicionar observabilidade, métricas de sincronização e trilha de auditoria.
+4. Consolidar progressivamente a superfície Vanilla JS em Next.js.
+5. Melhorar conciliação, categorização e confirmação de transações.
+6. Validar acessibilidade, responsividade e permissões por empresa.
 
-### **Críticos**
-- Sem cache implementado
-- Testes limitados a auth básica
+## Radar de notícias
 
-### **Importantes**
-- Sem monitoring/error tracking
-- Build sem otimizações avançadas
-- TypeScript não implementado
+`GET /api/news` é público para atender a homepage. Quando `NEWSAPI_KEY` está
+configurada, o backend consulta a NewsAPI usando o header `X-Api-Key`; sem a
+chave, ou em caso de falha, consulta as fontes definidas em `NEWS_FEED_URLS`
+ou usa RSS público como padrão. O serviço aplica timeout, cache de 15 minutos,
+deduplicação e descarta itens fora da janela de 48 horas. As oportunidades são heurísticas determinísticas por tema; não são
+aconselhamento fiscal ou financeiro e devem ser confirmadas antes de qualquer decisão.
 
-### **Melhorias**
-- Sem CI/CD automatizado
-- Design system não padronizado
-- Acessibilidade básica
+Para produção, recomenda-se configurar fontes RSS oficiais e monitorar a taxa de
+falhas das fontes. O endpoint retorna avisos parciais quando uma fonte falha e
+responde erro apenas quando todas as fontes estão indisponíveis.
 
-## 🎯 OBJETIVOS DA EVOLUÇÃO
+## Referência de produto
 
-1. **Manter 100% funcionalidade** durante todo o processo
-2. **Zero downtime** em produção
-3. **Melhorar performance** para <2s load time
-4. **Aumentar test coverage** para >80%
-5. **Implementar TypeScript** gradualmente
-6. **Adicionar monitoring** completo
-7. **Melhorar UX/UI** significativamente
-
----
-**Status:** Baseline documentado ✅  
-**Próximo:** Criar ambiente de desenvolvimento isolado
+A auditoria foi orientada por padrões públicos comuns em Conta Azul, QuickBooks e
+Xero: onboarding guiado, conexão bancária com estado de sincronização, conciliação
+assistida, visão de fluxo de caixa, alertas acionáveis, permissões e rastreabilidade.
+Nenhum código proprietário ou mecanismo interno desses produtos foi utilizado.

@@ -84,12 +84,12 @@ export function Sidebar() {
           </span>
           {companies.length > 1 ? (
             <select
-              value={activeCompany?._id || ""}
+              value={activeCompany?.id || ""}
               onChange={(e) => setActiveCompany(e.target.value)}
               className="w-full text-sm font-bold text-primary bg-gray-50 border border-gray-200 rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate"
             >
               {companies.map((c) => (
-                <option key={c._id} value={c._id}>
+                <option key={c.id} value={c.id}>
                   {c.nome}
                 </option>
               ))}

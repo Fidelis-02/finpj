@@ -13,14 +13,29 @@ import Link from "next/link";
 export default function FinancialPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiRequest("/api/dashboard/financial");
-        setData(res);
-      } catch {
+        const [dashboardResponse, summaryResponse] = await Promise.all([
+          apiRequest<{ dashboard: { metrics: any } }>("/api/dashboard"),
+          apiRequest<{ summary: any }>("/api/openfinance/summary"),
+        ]);
+        const metrics = dashboardResponse.dashboard.metrics;
+        const summary = summaryResponse.summary;
+        setData({
+          income: metrics.monthlyIncome || summary.monthlyIncome || 0,
+          expenses: metrics.monthlyExpenses || summary.monthlyExpenses || 0,
+          profit: metrics.profit || 0,
+          hasBankConnected: summary.banksCount > 0,
+          categories: summary.categories || [],
+        });
+        setLoadError("");
+      } catch (error) {
+        console.error("Falha ao carregar dados financeiros:", error);
         setData(null);
+        setLoadError("Não foi possível carregar os dados financeiros. Tente novamente.");
       } finally {
         setLoading(false);
       }
@@ -43,6 +58,12 @@ export default function FinancialPage() {
         </nav>
         <h1 className="text-3xl font-bold text-primary">Monitor de custos</h1>
       </div>
+
+      {loadError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

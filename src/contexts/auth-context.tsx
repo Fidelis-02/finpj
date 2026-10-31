@@ -18,7 +18,7 @@ interface User {
 }
 
 interface Company {
-  _id: string;
+  id: string;
   nome: string;
   cnpj: string;
   regime?: string;
@@ -82,12 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshCompanies = useCallback(async () => {
     try {
-      const data = await apiRequest<{ empresas: Company[] }>(
-        "/api/user/companies"
+      const data = await apiRequest<{ companies: Company[] }>(
+        "/api/companies"
       );
-      setCompanies(data.empresas || []);
-    } catch {
-      // silently fail
+      setCompanies(data.companies || []);
+    } catch (error) {
+      console.error("Falha ao carregar empresas:", error);
+      setCompanies([]);
     }
   }, []);
 
@@ -154,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const activeCompany =
-    companies.find((c) => c._id === activeCompanyId) || companies[0] || null;
+    companies.find((c) => c.id === activeCompanyId) || companies[0] || null;
 
   return (
     <AuthContext.Provider
