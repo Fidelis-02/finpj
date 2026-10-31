@@ -54,7 +54,10 @@ em MongoDB Atlas.
 2. Onboarding → perfil, empresa, plano e primeiro diagnóstico.
 3. Dashboard → KPIs, tendências, alertas e economia tributária estimada.
 4. Open Finance → token Pluggy, conexão bancária, sincronização e categorização.
-5. Documentos → upload, OCR/extração, análise e chat.
+5. Documentos → upload, OCR/extração, validação do tipo e da qualidade mínima,
+   análise e chat. Arquivos incompatíveis ou sem pelo menos dois termos contábeis
+   reconhecidos são rejeitados explicitamente; a resposta inclui os termos
+   encontrados e a quantidade de caracteres extraídos.
 6. Fiscal → simulação de regimes, DAS, calendário e diagnósticos.
 7. Pagamentos → checkout, success fee e webhook Stripe idempotente.
 8. Notícias → consulta NewsAPI no backend, filtro das últimas 48 horas, classificação por
@@ -66,7 +69,7 @@ em MongoDB Atlas.
 
 Comandos disponíveis em [`package.json`](../package.json):
 
-- `npm test`: 11 testes backend aprovados na última validação.
+- `npm test`: 14 testes backend aprovados na última validação.
 - `npm run test:frontend`: 9 testes Jest aprovados na última validação.
 - `npm run build`: build Next.js aprovado, incluindo type-check.
 
