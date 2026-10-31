@@ -49,19 +49,19 @@ export function Sidebar() {
     <motion.aside
       animate={{ width: collapsed ? 72 : 260 }}
       transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="h-screen sticky top-0 bg-white border-r border-gray-100 flex flex-col overflow-hidden shrink-0"
+      className="h-screen sticky top-0 bg-[#10233f] border-r border-[#1e3a5f] flex flex-col overflow-hidden shrink-0 text-white"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-50">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
         <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">
+          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">
             F
           </div>
           {!collapsed && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-lg font-bold text-primary whitespace-nowrap"
+              className="text-lg font-bold text-white whitespace-nowrap"
             >
               FinPJ
             </motion.span>
@@ -69,7 +69,7 @@ export function Sidebar() {
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors shrink-0"
+          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors shrink-0"
           title={collapsed ? "Expandir" : "Colapsar"}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -78,7 +78,7 @@ export function Sidebar() {
 
       {/* Company card / Selector */}
       {!collapsed && (
-        <div className="px-4 py-3 border-b border-gray-50">
+        <div className="px-4 py-3 border-b border-white/10">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">
             Workspace
           </span>
@@ -86,7 +86,7 @@ export function Sidebar() {
             <select
               value={activeCompany?.id || ""}
               onChange={(e) => setActiveCompany(e.target.value)}
-              className="w-full text-sm font-bold text-primary bg-gray-50 border border-gray-200 rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate"
+              className="w-full text-sm font-bold text-white bg-white/10 border border-white/10 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 truncate"
             >
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -96,15 +96,15 @@ export function Sidebar() {
             </select>
           ) : activeCompany ? (
             <>
-              <p className="text-sm font-bold text-primary truncate mt-0.5">
+              <p className="text-sm font-bold text-white truncate mt-0.5">
                 {activeCompany.nome}
               </p>
-              <p className="text-[11px] text-gray-400 truncate">
+              <p className="text-[11px] text-slate-400 truncate">
                 {activeCompany.cnpj}
               </p>
             </>
           ) : (
-            <p className="text-sm text-gray-400 italic">Nenhuma empresa</p>
+            <p className="text-sm text-slate-400 italic">Nenhuma empresa</p>
           )}
         </div>
       )}
@@ -123,8 +123,8 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
               isActive(item.href)
-                ? "bg-blue-50 text-blue-700"
-                : "text-gray-600 hover:bg-gray-50 hover:text-primary"
+                ? "bg-blue-500 text-white shadow-sm"
+                : "text-slate-300 hover:bg-white/10 hover:text-white"
             )}
             title={item.label}
           >
@@ -146,8 +146,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                 isActive(item.href)
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-primary"
+                  ? "bg-blue-500 text-white shadow-sm"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               )}
               title={item.label}
             >
@@ -159,13 +159,13 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-gray-50 p-2 space-y-1">
+      <div className="border-t border-white/10 p-2 space-y-1">
         {!collapsed && user && (
           <div className="px-3 py-2">
-            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs font-bold mb-1">
+            <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-300 text-xs font-bold mb-1">
               {(user.email?.[0] || "U").toUpperCase()}
             </div>
-            <p className="text-xs font-semibold text-primary truncate">
+            <p className="text-xs font-semibold text-white truncate">
               {user.nome || user.email}
             </p>
             <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
@@ -174,7 +174,7 @@ export function Sidebar() {
 
         <Link
           href="/dashboard/settings"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-primary transition-all"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all"
           title="Configurações"
         >
           <Settings size={18} className="shrink-0" />
@@ -183,7 +183,7 @@ export function Sidebar() {
 
         <button
           onClick={logout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all w-full text-left"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-red-500/20 hover:text-red-200 transition-all w-full text-left"
           title="Sair"
         >
           <LogOut size={18} className="shrink-0" />

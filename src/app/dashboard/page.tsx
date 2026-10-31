@@ -34,6 +34,20 @@ interface TrendData {
   empty: boolean;
 }
 
+interface Insight {
+  severity: "warning" | "success" | "danger";
+  title: string;
+  text: string;
+  actionTab?: string;
+  actionLabel?: string;
+}
+
+interface DashboardOverview {
+  kpis: Record<string, { value: number }>;
+  trend: TrendData;
+  insights?: Insight[];
+}
+
 interface KPIConfigItem {
   key: keyof KPIData;
   label: string;
@@ -98,13 +112,15 @@ export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [trend, setTrend] = useState<TrendData>({ labels: [], revenue: [], taxes: [], empty: true });
+  const [insights, setInsights] = useState<Insight[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await apiRequest<{ dashboard: { overview: { kpis: Record<string, { value: number }>; trend: TrendData } } }>("/api/dashboard");
+        const data = await apiRequest<{ dashboard: { overview: DashboardOverview } }>("/api/dashboard");
         const overview = data.dashboard.overview.kpis;
         setTrend(data.dashboard.overview.trend);
+        setInsights(data.dashboard.overview.insights || []);
         setKpis({
           monthlyRevenue: overview.monthlyRevenue?.value || 0,
           monthlyTaxes: overview.monthlyTaxes?.value || 0,
@@ -137,17 +153,18 @@ export default function DashboardOverview() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <nav className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-          <span>FinPJ</span>
-          <span>/</span>
-          <span className="text-primary font-semibold">Visão geral</span>
-        </nav>
-        <h1 className="text-3xl font-bold text-primary">Visão financeira</h1>
-        <p className="text-gray-500 mt-1">
+        <p className="eyebrow mb-2">Visão geral</p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-[#10233f]">Visão financeira</h1>
+            <p className="text-slate-500 mt-1">
           {activeCompany
             ? `Dashboard de ${activeCompany.nome}`
             : `Bem-vindo, ${user?.email || "usuário"}`}
-        </p>
+            </p>
+          </div>
+          <span className="text-xs text-slate-400">Dados sincronizados pela API FinPJ</span>
+        </div>
       </div>
 
       {loadError && (
@@ -166,9 +183,9 @@ export default function DashboardOverview() {
         {kpiConfig.map((kpi) => (
           <motion.div key={kpi.key} variants={fadeUp}>
             <Link href={kpi.href}>
-              <Card hover className="group">
+              <Card hover className="group h-full">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                     {kpi.label}
                   </span>
                   <div
@@ -177,7 +194,7 @@ export default function DashboardOverview() {
                     <kpi.icon size={16} className={kpi.color} />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-primary" data-testid={`kpi-value-${kpi.key}`}>
+                <div className="text-2xl font-bold tracking-tight text-[#10233f]" data-testid={`kpi-value-${kpi.key}`}>
                   {loading ? (
                     <div className="h-8 bg-gray-100 rounded-lg animate-pulse w-24" />
                   ) : (
@@ -196,7 +213,7 @@ export default function DashboardOverview() {
       {/* Smart Insights Banner */}
       {!loading && kpis && kpis.taxSavings > 0 && (
         <motion.div variants={fadeUp} initial="hidden" animate="show" data-testid="smart-insights-banner">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="bg-[#10233f] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -271,26 +288,17 @@ export default function DashboardOverview() {
               </Link>
             </div>
             <div className="space-y-3">
-              {[
-                {
-                  text: "Imposto sobre NF pode estar acima da média do setor",
-                  type: "warning",
-                },
-                {
-                  text: "Margem operacional subiu 2.3% no último mês",
-                  type: "success",
-                },
-                {
-                  text: "3 pendências fiscais vencem nos próximos 7 dias",
-                  type: "danger",
-                },
-              ].map((item, i) => (
+              {insights.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 p-5 text-sm text-slate-500">
+                  Nenhum insight disponível com os dados atuais.
+                </div>
+              ) : insights.map((item, i) => (
                 <div
                   key={i}
                   className={`flex items-start gap-3 p-3 rounded-xl border ${
-                    item.type === "warning"
+                    item.severity === "warning"
                       ? "bg-amber-50/50 border-amber-100"
-                      : item.type === "success"
+                      : item.severity === "success"
                       ? "bg-green-50/50 border-green-100"
                       : "bg-red-50/50 border-red-100"
                   }`}
@@ -298,14 +306,17 @@ export default function DashboardOverview() {
                   <AlertTriangle
                     size={16}
                     className={`mt-0.5 shrink-0 ${
-                      item.type === "warning"
+                      item.severity === "warning"
                         ? "text-amber-500"
-                        : item.type === "success"
+                        : item.severity === "success"
                         ? "text-green-500"
                         : "text-red-500"
                     }`}
                   />
-                  <span className="text-sm text-gray-700">{item.text}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">{item.title}</p>
+                    <span className="text-sm text-gray-600">{item.text}</span>
+                  </div>
                 </div>
               ))}
             </div>

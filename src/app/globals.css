@@ -3,10 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0A1F44;
-  --primary: #0A1F44;
+  --background: #f6f8fb;
+  --foreground: #10233f;
+  --primary: #10233f;
   --muted: #64748b;
+  --line: #e6ebf2;
+  --surface: #ffffff;
 }
 
 .dark {
@@ -29,6 +31,16 @@ body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .app-surface {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(15,35,65,0.04)];
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400;
+  }
 }
 
 /* Smooth scrolling */

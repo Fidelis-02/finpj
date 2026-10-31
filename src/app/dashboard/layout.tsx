@@ -21,10 +21,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (!isLoading && !isAuthenticated) return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50">
+    <div className="flex min-h-screen bg-[#f6f8fb]">
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">
-        <div className="max-w-7xl mx-auto p-6 lg:p-8">
+        <div className="max-w-[1440px] mx-auto p-5 sm:p-6 lg:p-10">
           {isLoading ? <DashboardSkeleton /> : children}
         </div>
       </main>
