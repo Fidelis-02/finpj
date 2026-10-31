@@ -23,32 +23,6 @@ function normalizeCompanyId(value) {
     return String(value || '').trim().toLowerCase();
 }
 
-function generateBankReports(seed = 'empresa') {
-    const today = new Date();
-    const labels = [
-        'Conciliacao de extrato',
-        'Revisao de lancamentos',
-        'Atualizacao de saldo',
-        'Alerta de fluxo de caixa',
-        'Analise de recebimentos',
-        'Diferenca bancaria detectada'
-    ];
-
-    return Array.from({ length: 6 }, (_, index) => {
-        const date = new Date(today);
-        date.setDate(today.getDate() - index);
-        const amount = Math.round((index + 3) * 3800);
-        return {
-            id: `${seed}-${date.toISOString().slice(0, 10)}-${index}`,
-            date: date.toISOString().slice(0, 10),
-            title: labels[index % labels.length],
-            detail: `Atualizacao diaria para ${seed}.`,
-            amount,
-            status: index % 2 === 0 ? 'Concluido' : 'Atencao'
-        };
-    });
-}
-
 function companySnapshot(source = {}, fallback = {}) {
     const cnpj = onlyDigits(source.cnpj || fallback.cnpj);
     const email = source.email || fallback.email || '';
@@ -297,7 +271,7 @@ function buildDashboard(usuario = {}, options = {}) {
         name: item.fantasia || item.nome || item.email || 'Empresa sem nome',
         active: item.id === company.id
     }));
-    const reports = company.bankReports.length ? company.bankReports : generateBankReports(company.cnpj || company.email || company.id);
+    const reports = company.bankReports;
     const transactions = getTransactions(company);
     const monthlyIncome = sumTransactions(transactions, (item) => Number(item.valor ?? item.amount) > 0 || item.tipo === 'entrada');
     const monthlyExpenses = sumTransactions(transactions, (item) => Number(item.valor ?? item.amount) < 0 || item.tipo === 'saida');
@@ -425,7 +399,6 @@ function clearDashboardCache() {
 module.exports = {
     buildDashboard,
     clearDashboardCache,
-    generateBankReports,
     DASHBOARD_CACHE_TTL_MS,
     getCompanies,
     resolveCompany

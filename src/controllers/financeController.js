@@ -358,8 +358,8 @@ async function cashflowProjection(req, res) {
     for (let i = 1; i <= 90; i += 1) {
         const data = new Date();
         data.setDate(data.getDate() + i);
-        const entrada = mediaDiariaEntrada * (0.8 + Math.random() * 0.4);
-        const saida = mediaDiariaSaida * (0.7 + Math.random() * 0.6);
+        const entrada = mediaDiariaEntrada;
+        const saida = mediaDiariaSaida;
         saldo += entrada - saida;
         if (i % 7 === 0 || i <= 7) {
             projecao.push({

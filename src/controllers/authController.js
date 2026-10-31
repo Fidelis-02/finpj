@@ -22,32 +22,6 @@ function gerarCodigoVerificacao() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function gerarRelatorioBancario(email) {
-    const hoje = new Date();
-    const tipos = [
-        'Conciliação de extrato',
-        'Revisão de lançamentos',
-        'Atualização de saldo',
-        'Alerta de fluxo de caixa',
-        'Análise de recebimentos',
-        'Detectamos uma diferença bancária'
-    ];
-
-    return Array.from({ length: 6 }, (_, i) => {
-        const data = new Date(hoje);
-        data.setDate(hoje.getDate() - i);
-        const valor = Math.round((Math.random() * 18 + 3) * 1000);
-        return {
-            id: `${email}-${data.toISOString().slice(0, 10)}-${i}`,
-            date: data.toISOString().slice(0, 10),
-            title: tipos[i % tipos.length],
-            detail: `Atualização diária para a empresa ${email.split('@')[0]} com informações de extrato e movimentações bancárias.`,
-            amount: valor,
-            status: i % 2 === 0 ? 'Concluído' : 'Atenção'
-        };
-    });
-}
-
 function getBankTransactions(usuario) {
     return (usuario.connectedBanks || []).flatMap((bank) => (bank.transactions || []).map((transaction) => ({
         ...transaction,
@@ -162,7 +136,7 @@ async function sendCode(req, res) {
         usuario = {
             email: emailNorm,
             createdAt: new Date().toISOString(),
-            bankReports: gerarRelatorioBancario(emailNorm)
+            bankReports: []
         };
     }
 
@@ -294,7 +268,7 @@ async function registerCnpj(req, res) {
         statusPagamento: 'pendente',
         createdAt: now,
         updatedAt: now,
-        bankReports: gerarRelatorioBancario(emailSistema)
+        bankReports: []
     };
 
     await salvarUsuario(usuario);

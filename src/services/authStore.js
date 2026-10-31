@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 
 const { conectarDB, obterUsuario, salvarUsuario } = require('./database');
-const { generateBankReports } = require('./dashboardService');
 const { normalizeEmail } = require('./authTokens');
 const {
     createInitialOnboardingState,
@@ -228,7 +227,7 @@ async function syncLegacyUserRecord(user) {
     const next = existing ? { ...existing } : {
         email,
         createdAt: user.createdAt || now,
-        bankReports: generateBankReports(email)
+        bankReports: []
     };
 
     next.email = email;
@@ -241,9 +240,7 @@ async function syncLegacyUserRecord(user) {
     next.plano = user.plan || next.plano || 'freemium';
     next.templateKey = user.templateKey || next.templateKey || '';
     next.usageType = profile.usageType || next.usageType || '';
-    if (!Array.isArray(next.bankReports) || !next.bankReports.length) {
-        next.bankReports = generateBankReports(email);
-    }
+    if (!Array.isArray(next.bankReports)) next.bankReports = [];
 
     await salvarUsuario(next);
     return next;
