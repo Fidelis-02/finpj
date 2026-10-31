@@ -2,6 +2,8 @@ const { salvarAnalise, obterAnalises, obterUsuario } = require('../services/data
 const { analisarComGroq } = require('../services/aiService');
 const { getScopedCompanyRecord, attachCompanyScope, filterRecordsByCompany } = require('../services/companyContext');
 const { recordPilotEvent } = require('../services/pilotTelemetry');
+const path = require('path');
+const { pathToFileURL } = require('url');
 
 const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 100000);
 const MAX_ANALYSES_RETURNED = Number(process.env.MAX_ANALYSES_RETURNED || 20);
@@ -118,6 +120,8 @@ async function extrairTextoPDF(buffer) {
         }
 
         if (pdfParse.PDFParse) {
+            const workerPath = path.join(path.dirname(require.resolve('pdf-parse')), 'pdf.worker.mjs');
+            pdfParse.PDFParse.setWorker(pathToFileURL(workerPath).href);
             const parser = new pdfParse.PDFParse({ data: buffer });
             try {
                 const data = await parser.getText();

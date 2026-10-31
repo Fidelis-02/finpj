@@ -19,7 +19,8 @@ interface User {
 
 interface Company {
   id: string;
-  nome: string;
+  nome?: string;
+  fantasia?: string;
   cnpj: string;
   regime?: string;
   setor?: string;

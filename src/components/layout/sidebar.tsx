@@ -122,8 +122,8 @@ export function Sidebar() {
               className="w-full text-sm font-bold text-white bg-white/10 border border-white/10 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 truncate"
             >
               {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome}
+                <option key={c.id} value={c.id} className="bg-white text-slate-900">
+                  {c.nome || c.fantasia || c.cnpj}
                 </option>
               ))}
             </select>

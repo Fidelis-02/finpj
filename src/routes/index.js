@@ -5,6 +5,8 @@ const { getScopedCompanyRecord, filterRecordsByCompany, recordMatchesCompany } =
 const pluggyService = require('../services/pluggyService');
 const { verificarEEnviarAlertas } = require('../services/alertService');
 const newsService = require('../services/newsService');
+const path = require('path');
+const { pathToFileURL } = require('url');
 
 const router = express.Router();
 
@@ -326,8 +328,20 @@ router.post('/ocr/process', verificarTokenMiddleware, upload.single('arquivo'), 
             }
         } else if (contentType === 'application/pdf' || nome.endsWith('.pdf')) {
             const pdfParse = require('pdf-parse');
-            const data = typeof pdfParse === 'function' ? await pdfParse(buffer) : await pdfParse.default(buffer);
-            texto = data.text || '';
+            if (pdfParse.PDFParse) {
+                const workerPath = path.join(path.dirname(require.resolve('pdf-parse')), 'pdf.worker.mjs');
+                pdfParse.PDFParse.setWorker(pathToFileURL(workerPath).href);
+                const parser = new pdfParse.PDFParse({ data: buffer });
+                try {
+                    const data = await parser.getText();
+                    texto = data.text || '';
+                } finally {
+                    await parser.destroy();
+                }
+            } else {
+                const data = typeof pdfParse === 'function' ? await pdfParse(buffer) : await pdfParse.default(buffer);
+                texto = data.text || '';
+            }
         } else if (nome.match(/\.(xlsx|xls|ods)$/)) {
             const ExcelJS = require('exceljs');
             const workbook = new ExcelJS.Workbook();
