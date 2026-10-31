@@ -1,8 +1,3 @@
-const DEFAULT_FEED_URL = [
-    'https://news.google.com/rss/search?q=tributa%C3%A7%C3%A3o+PME+Brasil+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419',
-    'https://news.google.com/rss/search?q=Selic+juros+empresas+Brasil+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419',
-    'https://news.google.com/rss/search?q=regula%C3%A7%C3%A3o+fiscal+empresas+Brasil+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419'
-].join(',');
 const CACHE_TTL_MS = Number(process.env.NEWS_CACHE_TTL_MS || 15 * 60 * 1000);
 const MAX_ITEMS = Number(process.env.NEWS_MAX_ITEMS || 8);
 const NEWS_API_URL = 'https://newsapi.org/v2/everything';
@@ -40,48 +35,6 @@ const TOPICS = [
 
 let cache = { expiresAt: 0, value: null };
 
-function decodeXml(value = '') {
-    return String(value)
-        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;|&apos;/g, "'")
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .trim();
-}
-
-function stripHtml(value = '') {
-    return decodeXml(value).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function readTag(block, tag) {
-    const match = block.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, 'i'));
-    return match ? decodeXml(match[1]) : '';
-}
-
-function parseRss(xml, sourceName = 'Fonte externa') {
-    if (!String(xml).includes('<rss') && !String(xml).includes('<feed')) {
-        throw new Error(`Resposta inválida da fonte ${sourceName}.`);
-    }
-
-    return Array.from(String(xml).matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi))
-        .map((match) => {
-            const block = match[1];
-            const title = stripHtml(readTag(block, 'title'));
-            const link = decodeXml(readTag(block, 'link')).trim();
-            const publishedAt = new Date(readTag(block, 'pubDate') || readTag(block, 'published') || readTag(block, 'updated'));
-            return {
-                title,
-                summary: stripHtml(readTag(block, 'description') || readTag(block, 'summary')),
-                url: link,
-                source: sourceName,
-                publishedAt: Number.isNaN(publishedAt.getTime()) ? null : publishedAt.toISOString()
-            };
-        })
-        .filter((item) => item.title && item.url);
-}
-
 function getTopic(text) {
     const normalized = String(text || '').toLocaleLowerCase('pt-BR');
     const matches = TOPICS.map((topic) => ({
@@ -104,30 +57,10 @@ function enrichItem(item) {
     };
 }
 
-function getFeedUrls() {
-    return (process.env.NEWS_FEED_URLS || DEFAULT_FEED_URL)
-        .split(',')
-        .map((url) => url.trim())
-        .filter(Boolean);
-}
-
-async function fetchFeed(url) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Number(process.env.NEWS_TIMEOUT_MS || 5000));
-    try {
-        const response = await fetch(url, {
-            headers: { Accept: 'application/rss+xml, application/xml, text/xml' },
-            signal: controller.signal
-        });
-        if (!response.ok) throw new Error(`Fonte respondeu HTTP ${response.status}.`);
-        return await response.text();
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
 async function fetchNewsApi() {
-    if (!process.env.NEWSAPI_KEY) return [];
+    if (!process.env.NEWSAPI_KEY) {
+        throw new Error('NEWSAPI_KEY não configurada.');
+    }
 
     const params = new URLSearchParams({
         q: process.env.NEWSAPI_QUERY || 'tributação OR PME OR Selic OR "Open Finance" OR crédito',
@@ -167,27 +100,7 @@ async function getDailyNews(options = {}) {
         return { ...cache.value, cached: true };
     }
 
-    const feedUrls = getFeedUrls();
-    const results = await Promise.allSettled(feedUrls.map(fetchFeed));
-    const items = [];
-    const errors = [];
-    const newsApiResult = await Promise.allSettled([fetchNewsApi()]);
-    if (newsApiResult[0].status === 'fulfilled') {
-        items.push(...newsApiResult[0].value);
-    } else if (process.env.NEWSAPI_KEY) {
-        errors.push({ source: 'NewsAPI', message: newsApiResult[0].reason?.message || 'Falha ao consultar NewsAPI.' });
-    }
-    results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-            errors.push({ source: feedUrls[index], message: result.reason?.message || 'Falha ao consultar fonte.' });
-            return;
-        }
-        try {
-            items.push(...parseRss(result.value, new URL(feedUrls[index]).hostname));
-        } catch (error) {
-            errors.push({ source: feedUrls[index], message: error.message });
-        }
-    });
+    const items = await fetchNewsApi();
 
     const unique = new Map();
     items
@@ -200,16 +113,11 @@ async function getDailyNews(options = {}) {
             if (!unique.has(key)) unique.set(key, item);
         });
 
-    const configuredSources = feedUrls.length + (process.env.NEWSAPI_KEY ? 1 : 0);
-    if (!unique.size && errors.length === configuredSources) {
-        throw new Error('Nenhuma fonte de notícias está disponível no momento.');
-    }
-
     const value = {
         generatedAt: new Date().toISOString(),
-        sourceCount: configuredSources - errors.length,
+        sourceCount: 1,
         items: Array.from(unique.values()).slice(0, MAX_ITEMS),
-        warnings: errors
+        warnings: []
     };
     cache = { value, expiresAt: now + CACHE_TTL_MS };
     return { ...value, cached: false };
@@ -221,8 +129,6 @@ function clearNewsCache() {
 
 module.exports = {
     getDailyNews,
-    parseRss,
     enrichItem,
     clearNewsCache,
-    DEFAULT_FEED_URL
 };

@@ -37,7 +37,7 @@ em MongoDB Atlas.
 - IA/Groq para análise e chat.
 - OAuth Google/Auth0.
 - Radar público de notícias em [`src/services/newsService.js`](../src/services/newsService.js),
-  com NewsAPI opcional, RSS configurável como fallback, cache, deduplicação,
+  com NewsAPI obrigatória, cache, deduplicação,
   relevância por domínio e oportunidades.
 
 ### Deploy
@@ -57,7 +57,7 @@ em MongoDB Atlas.
 5. Documentos → upload, OCR/extração, análise e chat.
 6. Fiscal → simulação de regimes, DAS, calendário e diagnósticos.
 7. Pagamentos → checkout, success fee e webhook Stripe idempotente.
-8. Notícias → consulta RSS no backend, filtro das últimas 48 horas, classificação por
+8. Notícias → consulta NewsAPI no backend, filtro das últimas 48 horas, classificação por
    tema e recomendação de ação na homepage.
 
 ## Qualidade verificada
@@ -101,16 +101,14 @@ Browserslist.
 
 ## Radar de notícias
 
-`GET /api/news` é público para atender a homepage. Quando `NEWSAPI_KEY` está
-configurada, o backend consulta a NewsAPI usando o header `X-Api-Key`; sem a
-chave, ou em caso de falha, consulta as fontes definidas em `NEWS_FEED_URLS`
-ou usa RSS público como padrão. O serviço aplica timeout, cache de 15 minutos,
+`GET /api/news` é público para atender a homepage. O backend consulta somente a
+NewsAPI usando o header `X-Api-Key`; `NEWSAPI_KEY` deve estar configurada.
+O serviço aplica timeout, cache de 15 minutos,
 deduplicação e descarta itens fora da janela de 48 horas. As oportunidades são heurísticas determinísticas por tema; não são
 aconselhamento fiscal ou financeiro e devem ser confirmadas antes de qualquer decisão.
 
-Para produção, recomenda-se configurar fontes RSS oficiais e monitorar a taxa de
-falhas das fontes. O endpoint retorna avisos parciais quando uma fonte falha e
-responde erro apenas quando todas as fontes estão indisponíveis.
+Em caso de falha da NewsAPI, o endpoint retorna erro e a homepage exibe o estado
+de indisponibilidade, sem substituir notícias por outra fonte.
 
 ## Referência de produto
 

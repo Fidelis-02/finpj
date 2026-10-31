@@ -1,22 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseRss, enrichItem } = require('../src/services/newsService');
-
-test('parseRss normalizes RSS items and decodes CDATA', () => {
-    const items = parseRss(`
-        <rss><channel><item>
-            <title><![CDATA[Selic e crédito para PMEs]]></title>
-            <link>https://example.com/noticia</link>
-            <description><![CDATA[Custos de crédito podem mudar.]]></description>
-            <pubDate>Sat, 31 Oct 2026 10:00:00 GMT</pubDate>
-        </item></channel></rss>
-    `, 'example.com');
-
-    assert.equal(items.length, 1);
-    assert.equal(items[0].title, 'Selic e crédito para PMEs');
-    assert.equal(items[0].source, 'example.com');
-    assert.match(items[0].publishedAt, /^2026-10-31T10:00:00/);
-});
+const { getDailyNews, enrichItem, clearNewsCache } = require('../src/services/newsService');
 
 test('enrichItem maps relevant news to a practical opportunity', () => {
     const item = enrichItem({
@@ -38,4 +22,17 @@ test('enrichItem ignores unrelated news', () => {
         summary: 'Partida terminou empatada.',
         url: 'https://example.com/esporte'
     }), null);
+});
+
+test('getDailyNews requires NewsAPI credentials', async () => {
+    const previousKey = process.env.NEWSAPI_KEY;
+    delete process.env.NEWSAPI_KEY;
+    clearNewsCache();
+
+    await assert.rejects(
+        getDailyNews({ force: true }),
+        /NEWSAPI_KEY não configurada/
+    );
+
+    if (previousKey) process.env.NEWSAPI_KEY = previousKey;
 });
