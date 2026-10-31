@@ -181,7 +181,7 @@ router.delete('/diagnosticos/:id', verificarTokenMiddleware, wrap(async (req, re
     }
 }));
 
-router.post('/upload-documento', verificarTokenMiddleware, validateRequest(validateAIAnalysis), upload.single('arquivo'), wrap(documentController.uploadDocumento));
+router.post('/upload-documento', verificarTokenMiddleware, upload.single('arquivo'), validateRequest(validateAIAnalysis), wrap(documentController.uploadDocumento));
 router.post('/upload-url', verificarTokenMiddleware, wrap(documentController.getUploadUrl));
 router.post('/process-document', verificarTokenMiddleware, wrap(documentController.processDocumentFromUrl));
 router.get('/analises', verificarTokenMiddleware, wrap(documentController.getAnalises));
