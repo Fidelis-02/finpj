@@ -1,79 +1,69 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Mail, ShieldCheck } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
-import { apiRequest } from "@/lib/api";
-import { useRouter } from "next/navigation";
-import { maskCurrency, maskPercent, maskCNPJ, parseCurrencyInput } from "@/lib/utils";
 
 interface RegisterModalProps {
   open: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
   defaultPlan?: string;
-  defaultCnpj?: string;
-  defaultFaturamento?: string;
 }
+
+const PLAN_DETAILS: Record<string, { name: string; price: string; description: string }> = {
+  starter: {
+    name: "Starter",
+    price: "R$ 490/mês",
+    description: "Visão financeira essencial para acompanhar sua operação.",
+  },
+  growth: {
+    name: "Growth",
+    price: "R$ 950/mês",
+    description: "Simulação fiscal, margem por produto e Open Finance.",
+  },
+  enterprise: {
+    name: "Enterprise",
+    price: "R$ 1.850/mês",
+    description: "Auditoria, valuation e suporte dedicado para operações maiores.",
+  },
+};
 
 export function RegisterModal({
   open,
   onClose,
   onSwitchToLogin,
   defaultPlan = "growth",
-  defaultCnpj = "",
-  defaultFaturamento = "",
 }: RegisterModalProps) {
-  const [cnpj, setCnpj] = useState("");
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [plan, setPlan] = useState(defaultPlan);
-  const [faturamento, setFaturamento] = useState("");
-  const [margem, setMargem] = useState("");
-  const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [lookupLoading, setLookupLoading] = useState(false);
   const [error, setError] = useState("");
+  const [createdEmail, setCreatedEmail] = useState("");
 
   const { register } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (open) {
-      if (defaultCnpj && defaultCnpj !== cnpj) {
-        handleCnpjChange(defaultCnpj);
-      }
-      if (defaultFaturamento) {
-        setFaturamento(defaultFaturamento);
-      }
       if (defaultPlan) {
         setPlan(defaultPlan);
       }
+      setError("");
+      setCreatedEmail("");
     }
-  }, [open, defaultCnpj, defaultFaturamento, defaultPlan]);
-
-  // Auto-lookup CNPJ when it has 14+ digits
-  const handleCnpjChange = async (value: string) => {
-    setCnpj(value);
-    const digits = value.replace(/\D/g, "");
-    if (digits.length >= 14) {
-      setLookupLoading(true);
-      try {
-        const data = await apiRequest<{ nome?: string; razao_social?: string }>(
-          `/api/cnpj/${digits}`
-        );
-        setCompanyName(data.nome || data.razao_social || "");
-      } catch {
-        // silent fail
-      } finally {
-        setLookupLoading(false);
-      }
-    }
-  };
+  }, [open, defaultPlan]);
 
   const handleSubmit = async () => {
+    if (!email.trim()) {
+      setError("Informe seu e-mail.");
+      return;
+    }
     if (password !== confirm) {
       setError("As senhas não coincidem.");
       return;
@@ -86,24 +76,72 @@ export function RegisterModal({
     setLoading(true);
     setError("");
     try {
-      await register({
-        cnpj,
+      const response = await register({
+        email: email.trim(),
         password,
+        name: name.trim(),
         plan,
-        faturamento: parseCurrencyInput(faturamento),
-        margem: parseCurrencyInput(margem) / 100, // percentage to decimal
       });
+      if (response.verificationRequired) {
+        setCreatedEmail(email.trim());
+        return;
+      }
       onClose();
-      router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Não foi possível criar sua conta.");
     } finally {
       setLoading(false);
     }
   };
 
+  const planDetails = PLAN_DETAILS[plan] || PLAN_DETAILS.growth;
+
+  if (createdEmail) {
+    return (
+      <Modal open={open} onClose={onClose} title="Confirme seu e-mail" subtitle="Próximo passo">
+        <div className="space-y-5">
+          <div className="flex items-start gap-4 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
+            <div className="rounded-xl bg-blue-500/20 p-2.5 text-blue-300">
+              <Mail size={22} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Cadastro recebido</h3>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                Enviamos um link de confirmação para <strong>{createdEmail}</strong>. Confirme o endereço para liberar o acesso.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Plano selecionado</p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-white">{planDetails.name}</p>
+              </div>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">{planDetails.price}</span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{planDetails.description}</p>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <ShieldCheck size={15} className="text-emerald-500" />
+            Você poderá revisar o plano no onboarding antes de contratar.
+          </div>
+
+          <Button className="w-full" onClick={onClose}>Entendi</Button>
+          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+            Já confirmou?{" "}
+            <button onClick={onSwitchToLogin} className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+              Ir para o login
+            </button>
+          </p>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="Crie sua conta PJ" subtitle="Cadastro">
+    <Modal open={open} onClose={onClose} title="Crie sua conta FinPJ" subtitle="Cadastro">
       {error && (
         <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400" role="alert">
           {error}
@@ -111,25 +149,33 @@ export function RegisterModal({
       )}
 
       <div className="space-y-4">
+        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Plano escolhido</p>
+              <p className="mt-1 font-semibold text-slate-900 dark:text-white">{planDetails.name}</p>
+            </div>
+            <span className="text-sm font-bold text-slate-900 dark:text-white">{planDetails.price}</span>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{planDetails.description}</p>
+        </div>
+
         <Input
-          label="CNPJ"
-          placeholder="00.000.000/0001-00"
-          inputMode="numeric"
-          maxLength={18}
-          value={cnpj}
-          onChange={(e) => handleCnpjChange(maskCNPJ(e.target.value))}
-          autoComplete="off"
+          label="E-mail profissional"
+          type="email"
+          placeholder="voce@empresa.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
         />
 
-        {companyName && (
-          <div className="bg-blue-50 border border-blue-100 text-blue-800 text-sm rounded-xl px-4 py-3 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-300">
-            <span className="font-semibold">Empresa encontrada:</span>{" "}
-            {companyName}
-          </div>
-        )}
-        {lookupLoading && (
-          <p className="text-xs text-gray-400 dark:text-slate-500">Buscando dados do CNPJ...</p>
-        )}
+        <Input
+          label="Como podemos chamar você? (opcional)"
+          placeholder="Seu nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoComplete="name"
+        />
 
         <Input
           label="Senha"
@@ -162,27 +208,11 @@ export function RegisterModal({
           </select>
         </div>
 
-        <Input
-          label="Faturamento mensal (R$)"
-          placeholder="0,00"
-          inputMode="numeric"
-          value={faturamento}
-          onChange={(e) => setFaturamento(maskCurrency(e.target.value))}
-        />
-
-        <Input
-          label="Margem estimada (%)"
-          placeholder="0,00"
-          inputMode="numeric"
-          value={margem}
-          onChange={(e) => setMargem(maskPercent(e.target.value))}
-        />
-
         <Button
           className="w-full"
           loading={loading}
           onClick={handleSubmit}
-          disabled={!cnpj || !password || !confirm}
+          disabled={!email || !password || !confirm}
         >
           Criar conta
         </Button>

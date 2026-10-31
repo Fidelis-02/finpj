@@ -35,10 +35,18 @@ interface AuthContextType {
   activeCompany: Company | null;
   loginWithCode: (email: string, code: string) => Promise<void>;
   sendCode: (email: string) => Promise<void>;
-  register: (data: Record<string, any>) => Promise<void>;
+  register: (data: Record<string, any>) => Promise<RegisterResponse>;
   logout: () => void;
   setActiveCompany: (id: string) => void;
   refreshCompanies: () => Promise<void>;
+}
+
+export interface RegisterResponse {
+  sucesso: boolean;
+  mensagem?: string;
+  verificationRequired?: boolean;
+  redirectTo?: string;
+  user?: User;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -117,14 +125,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: Record<string, any>) => {
-    const res = await apiRequest<{ token: string; email: string }>(
+    const res = await apiRequest<RegisterResponse>(
       "/api/auth/register",
       {
         method: "POST",
         body: JSON.stringify(data),
       }
     );
-    persistSession(res.token, res.email);
+    return res;
   };
 
   const logout = () => {

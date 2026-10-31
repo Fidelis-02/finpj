@@ -64,8 +64,6 @@ export default function Home() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("growth");
-  const [simCnpj, setSimCnpj] = useState("");
-  const [simFaturamento, setSimFaturamento] = useState("");
   const [showStickyCta, setShowStickyCta] = useState(false);
   const [news, setNews] = useState<NewsResponse | null>(null);
   const [newsLoading, setNewsLoading] = useState(true);
@@ -110,11 +108,9 @@ export default function Home() {
     setLoginOpen(true);
   };
 
-  const openRegister = (plan?: string, cnpj?: string, faturamento?: string) => {
-    trackEvent("open_register_modal", { plan, cnpj });
+  const openRegister = (plan?: string) => {
+    trackEvent("open_register_modal", { plan });
     if (plan) setSelectedPlan(plan);
-    if (cnpj) setSimCnpj(cnpj);
-    if (faturamento) setSimFaturamento(faturamento);
     setLoginOpen(false);
     setRegisterOpen(true);
   };
@@ -222,7 +218,7 @@ export default function Home() {
               <SimulatorForm
                 onRegister={(plan, cnpj, faturamento, email) => {
                   trackEvent("simulator_completed", { plan, cnpj, faturamento, email });
-                  openRegister(plan, cnpj, faturamento);
+                  openRegister(plan);
                 }}
                 onSubmit={(data) => trackEvent("lead_submitted", data)}
               />
@@ -597,8 +593,6 @@ export default function Home() {
         onClose={() => setRegisterOpen(false)}
         onSwitchToLogin={openLogin}
         defaultPlan={selectedPlan}
-        defaultCnpj={simCnpj}
-        defaultFaturamento={simFaturamento}
       />
     </main>
   );
