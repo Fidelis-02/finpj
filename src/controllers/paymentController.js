@@ -41,7 +41,7 @@ async function criarCheckoutHospedado(req, { email, cnpj, plano }) {
 
     return stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        mode: 'payment',
+        mode: 'subscription',
         line_items: [
             {
                 price_data: {
@@ -49,7 +49,10 @@ async function criarCheckoutHospedado(req, { email, cnpj, plano }) {
                     product_data: {
                         name: `FinPJ - Plano ${plano.charAt(0).toUpperCase() + plano.slice(1)}`
                     },
-                    unit_amount: valor * 100
+                    unit_amount: valor * 100,
+                    recurring: {
+                        interval: 'month'
+                    }
                 },
                 quantity: 1
             }

@@ -469,43 +469,51 @@ function analisarLocalmente(tipoDoc, texto) {
 
 function cashFlowForecast(transactions, sector) {
     if (!transactions || transactions.length === 0) return [];
-    
-    // Simplification of 30/60/90 days projection using historical moving averages
-    const entradas = transactions.filter(t => t.tipo === 'entrada').map(t => Math.abs(t.valor));
-    const saidas = transactions.filter(t => t.tipo === 'saida').map(t => Math.abs(t.valor));
+
+    const entradas = transactions
+        .filter(t => t.tipo === 'entrada')
+        .map(t => Math.abs(Number(t.valor) || 0))
+        .filter(Number.isFinite);
+    const saidas = transactions
+        .filter(t => t.tipo === 'saida')
+        .map(t => Math.abs(Number(t.valor) || 0))
+        .filter(Number.isFinite);
     
     const mediaEntrada = entradas.reduce((a, b) => a + b, 0) / Math.max(1, entradas.length);
     const mediaSaida = saidas.reduce((a, b) => a + b, 0) / Math.max(1, saidas.length);
     
-    // Seasonal coefficient based on sector
     const sectorCoefs = {
-        'comercio': 1.15, // Commerce has higher peaks (e.g., Q4)
-        'servicos': 1.05, // Services are flatter
+        'comercio': 1.15,
+        'servicos': 1.05,
         'industria': 1.10
     };
     const coef = sectorCoefs[sector?.toLowerCase()] || 1.0;
 
-    let saldo = entradas.reduce((a,b)=>a+b,0) - saidas.reduce((a,b)=>a+b,0);
+    let saldo = entradas.reduce((a, b) => a + b, 0) - saidas.reduce((a, b) => a + b, 0);
     const projecao = [];
 
-    // Projection for next 90 days
     for (let i = 1; i <= 90; i++) {
         const data = new Date();
         data.setDate(data.getDate() + i);
-        
-        // Random walk around mean + seasonal coefficient
-        const projectedEntrada = mediaEntrada * coef * (0.9 + Math.random() * 0.2);
-        const projectedSaida = mediaSaida * (0.95 + Math.random() * 0.1);
-        
+
+        const projectedEntrada = mediaEntrada * coef;
+        const projectedSaida = mediaSaida;
         saldo += projectedEntrada - projectedSaida;
-        
+
         if (i === 30 || i === 60 || i === 90) {
             projecao.push({
                 dias: i,
                 data: data.toISOString().slice(0, 10),
                 entradaProjetada: Math.round(projectedEntrada * i),
                 saidaProjetada: Math.round(projectedSaida * i),
-                saldoAcumulado: Math.round(saldo)
+                saldoAcumulado: Math.round(saldo),
+                metodologia: 'media_historica_ajustada_por_setor',
+                premissas: {
+                    mediaEntrada,
+                    mediaSaida,
+                    fatorSetorial: coef,
+                    dadosObservados: transactions.length
+                }
             });
         }
     }
