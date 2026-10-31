@@ -361,18 +361,18 @@ export default function Home() {
         )}
         {!newsLoading && !newsError && news && news.items.length > 0 && (
           <div className="grid md:grid-cols-2 gap-5">
-            {news.items.map((item) => (
-              <article key={item.url} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 hover:border-emerald-500/40 transition-colors">
+            {news.items.slice(0, 2).map((item) => (
+              <article key={item.url} className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 hover:border-blue-400/50 transition-colors">
                 <div className="flex items-center justify-between gap-3 mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">{item.category}</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue-300">{item.category}</span>
                   <span className="text-xs text-slate-500">{item.source}</span>
                 </div>
                 <h3 className="text-lg font-bold text-white leading-snug">{item.title}</h3>
                 <p className="text-sm text-slate-400 mt-3 line-clamp-3">{item.summary}</p>
-                <div className="mt-5 rounded-xl border border-blue-900/50 bg-blue-950/30 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-blue-300">Oportunidade</p>
-                  <p className="text-sm text-blue-100 mt-1">{item.opportunity}</p>
-                  <a href={item.href} className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold text-emerald-400 hover:text-emerald-300">
+                <div className="mt-5 rounded-xl border border-cyan-400/15 bg-cyan-400/[0.06] p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Oportunidade</p>
+                  <p className="text-sm text-cyan-50 mt-1">{item.opportunity}</p>
+                  <a href={item.href} className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold text-blue-300 hover:text-blue-200">
                     {item.cta} <ArrowRight size={14} />
                   </a>
                 </div>
