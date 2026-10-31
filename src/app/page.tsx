@@ -72,14 +72,6 @@ export default function Home() {
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState("");
 
-  // Real-time calculator states
-  const [calcFat, setCalcFat] = useState(1200000); // 1.2M faturamento
-  const [calcMargem, setCalcMargem] = useState(15); // 15% margem
-  const [calcFolha, setCalcFolha] = useState(250000); // 250k folha
-  const [calcSegmento, setCalcSegmento] = useState("comercio");
-  const [calcLoading, setCalcLoading] = useState(false);
-  const [calcResult, setCalcResult] = useState<any>(null);
-
   // Tab state for product screenshots
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -130,39 +122,6 @@ export default function Home() {
     setLoginOpen(false);
     setRegisterOpen(true);
   };
-
-  // Debounced API fetch for real-time calculator
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      calculateRealTimeSavings();
-    }, 600);
-
-    return () => clearTimeout(delayDebounce);
-  }, [calcFat, calcMargem, calcFolha, calcSegmento]);
-
-  const calculateRealTimeSavings = async () => {
-    setCalcLoading(true);
-    try {
-      const data = await apiRequest("/api/tax/simulate", {
-        method: "POST",
-        body: JSON.stringify({
-          annualRevenue: calcFat,
-          margin: calcMargem,
-          payroll: calcFolha,
-          activity: calcSegmento,
-        }),
-      });
-      setCalcResult(data);
-    } catch (err) {
-      console.error("Real-time calculation failed", err);
-      setCalcResult(null);
-    } finally {
-      setCalcLoading(false);
-    }
-  };
-
-  const formatBRL = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
   const productScreenshots = [
     {
@@ -326,10 +285,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="noticias" className="py-16 container mx-auto px-6">
+      <section id="noticias" className="py-12 container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 text-emerald-400 text-sm font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-blue-300 text-sm font-bold uppercase tracking-wider mb-2">
               <Newspaper size={16} /> Radar de oportunidades
             </div>
             <h2 className="text-3xl font-extrabold text-white">Notícias que podem impactar sua empresa</h2>
@@ -434,144 +393,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Savings Calculator */}
-      <section className="py-16 bg-slate-950 border-t border-slate-900">
-        <div className="container mx-auto px-6 max-w-4xl">
-          <div className="text-center mb-10">
-            <span className="text-blue-500 font-bold text-xs uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
-              Calculadora de Impacto
-            </span>
-            <h2 className="text-3xl font-extrabold text-white mt-4">Quanto sua empresa pode estar perdendo?</h2>
-            <p className="text-slate-400 mt-2 text-sm">
-              Ajuste as barras de controle abaixo e veja estimativas em tempo real baseadas em parâmetros padrão do motor fiscal.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-12 gap-8 items-center bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-            
-            {/* Inputs */}
-            <div className="md:col-span-7 space-y-6">
-              {/* Faturamento */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <label className="font-bold text-slate-300">Faturamento Anual</label>
-                  <span className="text-blue-400 font-mono font-bold">{formatBRL(calcFat)}</span>
-                </div>
-                <input
-                  type="range"
-                  min={100000}
-                  max={20000000}
-                  step={100000}
-                  value={calcFat}
-                  onChange={(e) => {
-                    setCalcFat(Number(e.target.value));
-                    trackEvent("calc_fat_change", { value: e.target.value });
-                  }}
-                  className="w-full accent-blue-500"
-                />
-              </div>
-
-              {/* Margem */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <label className="font-bold text-slate-300">Margem estimada</label>
-                  <span className="text-blue-400 font-mono font-bold">{calcMargem}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={99}
-                  step={1}
-                  value={calcMargem}
-                  onChange={(e) => {
-                    setCalcMargem(Number(e.target.value));
-                    trackEvent("calc_margin_change", { value: e.target.value });
-                  }}
-                  className="w-full accent-blue-500"
-                />
-              </div>
-
-              {/* Folha */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <label className="font-bold text-slate-300">Folha de pagamento anual</label>
-                  <span className="text-blue-400 font-mono font-bold">{formatBRL(calcFolha)}</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={calcFat * 0.6}
-                  step={50000}
-                  value={calcFolha}
-                  onChange={(e) => {
-                    setCalcFolha(Number(e.target.value));
-                    trackEvent("calc_payroll_change", { value: e.target.value });
-                  }}
-                  className="w-full accent-blue-500"
-                />
-              </div>
-
-              {/* Segmento */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-bold text-slate-300">Segmento Principal</label>
-                <select
-                  value={calcSegmento}
-                  onChange={(e) => {
-                    setCalcSegmento(e.target.value);
-                    trackEvent("calc_segment_change", { value: e.target.value });
-                  }}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="comercio">Comércio</option>
-                  <option value="servicos">Serviços</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Outputs */}
-            <div className="md:col-span-5 bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-4">
-              <div className="text-center pb-3 border-b border-slate-900">
-                <span className="text-slate-400 text-xs uppercase tracking-wider font-bold">Economia Potencial Estimada</span>
-                <div className="text-3xl font-extrabold text-emerald-400 mt-1">
-                  {calcLoading ? "Calculando..." : calcResult ? formatBRL(calcResult.savingsComparedToWorst?.annual || 0) : "Indisponível"}
-                </div>
-              </div>
-              
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Simples Nacional:</span>
-                  <span className="font-bold font-mono text-slate-300">
-                    {calcLoading ? "..." : calcResult ? formatBRL(calcResult.annualTaxByRegime?.simples || 0) : "Indisponível"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Lucro Presumido:</span>
-                  <span className="font-bold font-mono text-slate-300">
-                    {calcLoading ? "..." : calcResult ? formatBRL(calcResult.annualTaxByRegime?.presumido || 0) : "Indisponível"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Lucro Real:</span>
-                  <span className="font-bold font-mono text-slate-300">
-                    {calcLoading ? "..." : calcResult ? formatBRL(calcResult.annualTaxByRegime?.real || 0) : "Indisponível"}
-                  </span>
-                </div>
-              </div>
-
-              <a href="#simulador">
-                <button
-                  onClick={() => trackEvent("calc_unlock_cta")}
-                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 mt-2"
-                >
-                  Desbloquear DRE Completo <ArrowRight size={14} />
-                </button>
-              </a>
-            </div>
-
           </div>
         </div>
       </section>
@@ -689,18 +510,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing Section (ROI Optimized) */}
+      {/* Pricing Section */}
       <section id="planos" className="py-16 bg-slate-950">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <span className="text-blue-500 font-bold text-xs uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
-              Retorno sobre Investimento
+              Planos
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-4">
-              Planos desenhados para gerar lucro
+              Escolha o nível de acompanhamento da sua empresa
             </h2>
             <p className="text-slate-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
-              Compare a economia gerada em relação ao investimento mensal e escolha o plano certo para a sua escala de crescimento.
+              Comece com os recursos necessários hoje e evolua conforme seus dados e operações crescem.
             </p>
           </div>
 
@@ -710,8 +531,6 @@ export default function Home() {
                 key: "starter",
                 name: "Starter",
                 price: "490",
-                savings: "1.500",
-                roi: "3,0x",
                 description: "DRE gerencial e alertas de custos.",
                 features: [
                   "Dashboard financeiro",
@@ -726,8 +545,6 @@ export default function Home() {
                 key: "growth",
                 name: "Growth",
                 price: "950",
-                savings: "4.000",
-                roi: "4,2x",
                 description: "Simulador fiscal e margem por produto.",
                 features: [
                   "Tudo do Starter",
@@ -743,8 +560,6 @@ export default function Home() {
                 key: "enterprise",
                 name: "Enterprise",
                 price: "1.850",
-                savings: "9.000",
-                roi: "4,8x",
                 description: "Auditoria de créditos e valuation mensal.",
                 features: [
                   "Tudo do Growth",
@@ -780,22 +595,6 @@ export default function Home() {
                       {plan.name}
                     </span>
                     
-                    {/* ROI Section */}
-                    <div className="mt-4 p-3 bg-slate-950/80 border border-slate-850 rounded-xl space-y-1.5 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 font-medium">Economia potencial:</span>
-                        <span className="text-emerald-400 font-bold">R$ {plan.savings}/mês</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 font-medium">Investimento:</span>
-                        <span className="text-slate-300 font-bold">R$ {plan.price}/mês</span>
-                      </div>
-                      <div className="flex justify-between pt-1.5 border-t border-slate-900 font-semibold">
-                        <span className="text-slate-400">ROI estimado:</span>
-                        <span className="text-emerald-400">{plan.roi}</span>
-                      </div>
-                    </div>
-
                     <p className="text-xs mt-4 text-slate-400 leading-relaxed">
                       {plan.description}
                     </p>
