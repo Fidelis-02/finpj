@@ -9,6 +9,36 @@ export const metadata: Metadata = {
   title: "FinPJ | Inteligência tributária e financeira para PMEs",
   description:
     "FinPJ: inteligência tributária e financeira para PMEs brasileiras com diagnóstico fiscal, dashboards e comparação de regimes.",
+  keywords: [
+    "tributário",
+    "fiscal",
+    "PME",
+    "simples nacional",
+    "lucro presumido",
+    "lucro real",
+    "simulador fiscal",
+    "open finance",
+    "finpj",
+    "CFO digital",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "FinPJ",
+    title: "FinPJ | Inteligência tributária e financeira para PMEs",
+    description:
+      "Compare regimes tributários, identifique créditos esquecidos e acompanhe a saúde financeira da sua empresa em um único painel.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FinPJ | Inteligência tributária e financeira para PMEs",
+    description:
+      "Compare regimes tributários, identifique créditos esquecidos e acompanhe a saúde financeira da sua empresa.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

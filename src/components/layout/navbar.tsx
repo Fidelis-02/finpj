@@ -29,10 +29,10 @@ export function Navbar({ onOpenLogin, onOpenRegister }: NavbarProps) {
       {/* Desktop nav */}
       <nav className="hidden md:flex items-center gap-8" role="navigation" aria-label="Navegação principal">
         <a
-          href="#recursos"
+          href="#como-funciona"
           className="text-sm font-medium text-slate-400 hover:text-white transition-colors"
         >
-          Recursos
+          Como Funciona
         </a>
         <a
           href="#simulador"
@@ -106,12 +106,12 @@ export function Navbar({ onOpenLogin, onOpenRegister }: NavbarProps) {
           role="menu"
         >
           <a
-            href="#recursos"
+            href="#como-funciona"
             className="text-sm font-medium text-slate-300"
             onClick={() => setMobileOpen(false)}
             role="menuitem"
           >
-            Recursos
+            Como Funciona
           </a>
           <a
             href="#simulador"

@@ -26,15 +26,15 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="#recursos"
+                  href="/#como-funciona"
                   className="text-sm text-blue-200/70 hover:text-white transition-colors"
                 >
-                  Recursos
+                  Como Funciona
                 </a>
               </li>
               <li>
                 <a
-                  href="#simulador"
+                  href="/#simulador"
                   className="text-sm text-blue-200/70 hover:text-white transition-colors"
                 >
                   Simulador
@@ -42,7 +42,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#planos"
+                  href="/#planos"
                   className="text-sm text-blue-200/70 hover:text-white transition-colors"
                 >
                   Planos
@@ -58,13 +58,20 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               <li>
-                <span className="text-sm text-blue-200/70">Sobre nós</span>
+                <a
+                  href="mailto:contato@finpj.com.br"
+                  className="text-sm text-blue-200/70 hover:text-white transition-colors"
+                >
+                  Contato
+                </a>
               </li>
               <li>
-                <span className="text-sm text-blue-200/70">Contato</span>
-              </li>
-              <li>
-                <span className="text-sm text-blue-200/70">Blog</span>
+                <a
+                  href="/#faq"
+                  className="text-sm text-blue-200/70 hover:text-white transition-colors"
+                >
+                  Perguntas Frequentes
+                </a>
               </li>
             </ul>
           </div>
@@ -76,17 +83,28 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               <li>
-                <span className="text-sm text-blue-200/70">
+                <a
+                  href="/termos"
+                  className="text-sm text-blue-200/70 hover:text-white transition-colors"
+                >
                   Termos de uso
-                </span>
+                </a>
               </li>
               <li>
-                <span className="text-sm text-blue-200/70">
+                <a
+                  href="/privacidade"
+                  className="text-sm text-blue-200/70 hover:text-white transition-colors"
+                >
                   Política de privacidade
-                </span>
+                </a>
               </li>
               <li>
-                <span className="text-sm text-blue-200/70">LGPD</span>
+                <a
+                  href="/privacidade#lgpd"
+                  className="text-sm text-blue-200/70 hover:text-white transition-colors"
+                >
+                  LGPD
+                </a>
               </li>
             </ul>
           </div>
