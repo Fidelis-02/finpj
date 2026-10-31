@@ -64,8 +64,10 @@ em MongoDB Atlas.
 7. Pagamentos → checkout, success fee e webhook Stripe idempotente.
 8. Notícias → consulta NewsAPI no backend, filtro das últimas 48 horas, classificação por
    tema e recomendação de ação na homepage.
-9. Motor fiscal → simulações carregam a versão, a origem e a data de revisão configurada
-   das tabelas embarcadas; não há atualização legislativa automática sem integração adicional.
+9. Motor fiscal → simulações carregam a versão, a origem, a data de revisão configurada
+   e um catálogo por grupo de regra, com fonte, vigência quando conhecida e status
+   (`embedded`, `assumption` ou `projection`). Não há atualização legislativa
+   automática sem integração adicional.
 
 ## Qualidade verificada
 

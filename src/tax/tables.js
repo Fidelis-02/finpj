@@ -127,6 +127,50 @@
             'Leis 9.718/1998, 10.637/2002 e 10.833/2003 para PIS/COFINS',
             'LC 224/2025 para acréscimo de 10% na presunção sobre excedente anual',
             'RICMS/SP, art. 52, I para alíquota interna padrão de ICMS'
+        ],
+        ruleCatalog: [
+            {
+                key: 'simples-nacional-anexos',
+                label: 'Simples Nacional: anexos e faixas',
+                source: 'Resolução CGSN 140/2018, arts. 21, 25 e 26 e Anexos I, III e V',
+                effectiveFrom: '2018-01-01',
+                reviewStatus: 'embedded'
+            },
+            {
+                key: 'irpj-csll',
+                label: 'IRPJ e CSLL',
+                source: 'Lei 9.249/1995 e Lei 9.430/1996',
+                effectiveFrom: '1996-01-01',
+                reviewStatus: 'embedded'
+            },
+            {
+                key: 'pis-cofins',
+                label: 'PIS e COFINS',
+                source: 'Leis 9.718/1998, 10.637/2002 e 10.833/2003',
+                effectiveFrom: '2003-12-01',
+                reviewStatus: 'embedded'
+            },
+            {
+                key: 'presuncao-lucro-presumido',
+                label: 'Acréscimo na presunção do Lucro Presumido',
+                source: 'LC 224/2025',
+                effectiveFrom: '2026-01-01',
+                reviewStatus: 'embedded'
+            },
+            {
+                key: 'icms-sp',
+                label: 'ICMS interno padrão utilizado na estimativa',
+                source: 'RICMS/SP, art. 52, I',
+                effectiveFrom: null,
+                reviewStatus: 'assumption'
+            },
+            {
+                key: 'reforma-tributaria',
+                label: 'Projeção CBS e IBS',
+                source: 'EC 132/2023',
+                effectiveFrom: null,
+                reviewStatus: 'projection'
+            }
         ]
     };
 });
