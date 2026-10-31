@@ -413,6 +413,9 @@ async function cashflowProjection(req, res) {
         saldoAtual: Math.round(entradas - saidas),
         mediaEntrada: Math.round(mediaDiariaEntrada),
         mediaSaida: Math.round(mediaDiariaSaida)
+    });
+}
+
 async function getValuation(req, res) {
     const usuario = await obterUsuario(req.userEmail);
     if (!usuario) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
