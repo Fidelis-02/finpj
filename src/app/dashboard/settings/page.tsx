@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 
 export default function SettingsPage() {
-  const { activeCompany } = useAuth();
+  const { activeCompany, logout } = useAuth();
   const [form, setForm] = useState({
     nome: "",
     fantasia: "",
@@ -22,6 +22,9 @@ export default function SettingsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeCompany) {
@@ -56,6 +59,24 @@ export default function SettingsPage() {
       alert(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (confirmation !== "EXCLUIR") return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await apiRequest("/api/account", {
+        method: "DELETE",
+        body: JSON.stringify({ confirmation }),
+      });
+      logout();
+      window.location.href = "/";
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Não foi possível excluir a conta.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -138,6 +159,33 @@ export default function SettingsPage() {
             )}
           </div>
         </form>
+      </Card>
+
+      <Card className="max-w-2xl border-red-200">
+        <h2 className="text-lg font-bold text-red-700">Excluir conta e dados</h2>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600">
+          Essa ação remove sua conta, análises, diagnósticos, onboarding, sessões e
+          métricas operacionais. Não pode ser desfeita.
+        </p>
+        <div className="mt-4 space-y-3">
+          <Input
+            label='Digite "EXCLUIR" para confirmar'
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            autoComplete="off"
+          />
+          {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+          <Button
+            type="button"
+            variant="outline"
+            className="border-red-300 text-red-700 hover:bg-red-50"
+            disabled={confirmation !== "EXCLUIR" || deleting}
+            loading={deleting}
+            onClick={handleDeleteAccount}
+          >
+            Excluir permanentemente
+          </Button>
+        </div>
       </Card>
     </div>
   );

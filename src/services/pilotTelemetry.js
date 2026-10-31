@@ -14,6 +14,10 @@ function hashOwner(email) {
         .digest('hex');
 }
 
+function hashOwnerForStorage(email) {
+    return hashOwner(email);
+}
+
 async function recordPilotEvent({ email, companyId, type, metadata = {} }) {
     if (!EVENT_TYPES.has(type)) {
         throw new Error(`Evento de piloto não suportado: ${type}`);
@@ -33,5 +37,6 @@ async function getPilotMetrics({ email, companyId }) {
 
 module.exports = {
     recordPilotEvent,
-    getPilotMetrics
+    getPilotMetrics,
+    hashOwnerForStorage
 };

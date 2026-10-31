@@ -188,6 +188,41 @@ async function obterMetricasPiloto(ownerHash, companyId) {
     };
 }
 
+async function excluirDadosConta(email, userId) {
+    const database = await conectarDB();
+    const emailNorm = formatarEmail(email);
+    const userIds = [userId].filter(Boolean);
+    const modernUsers = await database.collection('users').find(
+        { $or: [{ email: emailNorm }, ...(userId ? [{ id: userId }] : [])] },
+        { projection: { id: 1 } }
+    ).toArray();
+    modernUsers.forEach((user) => {
+        if (user.id && !userIds.includes(user.id)) userIds.push(user.id);
+    });
+
+    const ownerHash = require('./pilotTelemetry').hashOwnerForStorage(emailNorm);
+    const operations = [
+        database.collection('usuarios').deleteMany({ email: emailNorm }),
+        database.collection('users').deleteMany({
+            $or: [{ email: emailNorm }, ...(userIds.length ? [{ id: { $in: userIds } }] : [])]
+        }),
+        database.collection('sessions').deleteMany({
+            $or: [{ userId: { $in: userIds } }, { email: emailNorm }]
+        }),
+        database.collection('onboarding_state').deleteMany({
+            $or: [{ email: emailNorm }, ...(userIds.length ? [{ userId: { $in: userIds } }] : [])]
+        }),
+        database.collection('analises').deleteMany({ email: emailNorm }),
+        database.collection('diagnosticos').deleteMany({ ownerEmail: emailNorm }),
+        database.collection('pilot_events').deleteMany({ ownerHash })
+    ];
+    const results = await Promise.all(operations);
+    return {
+        collectionsProcessed: results.length,
+        deletedRecords: results.reduce((total, result) => total + result.deletedCount, 0)
+    };
+}
+
 module.exports = {
     conectarDB,
     obterUsuario,
@@ -202,5 +237,6 @@ module.exports = {
     obterAnalises,
     deletarAnalise,
     salvarEventoPiloto,
-    obterMetricasPiloto
+    obterMetricasPiloto,
+    excluirDadosConta
 };

@@ -72,6 +72,10 @@ em MongoDB Atlas.
     arquivo ou conteúdo: início, conclusão, rejeição e falha. `GET /api/pilot/metrics`
     retorna somente as métricas agregadas do usuário autenticado, opcionalmente
     filtradas pela empresa ativa.
+11. Privacidade → `DELETE /api/account` exige a confirmação literal `EXCLUIR`,
+    revoga sessões e remove os registros do usuário, análises, diagnósticos,
+    onboarding e telemetria operacional. O fluxo não remove registros mantidos
+    por provedores externos sob obrigações próprias de retenção.
 
 ## Qualidade verificada
 
