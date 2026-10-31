@@ -102,6 +102,14 @@ function compactarResultadoAnalise(dados) {
 
 async function extrairTextoPDF(buffer) {
     try {
+        // pdf-parse v2 uses browser geometry globals through pdfjs-dist.
+        // @napi-rs/canvas provides their Node-compatible implementations.
+        if (typeof global.DOMMatrix === 'undefined') {
+            const { DOMMatrix, ImageData, Path2D } = require('@napi-rs/canvas');
+            global.DOMMatrix = DOMMatrix;
+            global.ImageData = ImageData;
+            global.Path2D = Path2D;
+        }
         const pdfParse = require('pdf-parse');
 
         if (typeof pdfParse === 'function') {
