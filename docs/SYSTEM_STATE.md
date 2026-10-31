@@ -55,9 +55,11 @@ em MongoDB Atlas.
 3. Dashboard → KPIs, tendências, alertas e economia tributária estimada.
 4. Open Finance → token Pluggy, conexão bancária, sincronização e categorização.
 5. Documentos → upload, OCR/extração, validação do tipo e da qualidade mínima,
-   análise e chat. Arquivos incompatíveis ou sem pelo menos dois termos contábeis
-   reconhecidos são rejeitados explicitamente; a resposta inclui os termos
-   encontrados e a quantidade de caracteres extraídos.
+   análise, histórico por empresa e chat. Arquivos incompatíveis ou sem pelo menos
+   dois termos contábeis reconhecidos são rejeitados explicitamente; a resposta
+   inclui os termos encontrados e a quantidade de caracteres extraídos. A tela de
+   DRE/Balanço consome `GET /api/analises` e exibe apenas indicadores realmente
+   presentes nas análises salvas.
 6. Fiscal → simulação de regimes, DAS, calendário e diagnósticos.
 7. Pagamentos → checkout, success fee e webhook Stripe idempotente.
 8. Notícias → consulta NewsAPI no backend, filtro das últimas 48 horas, classificação por
