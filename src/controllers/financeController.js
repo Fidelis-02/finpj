@@ -26,7 +26,7 @@ function touchScopedCompany(usuario, scoped, target) {
     usuario.updatedAt = now;
 }
 
-async function carregarTransacoesPluggy(itemId) {
+async function carregarTransacoesPluggy(itemId, bankName = 'instituição financeira') {
     if (!pluggyService.isConfigured()) {
         throw new Error('Integração Pluggy não configurada.');
     }
@@ -169,7 +169,7 @@ async function connectBank(req, res) {
     }
 
     const bankName = item.connector?.name || 'Instituicao financeira';
-    const transactions = await carregarTransacoesPluggy(itemId);
+    const transactions = await carregarTransacoesPluggy(itemId, bankName);
     if (transactions.length === 0) {
         return res.status(502).json({ erro: 'A instituição financeira não retornou transações reais.' });
     }

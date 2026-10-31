@@ -76,6 +76,10 @@ em MongoDB Atlas.
     revoga sessões e remove os registros do usuário, análises, diagnósticos,
     onboarding e telemetria operacional. O fluxo não remove registros mantidos
     por provedores externos sob obrigações próprias de retenção.
+12. Open Finance → a tela autenticada consome bancos, resumo e transações reais,
+    permite sincronizar/remover conexões e exibe estados explícitos quando não há
+    movimentações. A conexão usa o identificador da empresa ativa para manter o
+    escopo dos dados.
 
 ## Qualidade verificada
 
