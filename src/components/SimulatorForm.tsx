@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Calculator, ArrowRight, ShieldCheck, Mail, CheckCircle2, Building2, MapPin, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { maskCurrency, parseCurrencyInput, maskCNPJ, unmaskCNPJ, isValidCNPJ } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
 
 // Using require since TaxEngine is a CommonJS module
 const TaxEngine = require("@/tax/index.js");
@@ -42,9 +43,7 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
     if (!isValidCNPJ(digits)) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/cnpj?cnpj=${digits}`);
-      if (!res.ok) throw new Error("CNPJ não encontrado");
-      const data = await res.json();
+      const data = await apiRequest(`/api/cnpj?cnpj=${digits}`);
       if (data.nome || data.razao_social) {
         setCompanyDetails({
           nome: data.nome || data.razao_social,
@@ -61,20 +60,12 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
       } else {
         throw new Error();
       }
-    } catch (err) {
-      console.warn("API lookup failed, fallback to mock company name", err);
-      setCompanyDetails({
-        nome: "Empresa Exemplo LTDA",
-        fantasia: "FinTech Soluções",
-        cnae: "6202-3/00 - Desenvolvimento de softwares",
-        municipio: "São Paulo - SP",
-        porte: "Microempresa (ME)"
+    } catch (err: any) {
+      console.error("Falha ao consultar CNPJ:", err);
+      toast.error("Não foi possível consultar o CNPJ", {
+        description: err.message || "Tente novamente em instantes.",
       });
-      toast.success("Empresa localizada (Mock)");
-      setTimeout(() => {
-        setStep(2);
-        setIsLoading(false);
-      }, 1000);
+      setIsLoading(false);
     }
   };
 

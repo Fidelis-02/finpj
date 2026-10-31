@@ -143,9 +143,8 @@ export default function Home() {
   const calculateRealTimeSavings = async () => {
     setCalcLoading(true);
     try {
-      const res = await fetch("/api/tax/simulate", {
+      const data = await apiRequest("/api/tax/simulate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           annualRevenue: calcFat,
           margin: calcMargem,
@@ -153,10 +152,7 @@ export default function Home() {
           activity: calcSegmento,
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setCalcResult(data);
-      }
+      setCalcResult(data);
     } catch (err) {
       console.warn("Real-time calculation failed, fallback to local logic", err);
       // Basic mock math fallback to ensure calculator never looks broken

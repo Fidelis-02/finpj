@@ -28,7 +28,7 @@ export default function DiagnosticsPage() {
     setLoading(true);
     try {
       const data = await apiRequest<{ diagnostico: string }>(
-        "/api/diagnostics",
+        "/api/diagnosticos",
         {
           method: "POST",
           body: JSON.stringify(form),

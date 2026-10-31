@@ -47,10 +47,12 @@ export async function apiRequest<T = any>(
     );
   }
 
-  const contentType = response.headers.get("content-type") || "";
+  const contentType = response.headers?.get?.("content-type") || "";
   const body = contentType.includes("application/json")
     ? await response.json()
-    : await response.text();
+    : typeof response.text === "function"
+      ? await response.text()
+      : await response.json();
 
   if (!response.ok) {
     const raw =

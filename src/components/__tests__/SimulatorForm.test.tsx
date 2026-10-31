@@ -55,7 +55,12 @@ describe("SimulatorForm Component", () => {
     
     // Check that fetch was triggered for the CNPJ
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("12345678000195"));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("12345678000195"),
+        expect.objectContaining({
+          headers: expect.objectContaining({ "Content-Type": "application/json" }),
+        })
+      );
     });
 
     // Check that the component transitioned to Step 2
