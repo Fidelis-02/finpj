@@ -11,7 +11,6 @@ import {
   Zap,
   TrendingUp,
   Percent,
-  Play,
   ArrowRightLeft,
   DollarSign,
   AlertTriangle,
@@ -72,9 +71,6 @@ export default function Home() {
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState("");
 
-  // Tab state for product screenshots
-  const [activeTab, setActiveTab] = useState("dashboard");
-
   // Track window scroll to display Sticky CTA
   useEffect(() => {
     const handleScroll = () => {
@@ -122,33 +118,6 @@ export default function Home() {
     setLoginOpen(false);
     setRegisterOpen(true);
   };
-
-  const productScreenshots = [
-    {
-      id: "dashboard",
-      title: "Dashboard Financeiro",
-      desc: "Visão consolidada do fluxo de caixa e lucros.",
-      src: "/images/dashboard_screenshot.png"
-    },
-    {
-      id: "tax",
-      title: "Comparador de Regimes",
-      desc: "Simulação exata de carga tributária SN vs LP vs LR.",
-      src: "/images/tax_engine_screenshot.png"
-    },
-    {
-      id: "openfinance",
-      title: "Open Finance",
-      desc: "Conexão bancária Pluggy para importação automática.",
-      src: "/images/openfinance_screenshot.png"
-    },
-    {
-      id: "alerts",
-      title: "Monitoramento de OPEX",
-      desc: "Identificação de anomalias e desvios de despesas.",
-      src: "/images/cost_alerts_screenshot.png"
-    }
-  ];
 
   return (
     <main className="min-h-screen bg-[#07111f] text-slate-100 selection:bg-blue-500/30 selection:text-blue-200 overflow-x-hidden">
@@ -342,59 +311,6 @@ export default function Home() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* Product Screenshots Carousel Section */}
-      <section id="demonstracao" className="py-16 container mx-auto px-6">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-extrabold text-white">Veja o FinPJ em Ação</h2>
-          <p className="text-slate-400 mt-2 text-sm max-w-lg mx-auto">
-            Explore telas reais e descubra como transformamos dados bancários brutos em inteligência tributária clara.
-          </p>
-        </div>
-
-        <div className="grid lg:grid-cols-12 gap-8 items-start">
-          {/* Tab Selector */}
-          <div className="lg:col-span-3 space-y-2">
-            {productScreenshots.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  trackEvent("screenshot_tab_click", { tab: tab.id });
-                  setActiveTab(tab.id);
-                }}
-                className={`w-full text-left p-4 rounded-xl transition-all border ${
-                  activeTab === tab.id
-                    ? "bg-slate-900 border-blue-500 text-white"
-                    : "bg-slate-950 border-slate-900 hover:border-slate-800 text-slate-400"
-                }`}
-              >
-                <div className="font-bold text-sm">{tab.title}</div>
-                <div className="text-[11px] text-slate-500 mt-1">{tab.desc}</div>
-              </button>
-            ))}
-          </div>
-
-          {/* Screenshot Display */}
-          <div className="lg:col-span-9 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-3 shadow-2xl relative">
-            <div className="aspect-[16/10] relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
-              {productScreenshots.map((tab) => (
-                <div
-                  key={tab.id}
-                  className={`absolute inset-0 transition-opacity duration-300 ${
-                    activeTab === tab.id ? "opacity-100 z-10" : "opacity-0 z-0"
-                  }`}
-                >
-                  <img
-                    src={tab.src}
-                    alt={tab.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Rebuilt Feature Cards around Outcomes */}
