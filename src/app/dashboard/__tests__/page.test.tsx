@@ -68,6 +68,7 @@ describe("DashboardOverview Page", () => {
             taxSavings: { value: 25000 },
             alerts: { value: 2 },
           },
+          activeCompany: { connectedBanksCount: 1 },
         },
       },
     });
@@ -88,6 +89,9 @@ describe("DashboardOverview Page", () => {
     const banner = screen.getByTestId("smart-insights-banner");
     expect(banner).toBeInTheDocument();
     expect(banner).toHaveTextContent("R$ 25.000,00");
+    expect(banner).toHaveTextContent("Oportunidade tributária identificada");
+    expect(banner).toHaveTextContent("Open Finance conectado");
+    expect(banner).not.toHaveTextContent("Aplicar Economia");
 
     // Verify Recharts is rendered
     expect(screen.getByTestId("dashboard-chart")).toBeInTheDocument();

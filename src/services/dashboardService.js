@@ -269,6 +269,7 @@ function buildDashboard(usuario = {}, options = {}) {
         id: item.id,
         cnpj: item.cnpj,
         name: item.fantasia || item.nome || item.email || 'Empresa sem nome',
+        connectedBanksCount: item.connectedBanks.length,
         active: item.id === company.id
     }));
     const reports = company.bankReports;

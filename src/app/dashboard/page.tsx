@@ -46,6 +46,7 @@ interface DashboardOverview {
   kpis: Record<string, { value: number }>;
   trend: TrendData;
   insights?: Insight[];
+  activeCompany?: { connectedBanksCount?: number };
 }
 
 interface KPIConfigItem {
@@ -113,6 +114,7 @@ export default function DashboardOverview() {
   const [loadError, setLoadError] = useState("");
   const [trend, setTrend] = useState<TrendData>({ labels: [], revenue: [], taxes: [], empty: true });
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [connectedBanksCount, setConnectedBanksCount] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -122,6 +124,7 @@ export default function DashboardOverview() {
         const overview = data.dashboard.overview.kpis;
         setTrend(data.dashboard.overview.trend);
         setInsights(data.dashboard.overview.insights || []);
+        setConnectedBanksCount(data.dashboard.overview.activeCompany?.connectedBanksCount || 0);
         setKpis({
           monthlyRevenue: overview.monthlyRevenue?.value || 0,
           monthlyTaxes: overview.monthlyTaxes?.value || 0,
@@ -218,19 +221,23 @@ export default function DashboardOverview() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase">Open Finance Ativo</span>
-                  <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase border border-green-500/30">Motor Fiscal Sincronizado</span>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  {connectedBanksCount > 0 ? (
+                    <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase">Open Finance conectado</span>
+                  ) : (
+                    <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase">Dados financeiros informados</span>
+                  )}
+                  <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-bold tracking-wider uppercase border border-green-500/30">Estimativa fiscal</span>
                 </div>
-                <h2 className="text-xl font-bold mb-1">Seu DRE Mágico está rodando</h2>
+                <h2 className="text-xl font-bold mb-1">Oportunidade tributária identificada</h2>
                 <p className="text-blue-100 max-w-xl text-sm">
-                  Identificamos {formatCurrency(kpis.taxSavings)} em economia tributária estimada com base nos dados disponíveis para esta empresa.
+                  Estimativa anual de {formatCurrency(kpis.taxSavings)} com base nos dados disponíveis para esta empresa. Revise o cenário antes de tomar qualquer decisão.
                 </p>
               </div>
               <div className="shrink-0">
                 <Link href="/dashboard/tax">
                   <button className="bg-white text-blue-700 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-sm">
-                    Aplicar Economia
+                    Revisar cenário fiscal
                   </button>
                 </Link>
               </div>
