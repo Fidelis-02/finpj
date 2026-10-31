@@ -22,18 +22,24 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 
-const mainNav = [
+const overviewNav = [
   { key: "overview", label: "Raio-X Financeiro", icon: BarChart3, href: "/dashboard" },
-  { key: "tax", label: "Motor Fiscal", icon: Calculator, href: "/dashboard/tax" },
-  { key: "statements", label: "Analisador DRE", icon: FileText, href: "/dashboard/statements" },
-  { key: "financial", label: "Monitor de Custos", icon: DollarSign, href: "/dashboard/financial" },
 ];
 
-const operationNav = [
+const financialNav = [
+  { key: "financial", label: "Fluxo de caixa", icon: DollarSign, href: "/dashboard/financial" },
+  { key: "statements", label: "Demonstrações financeiras", icon: FileText, href: "/dashboard/statements" },
+  { key: "ai", label: "Análise de documentos", icon: Upload, href: "/dashboard/ai" },
   { key: "openfinance", label: "Open Finance", icon: Landmark, href: "/dashboard/openfinance" },
-  { key: "ai", label: "Importar Documentos", icon: Upload, href: "/dashboard/ai" },
-  { key: "diagnostics", label: "Diagnóstico Fiscal", icon: Stethoscope, href: "/dashboard/diagnostics" },
-  { key: "insights", label: "Insights", icon: Lightbulb, href: "/dashboard/insights" },
+];
+
+const taxNav = [
+  { key: "tax", label: "Comparar regimes", icon: Calculator, href: "/dashboard/tax" },
+  { key: "diagnostics", label: "Diagnóstico tributário", icon: Stethoscope, href: "/dashboard/diagnostics" },
+];
+
+const intelligenceNav = [
+  { key: "insights", label: "Central de alertas", icon: Lightbulb, href: "/dashboard/insights" },
 ];
 
 export function Sidebar() {
@@ -136,14 +142,14 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Main nav */}
+      {/* Product navigation follows the TCC's finance, tax and intelligence modules. */}
       <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2">
         {!collapsed && (
           <span className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Principal
+          Visão executiva
           </span>
         )}
-        {mainNav.map((item) => (
+      {overviewNav.map((item) => (
           <Link
             key={item.key}
             href={item.href}
@@ -164,10 +170,58 @@ export function Sidebar() {
         <div className="pt-4">
           {!collapsed && (
             <span className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Operação
+              Gestão financeira
             </span>
           )}
-          {operationNav.map((item) => (
+          {financialNav.map((item) => (
+            <Link
+              key={item.key}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                isActive(item.href)
+                  ? "bg-blue-500 text-white shadow-sm"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
+              )}
+              title={item.label}
+              onClick={() => setMobileOpen(false)}
+            >
+              <item.icon size={18} className="shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </Link>
+          ))}
+        </div>
+        <div className="pt-4">
+          {!collapsed && (
+            <span className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Inteligência tributária
+            </span>
+          )}
+          {taxNav.map((item) => (
+            <Link
+              key={item.key}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                isActive(item.href)
+                  ? "bg-blue-500 text-white shadow-sm"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
+              )}
+              title={item.label}
+              onClick={() => setMobileOpen(false)}
+            >
+              <item.icon size={18} className="shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </Link>
+          ))}
+        </div>
+        <div className="pt-4">
+          {!collapsed && (
+            <span className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Inteligência
+            </span>
+          )}
+          {intelligenceNav.map((item) => (
             <Link
               key={item.key}
               href={item.href}

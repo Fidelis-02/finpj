@@ -128,11 +128,11 @@ export default function StatementsPage() {
       <div>
         <nav className="mb-2 flex items-center gap-2 text-sm text-gray-400">
           <span>FinPJ</span><span>/</span>
-          <span className="font-semibold text-primary">DRE e Balanço</span>
+          <span className="font-semibold text-primary">Demonstrações financeiras</span>
         </nav>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary">DRE e balanço patrimonial</h1>
+            <h1 className="text-3xl font-bold text-primary">Demonstrações financeiras</h1>
             <p className="mt-1 text-sm text-gray-500">Histórico de documentos processados e indicadores extraídos.</p>
           </div>
           <Button variant="outline" onClick={loadAnalyses} disabled={loading}>

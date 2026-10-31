@@ -61,9 +61,9 @@ export default function FinancialPage() {
       <div>
         <nav className="flex items-center gap-2 text-sm text-gray-400 mb-2">
           <span>FinPJ</span><span>/</span>
-          <span className="text-primary font-semibold">Monitor de Custos</span>
+          <span className="text-primary font-semibold">Fluxo de caixa</span>
         </nav>
-        <h1 className="text-3xl font-bold text-primary">Monitor de custos</h1>
+        <h1 className="text-3xl font-bold text-primary">Fluxo de caixa</h1>
       </div>
 
       {loadError && (

@@ -58,7 +58,7 @@ export default function TaxPage() {
         <nav className="flex items-center gap-2 text-sm text-gray-400 mb-2">
           <span>FinPJ</span>
           <span>/</span>
-          <span className="text-primary font-semibold">Motor Fiscal</span>
+          <span className="text-primary font-semibold">Comparar regimes</span>
         </nav>
         <h1 className="text-3xl font-bold text-primary">Comparador de regimes</h1>
       </div>

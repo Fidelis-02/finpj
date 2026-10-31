@@ -86,12 +86,17 @@ em MongoDB Atlas.
     utiliza a empresa ativa; Dashboard, Insights e Monitor de Custos enviam
     `companyId` aos endpoints; Valuation exibe falhas explicitamente; e a
     navegação possui menu mobile com overlay.
+14. Navegação → os menus seguem os núcleos do TCC: visão executiva, gestão
+    financeira integrada ao Open Finance, inteligência tributária e central de
+    alertas. As rotas existentes foram preservadas; apenas os agrupamentos e
+    rótulos foram ajustados para evitar duplicidade entre dashboard, documentos,
+    DRE/Balanço e diagnóstico fiscal.
 
 ## Qualidade verificada
 
 Comandos disponíveis em [`package.json`](../package.json):
 
-- `npm test`: 14 testes backend aprovados na última validação.
+- `npm test`: 19 testes backend aprovados na última validação.
 - `npm run test:frontend`: 9 testes Jest aprovados na última validação.
 - `npm run build`: build Next.js aprovado, incluindo type-check.
 

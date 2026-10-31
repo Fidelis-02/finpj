@@ -59,11 +59,11 @@ export default function InsightsPage() {
     <div className="space-y-8">
       <div>
         <nav className="mb-2 flex items-center gap-2 text-sm text-gray-400">
-          <span>FinPJ</span><span>/</span><span className="font-semibold text-primary">Insights</span>
+          <span>FinPJ</span><span>/</span><span className="font-semibold text-primary">Central de alertas</span>
         </nav>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Insights e alertas</h1>
+            <h1 className="text-3xl font-bold text-primary">Central de alertas</h1>
             <p className="mt-1 text-sm text-gray-500">
               Recomendações geradas a partir dos dados disponíveis para {activeCompany?.nome || "a empresa ativa"}.
             </p>
