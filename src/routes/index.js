@@ -37,6 +37,7 @@ const documentController = require('../controllers/documentController');
 const userController = require('../controllers/userController');
 const paymentController = require('../controllers/paymentController');
 const companyController = require('../controllers/companyController');
+const pilotController = require('../controllers/pilotController');
 
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || Math.floor(50 * 1024 * 1024));
 
@@ -183,6 +184,7 @@ router.post('/upload-documento', verificarTokenMiddleware, validateRequest(valid
 router.post('/upload-url', verificarTokenMiddleware, wrap(documentController.getUploadUrl));
 router.post('/process-document', verificarTokenMiddleware, wrap(documentController.processDocumentFromUrl));
 router.get('/analises', verificarTokenMiddleware, wrap(documentController.getAnalises));
+router.get('/pilot/metrics', verificarTokenMiddleware, wrap(pilotController.getMetrics));
 router.post('/chat', verificarTokenMiddleware, validateRequest(validateChatMessage), wrap(documentController.postChat));
 
 router.get('/profile', verificarTokenMiddleware, wrap(userController.getProfile));

@@ -68,6 +68,10 @@ em MongoDB Atlas.
    e um catálogo por grupo de regra, com fonte, vigência quando conhecida e status
    (`embedded`, `assumption` ou `projection`). Não há atualização legislativa
    automática sem integração adicional.
+10. Piloto → eventos operacionais de documentos são registrados sem e-mail, nome de
+    arquivo ou conteúdo: início, conclusão, rejeição e falha. `GET /api/pilot/metrics`
+    retorna somente as métricas agregadas do usuário autenticado, opcionalmente
+    filtradas pela empresa ativa.
 
 ## Qualidade verificada
 

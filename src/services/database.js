@@ -34,6 +34,8 @@ async function conectarDB() {
             await db.collection('sessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
             await db.collection('onboarding_state').createIndex({ userId: 1 }, { unique: true });
             await db.collection('onboarding_state').createIndex({ email: 1 });
+            await db.collection('pilot_events').createIndex({ ownerHash: 1, createdAt: -1 });
+            await db.collection('pilot_events').createIndex({ ownerHash: 1, companyId: 1, type: 1 });
         } catch (e) {
             // Índices já existem.
         }
@@ -154,6 +156,38 @@ async function deletarAnalise(id) {
     return result.deletedCount > 0;
 }
 
+async function salvarEventoPiloto(evento) {
+    const database = await conectarDB();
+    const record = {
+        ownerHash: evento.ownerHash,
+        companyId: evento.companyId || null,
+        type: evento.type,
+        metadata: evento.metadata || {},
+        createdAt: new Date()
+    };
+    await database.collection('pilot_events').insertOne(record);
+    return record;
+}
+
+async function obterMetricasPiloto(ownerHash, companyId) {
+    const database = await conectarDB();
+    const filter = { ownerHash };
+    if (companyId) filter.companyId = companyId;
+    const events = await database.collection('pilot_events').find(filter, {
+        projection: { type: 1, createdAt: 1, _id: 0 }
+    }).toArray();
+    const byType = events.reduce((acc, event) => {
+        acc[event.type] = (acc[event.type] || 0) + 1;
+        return acc;
+    }, {});
+    return {
+        totalEvents: events.length,
+        byType,
+        firstEventAt: events.length ? events[events.length - 1].createdAt : null,
+        lastEventAt: events.length ? events[0].createdAt : null
+    };
+}
+
 module.exports = {
     conectarDB,
     obterUsuario,
@@ -166,5 +200,7 @@ module.exports = {
     deletarDiagnostico,
     salvarAnalise,
     obterAnalises,
-    deletarAnalise
+    deletarAnalise,
+    salvarEventoPiloto,
+    obterMetricasPiloto
 };

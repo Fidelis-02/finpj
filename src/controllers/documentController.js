@@ -1,10 +1,24 @@
 const { salvarAnalise, obterAnalises, obterUsuario } = require('../services/database');
 const { analisarComGroq } = require('../services/aiService');
 const { getScopedCompanyRecord, attachCompanyScope, filterRecordsByCompany } = require('../services/companyContext');
+const { recordPilotEvent } = require('../services/pilotTelemetry');
 
 const MAX_EXTRACTED_CHARS = Number(process.env.MAX_EXTRACTED_CHARS || 100000);
 const MAX_ANALYSES_RETURNED = Number(process.env.MAX_ANALYSES_RETURNED || 20);
 const DOCUMENT_TYPES = new Set(['dre', 'balanco', 'extrato']);
+
+async function recordDocumentEvent(req, type, metadata = {}) {
+    try {
+        await recordPilotEvent({
+            email: req.userEmail,
+            companyId: req.body?.companyId,
+            type,
+            metadata
+        });
+    } catch (error) {
+        console.error(`[pilotTelemetry] Falha ao registrar ${type}:`, error.message);
+    }
+}
 
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff'];
@@ -244,8 +258,10 @@ async function uploadDocumento(req, res) {
     const tipo = String(req.body?.tipo || 'dre').trim().toLowerCase();
     const contexto = req.body?.contexto || '';
     if (!validarTipoDocumento(tipo)) {
+        await recordDocumentEvent(req, 'document_analysis_rejected', { reason: 'invalid_document_type' });
         return res.status(422).json({ erro: 'Tipo de documento inválido. Use dre, balanco ou extrato.' });
     }
+    await recordDocumentEvent(req, 'document_upload_started', { type: tipo, sizeBytes: req.file.size });
 
     let texto = '';
     const mime = req.file.mimetype;
@@ -266,6 +282,7 @@ async function uploadDocumento(req, res) {
 
     const textoLimpo = texto.trim();
     if (!textoLimpo) {
+        await recordDocumentEvent(req, 'document_analysis_rejected', { type: tipo, reason: 'empty_extracted_text' });
         return res.status(422).json({
             erro: 'Não foi possível extrair texto do documento.',
             sugestao: 'Se for um PDF digitalizado (imagem), converta-o para PNG/JPG e envie, ou use um arquivo Excel/CSV.',
@@ -275,6 +292,7 @@ async function uploadDocumento(req, res) {
 
     // Heuristica: menos de 100 caracteres ou quase so numeros = provavel PDF digitalizado mal extraido
     if (textoLimpo.length < 100 || textoLimpo.replace(/[\d\s.,\-/]/g, '').length < 30) {
+        await recordDocumentEvent(req, 'document_analysis_rejected', { type: tipo, reason: 'insufficient_extracted_text' });
         return res.status(422).json({
             erro: 'Texto extraido muito curto ou sem conteudo semantico.',
             sugestao: 'Verifique se o PDF esta selecionavel ou converta-o para imagem/Excel.',
@@ -284,6 +302,11 @@ async function uploadDocumento(req, res) {
 
     const qualidade = avaliarQualidadeDocumento(textoLimpo, tipo);
     if (!qualidade.sufficient) {
+        await recordDocumentEvent(req, 'document_analysis_rejected', {
+            type: tipo,
+            reason: 'insufficient_accounting_terms',
+            matchedTerms: qualidade.matchedTerms.length
+        });
         return res.status(422).json({
             erro: `O documento não apresenta estrutura mínima reconhecível para ${tipo}.`,
             termosEncontrados: qualidade.matchedTerms,
@@ -317,9 +340,15 @@ async function uploadDocumento(req, res) {
             qualidade
         }, scoped));
     } catch (e) {
-        console.warn('[uploadDocumento] Não foi possível salvar análise no histórico (DB offline?):', e.message);
+        await recordDocumentEvent(req, 'document_analysis_failed', { type: tipo, reason: 'history_persistence_failed' });
+        return res.status(503).json({ erro: 'A análise foi processada, mas não pôde ser salva no histórico.' });
     }
 
+    await recordDocumentEvent(req, 'document_analysis_completed', {
+        type: tipo,
+        source: analise.fonte,
+        confidenceScore: analise.confianca?.score ?? null
+    });
     res.json({ sucesso: true, ...analise, dados: resultadoCompacto, qualidade, nomeArquivo: req.file.originalname });
 }
 
@@ -412,8 +441,13 @@ async function processDocumentFromUrl(req, res) {
         return res.status(400).json({ erro: 'Chave do arquivo é obrigatória.' });
     }
     if (!validarTipoDocumento(tipo)) {
+        await recordDocumentEvent(req, 'document_analysis_rejected', { reason: 'invalid_document_type' });
         return res.status(422).json({ erro: 'Tipo de documento inválido. Use dre, balanco ou extrato.' });
     }
+    await recordDocumentEvent(req, 'document_upload_started', {
+        type: tipo,
+        sizeBytes: Number.isFinite(Number(size)) ? Number(size) : null
+    });
     const { isStorageConfigured, generateDownloadUrl, deleteObject } = require('../services/storageService');
     if (!isStorageConfigured()) {
         return res.status(503).json({ erro: 'Serviço de storage não configurado.' });
@@ -449,6 +483,7 @@ async function processDocumentFromUrl(req, res) {
         const textoLimpo = texto.trim();
         if (!textoLimpo) {
             await deleteObject(key).catch(() => {});
+            await recordDocumentEvent(req, 'document_analysis_rejected', { type: tipo, reason: 'empty_extracted_text' });
             return res.status(422).json({
                 erro: 'Não foi possível extrair texto do documento.',
                 sugestao: 'Se for um PDF digitalizado (imagem), converta-o para PNG/JPG e envie, ou use um arquivo Excel/CSV.',
@@ -457,6 +492,7 @@ async function processDocumentFromUrl(req, res) {
         }
         if (textoLimpo.length < 100 || textoLimpo.replace(/[\d\s.,\-/]/g, '').length < 30) {
             await deleteObject(key).catch(() => {});
+            await recordDocumentEvent(req, 'document_analysis_rejected', { type: tipo, reason: 'insufficient_extracted_text' });
             return res.status(422).json({
                 erro: 'Texto extraído muito curto ou sem conteúdo semântico.',
                 sugestao: 'Verifique se o PDF está selecionável ou converta-o para imagem/Excel.',
@@ -466,6 +502,11 @@ async function processDocumentFromUrl(req, res) {
         const qualidade = avaliarQualidadeDocumento(textoLimpo, tipo);
         if (!qualidade.sufficient) {
             await deleteObject(key).catch(() => {});
+            await recordDocumentEvent(req, 'document_analysis_rejected', {
+                type: tipo,
+                reason: 'insufficient_accounting_terms',
+                matchedTerms: qualidade.matchedTerms.length
+            });
             return res.status(422).json({
                 erro: `O documento não apresenta estrutura mínima reconhecível para ${tipo}.`,
                 termosEncontrados: qualidade.matchedTerms,
@@ -497,15 +538,23 @@ async function processDocumentFromUrl(req, res) {
                 qualidade
             }, scoped));
         } catch (dbErr) {
-            console.warn('[processDocumentFromUrl] DB offline para salvarAnalise:', dbErr.message);
+            await recordDocumentEvent(req, 'document_analysis_failed', { type: tipo, reason: 'history_persistence_failed' });
+            await deleteObject(key).catch(() => {});
+            return res.status(503).json({ erro: 'A análise foi processada, mas não pôde ser salva no histórico.' });
         }
 
+        await recordDocumentEvent(req, 'document_analysis_completed', {
+            type: tipo,
+            source: analise.fonte,
+            confidenceScore: analise.confianca?.score ?? null
+        });
         await deleteObject(key).catch((e) => {
             console.warn('[processDocumentFromUrl] Falha ao deletar arquivo temporário:', e.message);
         });
         res.json({ sucesso: true, ...analise, dados: resultadoCompacto, qualidade, nomeArquivo: filename || key });
     } catch (e) {
         console.error('[processDocumentFromUrl] Erro:', e.message);
+        await recordDocumentEvent(req, 'document_analysis_failed', { type: tipo, reason: 'processing_error' });
         await deleteObject(key).catch(() => {});
         res.status(500).json({ erro: 'Erro ao processar documento.', detalhes: e.message });
     }
