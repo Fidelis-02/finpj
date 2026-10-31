@@ -22,6 +22,7 @@ interface Company {
   nome: string;
   cnpj: string;
   regime?: string;
+  setor?: string;
   faturamento?: number;
   margem?: number;
 }

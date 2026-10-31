@@ -117,7 +117,8 @@ export default function DashboardOverview() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await apiRequest<{ dashboard: { overview: DashboardOverview } }>("/api/dashboard");
+        const query = activeCompany?.id ? `?companyId=${encodeURIComponent(activeCompany.id)}` : "";
+        const data = await apiRequest<{ dashboard: { overview: DashboardOverview } }>(`/api/dashboard${query}`);
         const overview = data.dashboard.overview.kpis;
         setTrend(data.dashboard.overview.trend);
         setInsights(data.dashboard.overview.insights || []);

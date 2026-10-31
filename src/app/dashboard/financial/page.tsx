@@ -9,8 +9,10 @@ import { apiRequest } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { CashflowChart } from "@/components/dashboard/cashflow-chart";
 import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function FinancialPage() {
+  const { activeCompany } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -18,14 +20,15 @@ export default function FinancialPage() {
   useEffect(() => {
     async function load() {
       try {
+        const query = activeCompany?.id ? `?companyId=${encodeURIComponent(activeCompany.id)}` : "";
         const [dashboardResponse, summaryResponse] = await Promise.all([
-          apiRequest<{ dashboard: { metrics: any } }>("/api/dashboard"),
-          apiRequest<{ summary: any }>("/api/openfinance/summary"),
+          apiRequest<{ dashboard: { metrics: any } }>(`/api/dashboard${query}`),
+          apiRequest<{ summary: any }>(`/api/openfinance/summary${query}`),
         ]);
         const metrics = dashboardResponse.dashboard.metrics;
         const summary = summaryResponse.summary;
         const projectionResponse = summary.banksCount > 0
-          ? await apiRequest<{ projecao?: Array<{ data: string; saldo: number }> }>("/api/cashflow-projection")
+          ? await apiRequest<{ projecao?: Array<{ data: string; saldo: number }> }>(`/api/cashflow-projection${query}`)
           : { projecao: [] };
         setData({
           income: metrics.monthlyIncome || summary.monthlyIncome || 0,
@@ -45,7 +48,7 @@ export default function FinancialPage() {
       }
     }
     load();
-  }, []);
+  }, [activeCompany?.id]);
 
   const metrics = [
     { label: "Receita", key: "income", icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Stethoscope } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function DiagnosticsPage() {
+  const { activeCompany } = useAuth();
   const [form, setForm] = useState({
     nome: "",
     cnpj: "",
@@ -18,6 +20,19 @@ export default function DiagnosticsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!activeCompany) return;
+    setForm({
+      nome: activeCompany.nome || "",
+      cnpj: activeCompany.cnpj || "",
+      setor: activeCompany.setor || "",
+      regime: activeCompany.regime || "simples",
+      faturamento: activeCompany.faturamento ? String(activeCompany.faturamento) : "",
+      margem: activeCompany.margem != null ? String(activeCompany.margem) : "",
+    });
+  }, [activeCompany]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -26,17 +41,19 @@ export default function DiagnosticsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+    setResult(null);
     try {
       const data = await apiRequest<{ diagnostico: string }>(
         "/api/diagnosticos",
         {
           method: "POST",
-          body: JSON.stringify(form),
+          body: JSON.stringify({ ...form, companyId: activeCompany?.id }),
         }
       );
       setResult(data.diagnostico);
     } catch (err: any) {
-      setResult(`Erro: ${err.message}`);
+      setError(err.message || "Não foi possível gerar o diagnóstico.");
     } finally {
       setLoading(false);
     }
@@ -109,6 +126,7 @@ export default function DiagnosticsPage() {
 
         <Card>
           <h3 className="font-bold text-primary mb-4">Resultado</h3>
+          {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
           {result ? (
             <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
               {result}

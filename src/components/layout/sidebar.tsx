@@ -17,6 +17,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -37,6 +38,7 @@ const operationNav = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { user, activeCompany, companies, setActiveCompany, logout } = useAuth();
 
@@ -46,11 +48,32 @@ export function Sidebar() {
   };
 
   return (
-    <motion.aside
-      animate={{ width: collapsed ? 72 : 260 }}
-      transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="h-screen sticky top-0 bg-[#10233f] border-r border-[#1e3a5f] flex flex-col overflow-hidden shrink-0 text-white"
-    >
+    <>
+      <button
+        type="button"
+        aria-label="Abrir menu de navegação"
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen(true)}
+        className="fixed left-4 top-4 z-40 rounded-xl bg-[#10233f] p-3 text-white shadow-lg md:hidden"
+      >
+        <Menu size={20} />
+      </button>
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/40 md:hidden"
+        />
+      )}
+      <motion.aside
+        animate={{ width: collapsed ? 72 : 260 }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className={cn(
+          "h-screen fixed left-0 top-0 z-50 flex shrink-0 flex-col overflow-hidden border-r border-[#1e3a5f] bg-[#10233f] text-white transition-transform md:sticky md:z-auto",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
         <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
@@ -68,7 +91,11 @@ export function Sidebar() {
           )}
         </Link>
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            if (window.innerWidth < 768) setMobileOpen(false);
+            else setCollapsed(!collapsed);
+          }}
+          aria-label={collapsed ? "Expandir menu" : "Colapsar menu"}
           className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors shrink-0"
           title={collapsed ? "Expandir" : "Colapsar"}
         >
@@ -127,6 +154,7 @@ export function Sidebar() {
                 : "text-slate-300 hover:bg-white/10 hover:text-white"
             )}
             title={item.label}
+            onClick={() => setMobileOpen(false)}
           >
             <item.icon size={18} className="shrink-0" />
             {!collapsed && <span className="truncate">{item.label}</span>}
@@ -150,6 +178,7 @@ export function Sidebar() {
                   : "text-slate-300 hover:bg-white/10 hover:text-white"
               )}
               title={item.label}
+              onClick={() => setMobileOpen(false)}
             >
               <item.icon size={18} className="shrink-0" />
               {!collapsed && <span className="truncate">{item.label}</span>}
@@ -176,13 +205,18 @@ export function Sidebar() {
           href="/dashboard/settings"
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all"
           title="Configurações"
+          onClick={() => setMobileOpen(false)}
         >
           <Settings size={18} className="shrink-0" />
           {!collapsed && <span>Configurações</span>}
         </Link>
 
         <button
-          onClick={logout}
+          onClick={() => {
+            setMobileOpen(false);
+            logout();
+          }}
+          aria-label="Sair da conta"
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-red-500/20 hover:text-red-200 transition-all w-full text-left"
           title="Sair"
         >
@@ -190,6 +224,7 @@ export function Sidebar() {
           {!collapsed && <span>Sair</span>}
         </button>
       </div>
-    </motion.aside>
+      </motion.aside>
+    </>
   );
 }

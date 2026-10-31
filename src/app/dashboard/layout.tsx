@@ -24,7 +24,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-[#f6f8fb]">
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">
-        <div className="max-w-[1440px] mx-auto p-5 sm:p-6 lg:p-10">
+        <div className="max-w-[1440px] mx-auto p-5 pt-20 sm:p-6 sm:pt-20 lg:p-10">
           {isLoading ? <DashboardSkeleton /> : children}
         </div>
       </main>

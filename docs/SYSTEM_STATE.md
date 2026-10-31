@@ -80,6 +80,10 @@ em MongoDB Atlas.
     permite sincronizar/remover conexões e exibe estados explícitos quando não há
     movimentações. A conexão usa o identificador da empresa ativa para manter o
     escopo dos dados.
+13. Área logada → Insights consome recomendações reais do dashboard; Diagnóstico
+    utiliza a empresa ativa; Dashboard, Insights e Monitor de Custos enviam
+    `companyId` aos endpoints; Valuation exibe falhas explicitamente; e a
+    navegação possui menu mobile com overlay.
 
 ## Qualidade verificada
 
@@ -114,11 +118,10 @@ Browserslist.
 ### Próximas
 
 1. Expandir testes de contratos da API e dos fluxos de Open Finance.
-2. Substituir dados mock por estados explícitos de “sem dados” ou “aguardando sincronização”.
-3. Adicionar observabilidade, métricas de sincronização e trilha de auditoria.
-4. Consolidar progressivamente a superfície Vanilla JS em Next.js.
-5. Melhorar conciliação, categorização e confirmação de transações.
-6. Validar acessibilidade, responsividade e permissões por empresa.
+2. Adicionar testes E2E e de acessibilidade para os fluxos autenticados.
+3. Consolidar progressivamente a superfície Vanilla JS em Next.js.
+4. Melhorar conciliação, categorização e confirmação de transações.
+5. Formalizar permissões avançadas por empresa e papéis de usuário.
 
 ## Radar de notícias
 

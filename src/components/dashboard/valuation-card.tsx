@@ -19,6 +19,7 @@ export function ValuationCard({ companyId }: { companyId?: string }) {
   const [data, setData] = useState<ValuationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [wacc, setWacc] = useState(12);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -32,9 +33,13 @@ export function ValuationCard({ companyId }: { companyId?: string }) {
         const res = await apiRequest(`/api/finance/valuation?${query.toString()}`);
         if (active && res.sucesso) {
           setData(res);
+          setError("");
+        } else if (active) {
+          setError("A valuation não está disponível para os dados atuais.");
         }
       } catch (e) {
         console.error("Failed to load valuation", e);
+        if (active) setError("Não foi possível carregar a valuation.");
       } finally {
         if (active) setLoading(false);
       }
@@ -71,12 +76,14 @@ export function ValuationCard({ companyId }: { companyId?: string }) {
       </div>
 
       <div className="flex-1 flex flex-col justify-center">
-        {loading || !data ? (
+        {loading ? (
           <div className="space-y-4">
             <Skeleton className="h-10 w-48 mb-2" />
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-4 w-40" />
           </div>
+        ) : error || !data ? (
+          <div className="py-10 text-center text-sm text-gray-400">{error || "Ainda não há dados suficientes para calcular a valuation."}</div>
         ) : (
           <div className="animate-in fade-in duration-500">
             <div className="mb-6">
