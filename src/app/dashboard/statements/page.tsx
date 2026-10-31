@@ -27,6 +27,13 @@ type AnalysisData = {
   patrimonio_liquido?: number;
   liquidez_corrente?: number;
   endividamento_pct?: number;
+  indicadores?: {
+    liquidez?: Record<string, number | null>;
+    rentabilidade?: Record<string, number | null>;
+    estrutura_capital?: Record<string, number | null>;
+    eficiencia?: Record<string, number | null>;
+    limitacoes?: string[];
+  };
 };
 
 type Analysis = {
@@ -51,6 +58,21 @@ function formatDate(value?: string) {
   return Number.isNaN(date.getTime())
     ? "Data não informada"
     : date.toLocaleDateString("pt-BR", { dateStyle: "medium" });
+}
+
+function MetricGroup({ title, values }: { title: string; values: [string, number | null | undefined, boolean?][] }) {
+  const visible = values.filter(([, value]) => value != null && Number.isFinite(value));
+  if (!visible.length) return null;
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-gray-700">{title}</h3>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {visible.map(([label, value, percent]) => (
+          <Kpi key={label} label={label} value={value} percent={percent} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Kpi({ label, value, percent = false }: { label: string; value?: number; percent?: boolean }) {
@@ -205,6 +227,31 @@ export default function StatementsPage() {
                   <Kpi label="Liquidez corrente" value={data.liquidez_corrente} />
                   <Kpi label="Endividamento" value={data.endividamento_pct} percent />
                 </div>
+                {data.indicadores && (
+                  <div className="space-y-4">
+                    <MetricGroup title="Liquidez" values={[
+                      ["Liquidez imediata", data.indicadores.liquidez?.liquidez_imediata],
+                      ["Liquidez seca", data.indicadores.liquidez?.liquidez_seca],
+                      ["Liquidez geral", data.indicadores.liquidez?.liquidez_geral],
+                    ]} />
+                    <MetricGroup title="Rentabilidade" values={[
+                      ["ROE", data.indicadores.rentabilidade?.roe_pct, true],
+                      ["ROA", data.indicadores.rentabilidade?.roa_pct, true],
+                    ]} />
+                    <MetricGroup title="Estrutura de capital" values={[
+                      ["Grau de endividamento", data.indicadores.estrutura_capital?.grau_endividamento],
+                      ["Composição do endividamento", data.indicadores.estrutura_capital?.composicao_endividamento_pct, true],
+                      ["Capital de giro líquido", data.indicadores.estrutura_capital?.capital_de_giro_liquido],
+                    ]} />
+                    <MetricGroup title="Eficiência" values={[
+                      ["Giro do ativo", data.indicadores.eficiencia?.giro_do_ativo],
+                      ["Giro do patrimônio líquido", data.indicadores.eficiencia?.giro_do_pl],
+                    ]} />
+                    {data.indicadores.limitacoes && data.indicadores.limitacoes.length > 0 && (
+                      <p className="text-xs text-gray-500">Indicadores indisponíveis: {data.indicadores.limitacoes.join(" ")}</p>
+                    )}
+                  </div>
+                )}
 
                 {data.alertas && data.alertas.length > 0 && (
                   <div>

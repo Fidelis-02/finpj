@@ -59,7 +59,9 @@ em MongoDB Atlas.
    dois termos contábeis reconhecidos são rejeitados explicitamente; a resposta
    inclui os termos encontrados e a quantidade de caracteres extraídos. A tela de
    DRE/Balanço consome `GET /api/analises` e exibe apenas indicadores realmente
-   presentes nas análises salvas.
+   presentes nas análises salvas. O backend calcula liquidez, rentabilidade,
+   estrutura de capital e eficiência com divisão segura, normalização de aliases
+   contábeis e limitações explícitas; campos ausentes nunca são estimados.
 6. Fiscal → simulação de regimes, DAS, calendário e diagnósticos.
 7. Pagamentos → checkout, success fee e webhook Stripe idempotente.
 8. Notícias → consulta NewsAPI no backend, filtro das últimas 48 horas, classificação por

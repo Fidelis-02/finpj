@@ -36,6 +36,13 @@ interface AnalysisData {
   resumo?: string;
   categorias?: { nome: string; valor: number }[];
   anomalias?: string[];
+  indicadores?: {
+    liquidez?: Record<string, number | null>;
+    rentabilidade?: Record<string, number | null>;
+    estrutura_capital?: Record<string, number | null>;
+    eficiencia?: Record<string, number | null>;
+    limitacoes?: string[];
+  };
 }
 
 interface AnalysisResponse {
@@ -184,6 +191,7 @@ export default function AIPage() {
   const renderDreKpis = () => {
     if (!dados) return null;
     return (
+      <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {dados.receita_bruta != null && <KpiCard label="Receita Bruta" value={formatCurrency(dados.receita_bruta)} />}
         {dados.receita_liquida != null && <KpiCard label="Receita Líquida" value={formatCurrency(dados.receita_liquida)} />}
@@ -195,12 +203,20 @@ export default function AIPage() {
         {dados.margem_bruta_pct != null && <KpiCard label="Margem Bruta" value={`${dados.margem_bruta_pct.toFixed(1)}%`} />}
         {dados.margem_liquida_pct != null && <KpiCard label="Margem Líquida" value={`${dados.margem_liquida_pct.toFixed(1)}%`} />}
       </div>
+      {dados.indicadores?.rentabilidade && (
+        <MetricGroup title="Rentabilidade" values={[
+          ["Margem bruta", dados.indicadores.rentabilidade.margem_bruta_pct, "%"],
+          ["Margem líquida", dados.indicadores.rentabilidade.margem_liquida_pct, "%"]
+        ]} />
+      )}
+      </div>
     );
   };
 
   const renderBalancoKpis = () => {
     if (!dados) return null;
     return (
+      <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {dados.ativo_total != null && <KpiCard label="Ativo Total" value={formatCurrency(dados.ativo_total)} />}
         {dados.ativo_circulante != null && <KpiCard label="Ativo Circulante" value={formatCurrency(dados.ativo_circulante)} />}
@@ -210,8 +226,39 @@ export default function AIPage() {
         {dados.liquidez_corrente != null && <KpiCard label="Liquidez Corrente" value={dados.liquidez_corrente.toFixed(2)} />}
         {dados.endividamento_pct != null && <KpiCard label="Endividamento" value={`${(dados.endividamento_pct * 100).toFixed(1)}%`} />}
       </div>
+      {dados.indicadores?.liquidez && <MetricGroup title="Liquidez" values={[
+        ["Liquidez corrente", dados.indicadores.liquidez.liquidez_corrente],
+        ["Liquidez imediata", dados.indicadores.liquidez.liquidez_imediata],
+        ["Liquidez seca", dados.indicadores.liquidez.liquidez_seca],
+        ["Liquidez geral", dados.indicadores.liquidez.liquidez_geral]
+      ]} />}
+      {dados.indicadores?.rentabilidade && <MetricGroup title="Rentabilidade" values={[
+        ["ROE", dados.indicadores.rentabilidade.roe_pct, "%"],
+        ["ROA", dados.indicadores.rentabilidade.roa_pct, "%"]
+      ]} />}
+      {dados.indicadores?.estrutura_capital && <MetricGroup title="Estrutura de capital" values={[
+        ["Grau de endividamento", dados.indicadores.estrutura_capital.grau_endividamento],
+        ["Composição do endividamento", dados.indicadores.estrutura_capital.composicao_endividamento_pct, "%"],
+        ["Capital de giro líquido", dados.indicadores.estrutura_capital.capital_de_giro_liquido, "currency"]
+      ]} />}
+      {dados.indicadores?.eficiencia && <MetricGroup title="Eficiência" values={[
+        ["Giro do ativo", dados.indicadores.eficiencia.giro_do_ativo],
+        ["Giro do patrimônio líquido", dados.indicadores.eficiencia.giro_do_pl]
+      ]} />}
+      </div>
     );
   };
+
+  const MetricGroup = ({ title, values }: { title: string; values: [string, number | null | undefined, string?][] }) => (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-gray-700">{title}</h3>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {values.map(([label, value, format]) => value != null && (
+          <KpiCard key={label} label={label} value={format === "%" ? `${value.toFixed(1)}%` : format === "currency" ? formatCurrency(value) : value.toFixed(2)} />
+        ))}
+      </div>
+    </div>
+  );
 
   const renderExtratoKpis = () => {
     if (!dados) return null;

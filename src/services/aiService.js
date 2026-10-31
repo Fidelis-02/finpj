@@ -1,3 +1,5 @@
+const { calculateFinancialMetrics } = require('./financialMetrics');
+
 function fmtReais(valor) {
     return 'R$ ' + Math.round(Number(valor) || 0).toLocaleString('pt-BR');
 }
@@ -243,19 +245,21 @@ async function callGroq(messages, maxTokens = 2000, retries = 1) {
 async function analisarComGroq(tipoDoc, textoDoc, contexto = '') {
     const GROQ_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_KEY) {
-        return analisarLocalmente(tipoDoc, textoDoc);
+        const local = analisarLocalmente(tipoDoc, textoDoc);
+        local.dados = calculateFinancialMetrics(tipoDoc, local.dados);
+        return local;
     }
     const prompts = {
         dre: `Você é analista financeiro especialista em PMEs brasileiras. Analise o DRE abaixo e extraia os valores numéricos principais. Formato numérico: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos, rodapés e números de página.
 
 Retorne EXCLUSIVAMENTE JSON:
-{"receita_bruta": number, "deducoes": number, "receita_liquida": number, "custos": number, "lucro_bruto": number, "despesas_operacionais": number, "ebitda": number, "lucro_liquido": number, "margem_bruta_pct": number, "margem_liquida_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
+{"receita_bruta": number|null, "deducoes_receita": number|null, "receita_liquida": number|null, "cmv": number|null, "lucro_bruto": number|null, "despesas_operacionais": number|null, "lucro_liquido": number|null, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
 
 Exemplo: {"receita_bruta":1250000.00,"deducoes":25000.00,"receita_liquida":1225000.00,"custos":612500.00,"lucro_bruto":612500.00,"despesas_operacionais":245000.00,"ebitda":367500.00,"lucro_liquido":245000.00,"margem_bruta_pct":0.50,"margem_liquida_pct":0.20,"alertas":["Despesas subiram 12%"],"recomendacoes":["Rever aluguel"],"resumo":"Margem bruta 50%, mas despesas elevadas."}`,
         balanco: `Você é analista financeiro especialista em PMEs brasileiras. Analise o Balanço Patrimonial e extraia os valores numéricos. Formato: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos, rodapés.
 
 Retorne EXCLUSIVAMENTE JSON:
-{"ativo_total": number, "ativo_circulante": number, "ativo_não_circulante": number, "passivo_total": number, "passivo_circulante": number, "patrimonio_liquido": number, "liquidez_corrente": number, "endividamento_pct": number, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
+{"ativo_circulante": number|null, "disponibilidades": number|null, "estoques": number|null, "ativo_nao_circulante": number|null, "ativo_total": number|null, "passivo_circulante": number|null, "passivo_nao_circulante": number|null, "passivo_total": number|null, "patrimonio_liquido": number|null, "alertas": ["string"], "recomendacoes": ["string"], "resumo": "string"}
 
 Exemplo: {"ativo_total":2500000.00,"ativo_circulante":1250000.00,"ativo_não_circulante":1250000.00,"passivo_total":1500000.00,"passivo_circulante":875000.00,"patrimonio_liquido":1000000.00,"liquidez_corrente":1.43,"endividamento_pct":0.60,"alertas":["Endividamento alto"],"recomendacoes":["Reduzir passivo circulante"],"resumo":"Liquidez 1,43 OK, mas endividamento 60% preocupante."}`,
         extrato: `Você é especialista em conciliação bancária. Analise o extrato e extraia totais e padrões. Formato: 1.234.567,89 (ponto milhar, vírgula decimal). Ignore cabeçalhos.
@@ -278,7 +282,9 @@ Exemplo: {"saldo_inicial":45230.00,"saldo_final":38910.00,"total_entradas":12500
         return { sucesso: true, dados, fonte: 'groq-llama3', confianca };
     } catch (e) {
         console.error('Groq error:', e.message);
-        return analisarLocalmente(tipoDoc, textoDoc);
+        const local = analisarLocalmente(tipoDoc, textoDoc);
+        local.dados = calculateFinancialMetrics(tipoDoc, local.dados);
+        return local;
     }
 }
 
@@ -405,25 +411,21 @@ function analisarLocalmente(tipoDoc, texto) {
         const passivoTotal = buscarValorPorRotulos(texto, ['Passivo Total', 'TOTAL DO PASSIVO']);
         const passivoCirculante = buscarValorPorRotulos(texto, ['Passivo Circulante', 'Exigivel a Curto Prazo']);
         const patrimonioLiquido = buscarValorPorRotulos(texto, ['Patrimônio Líquido', 'Patrimônio Líquido Consolidado', 'PL']);
-        const ativoBase = ativoTotal || max;
-        const plBase = patrimonioLiquido || (ativoBase * 0.4);
-        const pcBase = passivoCirculante || (ativoBase * 0.35);
-        const liquidez = ativoCirculante > 0 && pcBase > 0 ? +(ativoCirculante / pcBase).toFixed(2) : 0;
-        const endividamento = ativoBase > 0 ? +((passivoTotal || (ativoBase - plBase)) / ativoBase).toFixed(2) : 0;
+        const ativoNaoCirculanteValue = ativoNãoCirculante || null;
+        const ativoBase = ativoTotal || null;
+        const passivoBase = passivoTotal || null;
         return {
             sucesso: true,
             dados: {
                 ativo_total: ativoBase,
-                ativo_circulante: ativoCirculante || ativoBase * 0.55,
-                ativo_não_circulante: ativoNãoCirculante || ativoBase * 0.45,
-                passivo_total: passivoTotal || ativoBase - plBase,
-                passivo_circulante: pcBase,
-                patrimonio_liquido: plBase,
-                liquidez_corrente: liquidez,
-                endividamento_pct: endividamento,
-                alertas: ['Análise local aproximada com base nos valores identificados.'],
-                recomendacoes: ['Envie demonstrativos completos para melhorar a precisão da análise.'],
-                resumo: `Balanço processado localmente. Ativo total R$ ${ativoBase.toLocaleString('pt-BR')}, liquidez ${liquidez.toFixed(2)}.`
+                ativo_circulante: ativoCirculante || null,
+                ativo_não_circulante: ativoNaoCirculanteValue,
+                passivo_total: passivoBase,
+                passivo_circulante: passivoCirculante || null,
+                patrimonio_liquido: patrimonioLiquido || null,
+                alertas: [],
+                recomendacoes: [],
+                resumo: 'Balanço processado localmente com os valores identificados no documento.'
             },
             fonte: 'local',
             confianca: { score: ativoTotal > 0 ? 0.4 : 0.15, flags: ['Análise local aproximada'] }
@@ -437,30 +439,28 @@ function analisarLocalmente(tipoDoc, texto) {
     const lucroBruto = buscarValorPorRotulos(texto, ['Lucro Bruto', 'Resultado Bruto']);
     const despesasOpRaw = buscarValorPorRotulos(texto, ['Despesas Operacionais', 'Despesas Administrativas', 'Despesas Comerciais', 'Despesas Gerais']);
     const lucroLiquido = buscarValorPorRotulos(texto, ['Lucro Líquido', 'Lucro Líquido do Exercício', 'Resultado Líquido']);
-    const receitaBase = receitaBruta || max;
+    const receitaBase = receitaBruta || null;
     // Valores dedutores no DRE costumam vir entre parenteses (negativos no parse); normalizar para positivo
     const deducoes = Math.abs(deducoesRaw);
     const custos = Math.abs(custosRaw);
     const despesasOp = Math.abs(despesasOpRaw);
-    const rl = receitaBase - deducoes;
-    const lb = lucroBruto || (rl - custos);
-    const ll = lucroLiquido || (lb - despesasOp);
+    const rl = receitaBase !== null && deducoesRaw !== 0 ? receitaBase - deducoes : null;
+    const lb = lucroBruto || (rl !== null && custosRaw !== 0 ? rl - custos : null);
+    const ll = lucroLiquido || (lb !== null && despesasOpRaw !== 0 ? lb - despesasOp : null);
     return {
         sucesso: true,
         dados: {
             receita_bruta: receitaBase,
-            deducoes: deducoes || 0,
+            deducoes: deducoes || null,
             receita_liquida: rl,
-            custos: custos || receitaBase * 0.45,
+            custos: custos || null,
             lucro_bruto: lb,
-            despesas_operacionais: despesasOp || receitaBase * 0.25,
-            ebitda: lb - (despesasOp || receitaBase * 0.25),
+            despesas_operacionais: despesasOp || null,
+            ebitda: lb !== null && despesasOpRaw !== 0 ? lb - despesasOp : null,
             lucro_liquido: ll,
-            margem_bruta_pct: receitaBase ? +((lb / receitaBase) * 100).toFixed(1) : 0,
-            margem_liquida_pct: receitaBase ? +((ll / receitaBase) * 100).toFixed(1) : 0,
-            alertas: ['Análise local aproximada com base nos valores identificados.'],
-            recomendacoes: ['Envie demonstrativos completos para melhorar a precisão da análise.'],
-            resumo: `DRE processado localmente. Receita R$ ${receitaBase.toLocaleString('pt-BR')}, lucro líquido R$ ${ll.toLocaleString('pt-BR')}.`
+            alertas: [],
+            recomendacoes: [],
+            resumo: 'DRE processado localmente com os valores identificados no documento.'
         },
         fonte: 'local',
         confianca: { score: receitaBruta > 0 ? 0.4 : 0.15, flags: ['Análise local aproximada'] }

@@ -77,7 +77,16 @@ function compactarResultadoAnalise(dados) {
         'margem_bruta_pct',
         'margem_liquida_pct',
         'liquidez_corrente',
-        'endividamento_pct'
+        'endividamento_pct',
+        'deducoes_receita',
+        'cmv',
+        'ativo_nao_circulante',
+        'ativo_não_circulante',
+        'disponibilidades',
+        'estoques',
+        'passivo_nao_circulante',
+        'passivo_não_circulante',
+        'indicadores'
     ];
 
     const compacto = {};
