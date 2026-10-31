@@ -192,7 +192,7 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-300 overflow-x-hidden">
+    <main className="min-h-screen bg-[#07111f] text-slate-100 selection:bg-blue-500/30 selection:text-blue-200 overflow-x-hidden">
       {/* Toast provider */}
       <Toaster
         position="top-right"
@@ -232,15 +232,19 @@ export default function Home() {
       {/* Hero Section & Simulator (Above the Fold) */}
       <section
         id="simulador"
-        className="relative pt-12 pb-12 lg:pt-16 lg:pb-16 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950/20 via-slate-950 to-slate-950"
+        className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_15%_20%,rgba(37,99,235,0.2),transparent_35%),radial-gradient(circle_at_85%_10%,rgba(14,165,233,0.12),transparent_30%)]"
       >
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)] opacity-35 pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_at_center,white,transparent_75%)] opacity-40 pointer-events-none" />
         
         <div className="container mx-auto px-6 relative z-10 grid lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Column: Copywriting */}
-          <div className="lg:col-span-7 space-y-6">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-white max-w-2xl">
+          <div className="lg:col-span-7 space-y-6 py-12 lg:py-24">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1.5 text-xs font-semibold text-blue-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Inteligência financeira baseada nos seus dados
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-[-0.04em] text-white max-w-2xl">
               Descubra em segundos quanto sua empresa está pagando de imposto além do necessário.
             </h1>
             
@@ -252,7 +256,7 @@ export default function Home() {
               <a href="#simulador-form-box">
                 <button
                   onClick={() => trackEvent("hero_primary_cta")}
-                  className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5"
+                  className="w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white px-6 py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 shadow-lg shadow-blue-950/40"
                 >
                   Fazer Diagnóstico Gratuito <ArrowRight size={18} />
                 </button>
@@ -260,7 +264,7 @@ export default function Home() {
               <a href="#demonstracao">
                 <button
                   onClick={() => trackEvent("hero_secondary_cta")}
-                  className="w-full sm:w-auto border border-slate-800 bg-slate-900/60 text-slate-300 px-6 py-3.5 rounded-xl font-bold hover:bg-slate-800 hover:text-white transition-all transform hover:-translate-y-0.5"
+                  className="w-full sm:w-auto border border-white/15 bg-white/5 text-slate-200 px-6 py-3.5 rounded-xl font-semibold hover:bg-white/10 hover:text-white transition-all transform hover:-translate-y-0.5"
                 >
                   Ver Demonstração
                 </button>
@@ -268,25 +272,25 @@ export default function Home() {
             </div>
 
             {/* Trust Banner / Strip */}
-            <div className="pt-6 border-t border-slate-900 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold text-slate-300">
+            <div className="pt-6 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-medium text-slate-400">
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> R$ 23.700 economia média
+                <ShieldCheck size={14} className="text-emerald-400" /> Dados protegidos
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Até 5% faturamento recuperado
+                <ArrowRightLeft size={14} className="text-emerald-400" /> Open Finance
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> ROI médio de 16,6x
+                <Check size={14} className="text-emerald-400" /> Simulação fiscal
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Menos de 3 minutos
+                <Zap size={14} className="text-emerald-400" /> Dados em um painel
               </div>
             </div>
           </div>
 
           {/* Right Column: Gated Simulator Widget */}
           <div id="simulador-form-box" className="lg:col-span-5 w-full">
-            <div className="bg-slate-900/90 border border-slate-800/80 p-6 sm:p-8 rounded-3xl backdrop-blur-md shadow-2xl">
+            <div className="bg-white/[0.07] border border-white/15 p-6 sm:p-8 rounded-3xl backdrop-blur-xl shadow-2xl shadow-black/30">
               <SimulatorForm
                 onRegister={(plan, cnpj, faturamento, email) => {
                   trackEvent("simulator_completed", { plan, cnpj, faturamento, email });
