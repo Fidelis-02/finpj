@@ -89,6 +89,11 @@
 
         return {
             input,
+            rules: {
+                version: process.env.TAX_RULES_VERSION || 'embedded',
+                source: 'Tabelas fiscais embarcadas no FinPJ',
+                lastReviewedAt: process.env.TAX_RULES_LAST_REVIEWED_AT || null
+            },
             bestRegime: bestWithSavings,
             worstRegime: worstWithSavings,
             annualTaxByRegime: regimesWithSavings.reduce((acc, regime) => {
