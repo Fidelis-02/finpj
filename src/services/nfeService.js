@@ -2,60 +2,31 @@
 const taxEngine = require('../tax/index');
 const simplesNacional = taxEngine.regimes.simplesNacional;
 
-function gerarNotasMocks(cnpj) {
-    const hoje = new Date();
-    const notas = [];
-    const qtdNotas = Math.floor(Math.random() * 8) + 3; // 3 a 10 notas
-    
-    let faturamentoTotal = 0;
-    
-    for (let i = 0; i < qtdNotas; i++) {
-        const dataEmissao = new Date(hoje);
-        dataEmissao.setDate(hoje.getDate() - Math.floor(Math.random() * 28)); // Últimos 28 dias
-        const valor = Math.round((Math.random() * 5000 + 1000) * 100) / 100;
-        faturamentoTotal += valor;
-        
-        notas.push({
-            chave: '352' + Math.floor(Math.random() * 90000000000000) + cnpj + '550010000' + Math.floor(Math.random() * 99999),
-            numero: Math.floor(Math.random() * 5000) + 100,
-            data_emissao: dataEmissao.toISOString().slice(0, 10),
-            valor: valor,
-            status: 'AUTORIZADA',
-            tipo: Math.random() > 0.5 ? 'NF-e' : 'NFS-e',
-            tomador: {
-                nome: 'Cliente ' + String.fromCharCode(65 + i) + ' LTDA',
-                cnpj: '00.000.000/0001-' + String(i).padStart(2, '0')
-            }
-        });
-    }
-    
-    // Ordena da mais recente para a mais antiga
-    notas.sort((a, b) => new Date(b.data_emissao) - new Date(a.data_emissao));
-    
-    return {
-        notas,
-        faturamentoTotal: Math.round(faturamentoTotal * 100) / 100
-    };
-}
-
 async function fetchNotasFiscais(cnpj) {
-    // Aqui no futuro será a chamada para FocusNFe ou Arquivei
-    // Exemplo: fetch('https://api.focusnfe.com.br/v2/nfe/recebidas?cnpj=' + cnpj, { headers: { Authorization: `Basic ${process.env.FOCUS_NFE_KEY}` } })
-    
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            const data = gerarNotasMocks(cnpj);
-            resolve({
-                sucesso: true,
-                notas: data.notas,
-                resumo: {
-                    periodo: new Date().toISOString().slice(0, 7), // Mês atual
-                    totalNotas: data.notas.length,
-                    faturamento: data.faturamentoTotal
-                }
-            });
-        }, 1500); // delay para simular a rede
+    const baseUrl = process.env.FOCUS_NFE_URL;
+    const apiKey = process.env.FOCUS_NFE_KEY;
+    if (!baseUrl || !apiKey) {
+        throw new Error('Integração fiscal não configurada.');
+    }
+
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/v2/nfe/recebidas?cnpj=${encodeURIComponent(cnpj)}`, {
+        headers: { Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}` },
+        signal: AbortSignal.timeout(15000)
     });
+    if (!response.ok) {
+        throw new Error(`Falha na consulta de notas fiscais (${response.status}).`);
+    }
+    const payload = await response.json();
+    const notas = Array.isArray(payload) ? payload : payload.notas || [];
+    return {
+        sucesso: true,
+        notas,
+        resumo: {
+            periodo: new Date().toISOString().slice(0, 7),
+            totalNotas: notas.length,
+            faturamento: notas.reduce((total, nota) => total + Number(nota.valor || 0), 0)
+        }
+    };
 }
 
 function calcularDasAutomatico(faturamentoPeriodo, anexoI = true) {
@@ -83,7 +54,7 @@ function calcularDasAutomatico(faturamentoPeriodo, anexoI = true) {
         aliquotaEfetiva: (result.effectiveRate * 100).toFixed(2),
         vencimento: vencimento,
         competencia: hoje.toISOString().slice(0, 7),
-        linhaDigitavel: '858' + Math.floor(Math.random() * 9000000000000000000).toString().padStart(40, '0') // PIX/Código de barras mockado
+        linhaDigitavel: null
     };
 }
 

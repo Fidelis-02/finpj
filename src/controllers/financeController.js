@@ -26,46 +26,9 @@ function touchScopedCompany(usuario, scoped, target) {
     usuario.updatedAt = now;
 }
 
-function gerarTransacoesMock(bankName) {
-    const tipos = [
-        { desc: 'PIX Recebido', tipo: 'entrada', cat: 'Receita' },
-        { desc: 'PIX Enviado', tipo: 'saida', cat: 'Transferencia' },
-        { desc: 'Boleto Pago', tipo: 'saida', cat: 'Fornecedor' },
-        { desc: 'TED Recebida', tipo: 'entrada', cat: 'Receita' },
-        { desc: 'Tarifa Bancaria', tipo: 'saida', cat: 'Taxa' },
-        { desc: 'Pagamento Fornecedor', tipo: 'saida', cat: 'Fornecedor' },
-        { desc: 'Recebimento Cliente', tipo: 'entrada', cat: 'Receita' },
-        { desc: 'DAS Simples Nacional', tipo: 'saida', cat: 'Imposto' },
-        { desc: 'Folha de Pagamento', tipo: 'saida', cat: 'RH' },
-        { desc: 'Venda Cartao', tipo: 'entrada', cat: 'Receita' }
-    ];
-
-    const hoje = new Date();
-    return Array.from({ length: 15 }, (_, index) => {
-        const data = new Date(hoje);
-        data.setDate(hoje.getDate() - index);
-        const tipo = tipos[Math.floor(Math.random() * tipos.length)];
-        const valor = Math.round((Math.random() * 18 + 0.3) * 1000);
-        return {
-            id: `${bankName}-${Date.now()}-${index}`,
-            data: data.toISOString().slice(0, 10),
-            descricao: tipo.desc,
-            valor: tipo.tipo === 'entrada' ? valor : -valor,
-            tipo: tipo.tipo,
-            categoria: tipo.cat,
-            source: 'mock'
-        };
-    });
-}
-
-/**
- * Carrega transações reais via Pluggy SDK.
- * Só cai em mock se a Pluggy estiver completamente indisponível.
- */
-async function carregarTransacoesPluggy(itemId, bankName) {
+async function carregarTransacoesPluggy(itemId) {
     if (!pluggyService.isConfigured()) {
-        console.warn(`[Pluggy] SDK não configurado — usando dados mock para ${bankName}`);
-        return gerarTransacoesMock(bankName);
+        throw new Error('Integração Pluggy não configurada.');
     }
 
     try {
@@ -76,11 +39,10 @@ async function carregarTransacoesPluggy(itemId, bankName) {
             return transactions.map((tx) => ({ ...tx, source: 'pluggy' }));
         }
 
-        console.warn(`[Pluggy] Nenhuma transação retornada para ${bankName}, usando mock`);
-        return gerarTransacoesMock(bankName);
+        return [];
     } catch (error) {
         console.error(`[Pluggy] Erro ao buscar transações para ${bankName}:`, error.message);
-        return gerarTransacoesMock(bankName);
+        throw error;
     }
 }
 
@@ -207,8 +169,10 @@ async function connectBank(req, res) {
     }
 
     const bankName = item.connector?.name || 'Instituicao financeira';
-    const transactions = await carregarTransacoesPluggy(itemId, bankName);
-    const isReal = transactions.length > 0 && transactions[0]?.source === 'pluggy';
+    const transactions = await carregarTransacoesPluggy(itemId);
+    if (transactions.length === 0) {
+        return res.status(502).json({ erro: 'A instituição financeira não retornou transações reais.' });
+    }
 
     const bank = {
         bankId: itemId,
@@ -218,7 +182,7 @@ async function connectBank(req, res) {
         lastSync: new Date().toISOString(),
         status: item.status || 'connected',
         accountType: 'Conta PJ',
-        dataSource: isReal ? 'pluggy' : 'mock',
+        dataSource: 'pluggy',
         transactions
     };
 

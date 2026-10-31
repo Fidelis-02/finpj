@@ -47,10 +47,10 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
       if (data.nome || data.razao_social) {
         setCompanyDetails({
           nome: data.nome || data.razao_social,
-          fantasia: data.fantasia || "Não informado",
-          cnae: data.cnae_descricao || data.cnae || "Não cadastrado",
-          municipio: `${data.municipio || "São Paulo"} - ${data.uf || "SP"}`,
-          porte: data.porte || "Demais Empresas / PME"
+          fantasia: data.fantasia || "",
+          cnae: data.cnae_descricao || data.cnae || "",
+          municipio: [data.municipio, data.uf].filter(Boolean).join(" - "),
+          porte: data.porte || ""
         });
         toast.success(`Empresa localizada: ${data.nome || data.razao_social}`);
         setTimeout(() => {
@@ -238,7 +238,7 @@ export function SimulatorForm({ onRegister, onSubmit }: SimulatorFormProps) {
         <div className="space-y-4">
           <div className="text-left mb-6">
             <h3 className="text-xl font-bold text-white mb-1" data-testid="company-enriched-title">
-              {companyDetails?.nome || "Sua Empresa"}
+              {companyDetails?.nome || "Empresa identificada"}
             </h3>
             <p className="text-xs text-emerald-400 font-medium flex items-center gap-1">
               <CheckCircle2 size={12} /> CNPJ enriquecido com sucesso

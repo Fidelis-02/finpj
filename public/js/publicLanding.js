@@ -678,8 +678,8 @@ function buildLandingMarkup() {
             <div class="landing-dashboard-main">
               <div class="landing-dashboard-topbar">
                 <div>
-                  <strong>Empresa Exemplo LTDA</strong>
-                  <small>12.345.678/0001-90</small>
+                  <strong>Dados da sua empresa</strong>
+                  <small>Disponível após conexão</small>
                 </div>
                 <span class="landing-dashboard-chip">Diagnostico atualizado</span>
               </div>
@@ -687,19 +687,19 @@ function buildLandingMarkup() {
               <div class="landing-dashboard-kpis">
                 <article class="landing-mini-metric">
                   <span>Economia anual estimada</span>
-                  <strong>R$ 98.540</strong>
+                  <strong>Disponível após análise</strong>
                 </article>
                 <article class="landing-mini-metric">
                   <span>Melhor regime</span>
-                  <strong>Lucro Presumido</strong>
+                  <strong>Disponível após análise</strong>
                 </article>
                 <article class="landing-mini-metric">
                   <span>Imposto atual</span>
-                  <strong>R$ 256.420</strong>
+                  <strong>Disponível após análise</strong>
                 </article>
                 <article class="landing-mini-metric">
                   <span>Novo imposto</span>
-                  <strong>R$ 157.880</strong>
+                  <strong>Disponível após análise</strong>
                 </article>
               </div>
 
@@ -754,7 +754,7 @@ function buildLandingMarkup() {
                         stroke-dasharray="42 339" stroke-dashoffset="-300"></circle>
                     </svg>
                     <div class="landing-donut-center">
-                      <strong>R$ 157.880</strong>
+                      <strong>Disponível após análise</strong>
                       <span>Novo imposto</span>
                     </div>
                   </div>
@@ -778,7 +778,7 @@ function buildLandingMarkup() {
           <span>Empresas analisadas</span>
         </article>
         <article class="landing-stat-card">
-          <strong>R$ 45M+</strong>
+          <strong>Dados reais</strong>
           <span>Economia potencial mapeada</span>
         </article>
         <article class="landing-stat-card">
@@ -803,12 +803,12 @@ function buildLandingMarkup() {
         <article class="landing-proof-card" data-reveal>
           <span class="landing-chip">Caso ilustrativo</span>
           <strong>Distribuidora alimenticia</strong>
-          <p>Faturamento anual de R$ 6,8 mi. O simulador apontou economia potencial de R$ 118 mil/ano ao comparar o regime atual com Lucro Presumido.</p>
+          <p>Resultados são calculados somente com os dados reais informados e as integrações habilitadas.</p>
         </article>
         <article class="landing-proof-card" data-reveal>
           <span class="landing-chip">Caso ilustrativo</span>
           <strong>Clinica multiprofissional</strong>
-          <p>Com receita anual de R$ 3,2 mi, o diagnostico inicial mostrou pressao tributaria e financeira equivalente a R$ 64 mil/ano em margem comprimida.</p>
+          <p>O diagnóstico depende dos dados financeiros e fiscais da empresa conectada.</p>
         </article>
         <article class="landing-proof-card" data-reveal>
           <span class="landing-chip">Caso ilustrativo</span>
